@@ -37,7 +37,7 @@ The library uses GPU for optimal execution. For more details on TensorFlow GPU s
 
 # Overview
 
-- `ml_privacy_meter.attack` consists of attacks that can be mounted against trained machine learning models. The tool implements the whitebox membership inference attack described in Nasr, Shokri, Houmansadr [2].
+- `ml_privacy_meter.attack` consists of attacks that can be mounted against trained machine learning models. The tool implements the blackbox and whitebox membership inference attack described in Shokri, Stronati, Song, Shmatikov [1], and Nasr, Shokri, Houmansadr [2]. The tool is designed and developed at NUS Data Privacy and Trustworthy Machine Learning Lab, by (alphabetical order): Mihir Harshavardhan Khandekar, Milad Nasr, Shadab Shaikh, and Reza Shokri.
 
 ## Data 
 
