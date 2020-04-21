@@ -3,12 +3,13 @@ The Attack class.
 '''
 import datetime
 import itertools
+import json
 import os
 import time
 
 import numpy as np
-import tensorflow as tf
 
+import tensorflow as tf
 from ml_privacy_meter.utils.attack_utils import attack_utils, sanity_check
 from ml_privacy_meter.utils.logger import get_logger
 from ml_privacy_meter.utils.losses import CrossEntropyLoss, mse
@@ -114,8 +115,8 @@ class initialize(object):
         self.attack_utils = attack_utils()
         self.logger = get_logger(self.attack_utils.root_dir, "attack",
                                  "whitebox", "info", time_stamp)
-        self.aprefix = os.path.join('logs', 
-                                  "attack", "tensorboard")
+        self.aprefix = os.path.join('logs',
+                                    "attack", "tensorboard")
         self.summary_writer = tf.summary.create_file_writer(self.aprefix)
         self.target_train_model = target_train_model
         self.target_attack_model = target_attack_model
@@ -391,7 +392,13 @@ class initialize(object):
         Trains the whitebox attack model
         """
         assert self.attackmodel, "Attack model not initialized"
-        mtrainset, nmtrainset = self.train_datahandler.load_train()
+        mtrainset, nmtrainset, nm_features, nm_labels = self.train_datahandler.load_train()
+        model = self.target_train_model
+
+        pred = model(nm_features)
+        acc = np.sum(pred > 0.5, nm_labels) / len(pred)
+        print('Target model test accuracy', acc)
+
         mtestset, nmtestset = self.attack_datahandler.load_test()
         attack_acc = tf.keras.metrics.Accuracy(
             'attack_acc', dtype=tf.float32)
@@ -401,7 +408,6 @@ class initialize(object):
         nmtestset = self.attack_utils.intersection(
             nmtrainset, nmtestset, self.attack_datahandler.batch_size)
         # main training procedure begins
-        model = self.target_train_model
 
         with tf.device(self.device):
             best_accuracy = 0
@@ -422,7 +428,7 @@ class initialize(object):
                         probs = tf.concat((moutputs, nmoutputs), 0)
                         attackloss = mse(target, probs)
                     # Computing gradients
-                    
+
                     grads = tape.gradient(attackloss,
                                           self.attackmodel.variables)
                     self.optimizer.apply_gradients(zip(grads,
@@ -448,11 +454,21 @@ class initialize(object):
                                  "Attack accuracy: {}"
                                  .format(e, attackloss, attack_accuracy))
         # main training procedure ends
+        tensorboard_callback = tf.keras.callbacks.TensorBoard(
+            log_dir=self.aprefix, histogram_freq=0, write_graph=True)
+        self.attackmodel.compile(
+            optimizer='adam', loss='categorical_crossentropy')
+        self.attackmodel.fit(self.inputArray, nonmemtrue[:np.array(
+            self.inputArray).shape[1]], callbacks=[tensorboard_callback])
 
+        with open('logs/attack/results', 'w+') as json_file:
+            data = json.load(json_file)
+            if not data:
+                data = []
+            data.append(
+                {self.model_name: {'target_acc': acc, 'attack_acc': best_accuracy}})
+            json.dump(data, json_file)
 
-        tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=self.aprefix, histogram_freq=0, write_graph=True)
-        self.attackmodel.compile(optimizer='adam', loss='categorical_crossentropy')
-        self.attackmodel.fit(self.inputArray, nonmemtrue[:np.array(self.inputArray).shape[1]], callbacks=[tensorboard_callback])
         # logging best attack accuracy
         self.logger.info("Best attack accuracy %.2f%%\n\n",
                          100 * best_accuracy)
