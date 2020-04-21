@@ -10,6 +10,7 @@ import time
 import numpy as np
 
 import tensorflow as tf
+from sklearn.metrics import accuracy_score
 from ml_privacy_meter.utils.attack_utils import attack_utils, sanity_check
 from ml_privacy_meter.utils.logger import get_logger
 from ml_privacy_meter.utils.losses import CrossEntropyLoss, mse
@@ -396,7 +397,7 @@ class initialize(object):
         model = self.target_train_model
 
         pred = model(nm_features)
-        acc = np.sum(pred > 0.5, nm_labels) / len(pred)
+        acc = accuracy_score(nm_labels, np.argmax(pred, axis=1))
         print('Target model test accuracy', acc)
 
         mtestset, nmtestset = self.attack_datahandler.load_test()
@@ -445,7 +446,7 @@ class initialize(object):
                     tf.summary.scalar('loss', np.average(attackloss), step=e+1)
                     tf.summary.scalar('accuracy', attack_accuracy, step=e+1)
 
-                print("Epoch {} over,"
+                print("Epoch {} over :"
                       "Attack test accuracy: {}, Best accuracy : {}"
                       .format(e, attack_accuracy, best_accuracy))
 
@@ -460,14 +461,16 @@ class initialize(object):
             optimizer='adam', loss='categorical_crossentropy')
         self.attackmodel.fit(self.inputArray, nonmemtrue[:np.array(
             self.inputArray).shape[1]], callbacks=[tensorboard_callback])
-
+        data = None
+        if os.path.isfile('logs/attack/results') and os.stat("logs/attack/results").st_size > 0:
+            with open('logs/attack/results', 'w+') as json_file:
+                data = json.load(json_file)['result']
+        if not data:
+            data = []
+        data.append(
+            {self.model_name: {'target_acc': float(acc), 'attack_acc': float(best_accuracy.numpy())}})
         with open('logs/attack/results', 'w+') as json_file:
-            data = json.load(json_file)
-            if not data:
-                data = []
-            data.append(
-                {self.model_name: {'target_acc': acc, 'attack_acc': best_accuracy}})
-            json.dump(data, json_file)
+            json.dump({'result' : data}, json_file)
 
         # logging best attack accuracy
         self.logger.info("Best attack accuracy %.2f%%\n\n",
