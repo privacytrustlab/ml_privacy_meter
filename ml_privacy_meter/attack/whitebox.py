@@ -463,8 +463,12 @@ class initialize(object):
             self.inputArray).shape[1]], callbacks=[tensorboard_callback])
         data = None
         if os.path.isfile('logs/attack/results') and os.stat("logs/attack/results").st_size > 0:
-            with open('logs/attack/results', 'w+') as json_file:
-                data = json.load(json_file)['result']
+            with open('logs/attack/results', 'r+') as json_file:
+                data = json.load(json_file)
+                if data:
+                    data = data['result']
+                else:
+                    data = []
         if not data:
             data = []
         data.append(
