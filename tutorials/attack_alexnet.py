@@ -4,7 +4,7 @@ import tensorflow.compat.v1.keras.layers as keraslayers
 from tensorflow.compat.v1.train import Saver
 
 import ml_privacy_meter
-
+from ml_privacy_meter.visualization.visualize import compare_models
 # input_features should be changed according to the model
 input_shape = (32, 32, 3)
 
@@ -50,3 +50,4 @@ attackobj = ml_privacy_meter.attack.whitebox.initialize(
     device=None, epochs=2, model_name='blackbox1')
 
 attackobj.train_attack()
+compare_models()
