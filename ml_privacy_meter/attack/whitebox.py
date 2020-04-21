@@ -101,6 +101,7 @@ class initialize(object):
                  attack_datahandler,
                  device=None,
                  optimizer="adam",
+                 model_name="sample_model",
                  layers_to_exploit=None,
                  gradients_to_exploit=None,
                  exploit_loss=True,
@@ -113,7 +114,9 @@ class initialize(object):
         self.attack_utils = attack_utils()
         self.logger = get_logger(self.attack_utils.root_dir, "attack",
                                  "whitebox", "info", time_stamp)
-
+        self.aprefix = os.path.join('logs', 
+                                  "attack", "tensorboard")
+        self.summary_writer = tf.summary.create_file_writer(self.aprefix)
         self.target_train_model = target_train_model
         self.target_attack_model = target_attack_model
         self.train_datahandler = train_datahandler
@@ -128,7 +131,7 @@ class initialize(object):
         self.learning_rate = learning_rate
         self.output_size = int(target_train_model.output.shape[1])
         self.ohencoding = self.attack_utils.createOHE(self.output_size)
-
+        self.model_name = model_name
         # Create input containers for attack & encoder model.
         self.create_input_containers()
         layers = target_train_model.layers
@@ -255,7 +258,6 @@ class initialize(object):
         output = self.encoder
         self.attackmodel = tf.compat.v1.keras.Model(inputs=self.attackinputs,
                                                     outputs=output)
-        self.attackmodel.summary()
 
     def get_layer_outputs(self, model, features):
         """
@@ -407,6 +409,7 @@ class initialize(object):
                 zipped = zip(mtrainset, nmtrainset)
                 for((mfeatures, mlabels), (nmfeatures, nmlabels)) in zipped:
                     with tf.GradientTape() as tape:
+
                         tape.reset()
                         # Getting outputs of forward pass of attack model
                         moutputs = self.forward_pass(model, mfeatures, mlabels)
@@ -419,16 +422,22 @@ class initialize(object):
                         probs = tf.concat((moutputs, nmoutputs), 0)
                         attackloss = mse(target, probs)
                     # Computing gradients
+                    
                     grads = tape.gradient(attackloss,
                                           self.attackmodel.variables)
                     self.optimizer.apply_gradients(zip(grads,
                                                        self.attackmodel.variables))
+
                 # Calculating Attack accuracy
                 attack_acc(probs > 0.5, target)
 
                 attack_accuracy = self.attack_accuracy(mtestset, nmtestset)
                 if attack_accuracy > best_accuracy:
                     best_accuracy = attack_accuracy
+
+                with self.summary_writer.as_default(), tf.name_scope(self.model_name):
+                    tf.summary.scalar('loss', np.average(attackloss), step=e+1)
+                    tf.summary.scalar('accuracy', attack_accuracy, step=e+1)
 
                 print("Epoch {} over,"
                       "Attack test accuracy: {}, Best accuracy : {}"
@@ -440,6 +449,10 @@ class initialize(object):
                                  .format(e, attackloss, attack_accuracy))
         # main training procedure ends
 
+
+        tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=self.aprefix, histogram_freq=0, write_graph=True)
+        self.attackmodel.compile(optimizer='adam', loss='categorical_crossentropy')
+        self.attackmodel.fit(self.inputArray, nonmemtrue[:np.array(self.inputArray).shape[1]], callbacks=[tensorboard_callback])
         # logging best attack accuracy
         self.logger.info("Best attack accuracy %.2f%%\n\n",
                          100 * best_accuracy)

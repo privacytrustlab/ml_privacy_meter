@@ -46,7 +46,7 @@ attackobj = ml_privacy_meter.attack.whitebox.initialize(
     train_datahandler=datahandlerA,
     attack_datahandler=datahandlerA,
     layers_to_exploit=[26],
-    gradients_to_exploit=[6],
-    device=None)
+    gradients_to_exploit=[],
+    device=None, epochs=2, model_name='blackbox1')
 
 attackobj.train_attack()
