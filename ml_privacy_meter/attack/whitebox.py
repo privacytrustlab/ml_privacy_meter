@@ -455,6 +455,7 @@ class initialize(object):
                                  "Attack accuracy: {}"
                                  .format(e, attackloss, attack_accuracy))
         # main training procedure ends
+        
         tensorboard_callback = tf.keras.callbacks.TensorBoard(
             log_dir=self.aprefix, histogram_freq=0, write_graph=True)
         self.attackmodel.compile(
@@ -479,3 +480,29 @@ class initialize(object):
         # logging best attack accuracy
         self.logger.info("Best attack accuracy %.2f%%\n\n",
                          100 * best_accuracy)
+
+
+    def test_attack(self):
+        mtrainset, nmtrainset, _, _ = self.train_datahandler.load_train()
+        model = self.target_train_model
+        mpreds = []
+        nmpreds = []
+        with tf.device(self.device):
+            zipped = zip(mtrainset, nmtrainset)
+            for((mfeatures, mlabels), (nmfeatures, nmlabels)) in zipped:
+                # Getting outputs of forward pass of attack model
+                moutputs = self.forward_pass(model, mfeatures, mlabels)
+                nmoutputs = self.forward_pass(
+                    model, nmfeatures, nmlabels)
+                # Computing the true values for loss function according
+                mpreds.extend(moutputs.numpy())
+                nmpreds.extend(nmoutputs.numpy())
+                memtrue = tf.ones(moutputs.shape)
+                nonmemtrue = tf.zeros(nmoutputs.shape)
+                target = tf.concat((memtrue, nonmemtrue), 0)
+                probs = tf.concat((moutputs, nmoutputs), 0)
+        
+        with self.summary_writer.as_default(), tf.name_scope(self.model_name):
+            tf.summary.histogram('Member', mpreds, step=0)
+            tf.summary.histogram('Nonmember', nmpreds, step=0)
+
