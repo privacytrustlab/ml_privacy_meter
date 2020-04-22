@@ -21,7 +21,7 @@ You can find 'tgz' files of some of these datasets over here: [here](https://www
 
 ### Downloading datasets:
 
-To generate a particular dataset (named 'dataset_name') in text format as required by  `ml_privacy_meter's`  data loading mechanisms,  run the script `sh download_<dataset_name>`. Eg: For `purchase100`, run:
+To generate a particular dataset (named 'dataset_name') in text format as required by  `ml_privacy_meter's`  data loading mechanisms, run the script `sh download_<dataset_name>`. Note that the given scripts call the data processing programs using `python2`, so you need to have Python 2 and `numpy` with Python 2 support (e.g. `v1.16.6`) installed before running them. Eg: For `purchase100`, run:
 
 ```
 sh download_purchase100.sh
