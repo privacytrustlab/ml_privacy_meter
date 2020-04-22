@@ -100,9 +100,9 @@ Note 2: The `target_attack_model` is not a attack model but rather a classificat
 
 ## Running the Alexnet CIFAR-100 Attack
 To perform an attack as in Nasr et al [2], we use the Alexnet model trained on the CIFAR-100 dataset. We perform the whitebox attack on the model while exploiting the gradients, final layer outputs, loss values and label values.
-First, extract the pretrained model from the `tutorials/models` directory and place it in the root directory of the project. `unzip tutorials/models/alexnet_pretrained.zip -d .`
+First, extract the pretrained model from the `tutorials/models` directory and place it in the root directory of the project. `unzip tutorials/models/alexnet_pretrained.zip -d .` 
 Note : The user can also train their own model to attack simliar to the example in `tutorials/alexnet.py`
-Then, run the script to download the required data files.
+Then, run the script to download the required data files. This script calls the data processing programs using `python2`, so you need to have Python 2 and `numpy` with Python 2 support (e.g. `v1.16.6`) installed before running the following commands:
 ```
 cd datasets
 chmod +x download_cifar100.sh
