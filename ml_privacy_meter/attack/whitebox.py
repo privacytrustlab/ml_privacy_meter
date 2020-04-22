@@ -480,6 +480,7 @@ class initialize(object):
         # logging best attack accuracy
         self.logger.info("Best attack accuracy %.2f%%\n\n",
                          100 * best_accuracy)
+        self.test_attack()
 
 
     def test_attack(self):
