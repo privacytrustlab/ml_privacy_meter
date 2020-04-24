@@ -179,7 +179,7 @@ The accuracy and loss of the attack model while getting trained can be visualize
 ![Model accuracy and loss](images/tb_acc.png)
 
 A `comparison.png` graph is also created to compare multiple runs of the attack, with the inference accuracy and target model test accuracy.
-![Comparison](images/tb_acc.png)
+![Comparison](images/comparison.png)
 
 
 The `logs/attack` folder can be deleted to refresh the data.
