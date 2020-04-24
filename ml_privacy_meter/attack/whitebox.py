@@ -502,10 +502,10 @@ class initialize(object):
                     model, nmfeatures, nmlabels)
                 # Computing the true values for loss function according
                 mpreds.extend(moutputs.numpy())
-                mlab.extend(np.argmax(mlabels, axis=1))
+                mlab.extend(mlabels)
                 mfeat.extend(mfeatures)
                 nmpreds.extend(nmoutputs.numpy())
-                nmlab.extend(np.argmax(nmlabels, axis=1))
+                nmlab.extend(nmlabels)
                 nmfeat.extend(nmfeatures)
 
                 memtrue = tf.ones(moutputs.shape)
@@ -524,7 +524,8 @@ class initialize(object):
             for l, p in zip(mlab, mpreds):
                 if l == lab:
                     labs.append(p)
-            tf.summary.histogram('Member' + '_Label_' + lab, labs, step=0)
+            with self.summary_writer.as_default(), tf.name_scope(self.model_name):
+                tf.summary.histogram('Member' + '_Label_' + str(lab), labs, step=0)
 
         # Non Members
         unique_nmem_lab = sorted(np.unique(nmlab))
@@ -533,8 +534,9 @@ class initialize(object):
             for l, p in zip(nmlab, nmpreds):
                 if l == lab:
                     labs.append(p)
-            tf.summary.histogram('NonMember' + '_Label_' + lab, labs, step=0)
+            with self.summary_writer.as_default(), tf.name_scope(self.model_name):
+                tf.summary.histogram('NonMember' + '_Label_' + str(lab), labs, step=0)
 
-        np.save(mpreds, 'logs/member_probs.npy')
-        np.save(nmpreds, 'logs/nonmember_probs.npy')
+        np.save('logs/member_probs.npy', np.array(mpreds))
+        np.save('logs/nonmember_probs.npy', np.array(nmpreds))
 
