@@ -10,11 +10,12 @@ import time
 import numpy as np
 
 import tensorflow as tf
-from sklearn.metrics import accuracy_score
 from ml_privacy_meter.utils.attack_utils import attack_utils, sanity_check
 from ml_privacy_meter.utils.logger import get_logger
 from ml_privacy_meter.utils.losses import CrossEntropyLoss, mse
 from ml_privacy_meter.utils.optimizers import optimizer_op
+from ml_privacy_meter.visualization.visualize import compare_models
+from sklearn.metrics import accuracy_score
 
 from .WHITEBOX.autoencoder import create_encoder
 from .WHITEBOX.create_cnn import (cnn_for_cnn_gradients,
@@ -541,3 +542,4 @@ class initialize(object):
 
         np.save('logs/member_probs.npy', np.array(mpreds))
         np.save('logs/nonmember_probs.npy', np.array(nmpreds))
+        compare_models()
