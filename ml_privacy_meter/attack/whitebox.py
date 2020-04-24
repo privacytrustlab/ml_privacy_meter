@@ -3,16 +3,19 @@ The Attack class.
 '''
 import datetime
 import itertools
+import json
 import os
 import time
 
 import numpy as np
-import tensorflow as tf
 
+import tensorflow as tf
 from ml_privacy_meter.utils.attack_utils import attack_utils, sanity_check
 from ml_privacy_meter.utils.logger import get_logger
 from ml_privacy_meter.utils.losses import CrossEntropyLoss, mse
 from ml_privacy_meter.utils.optimizers import optimizer_op
+from ml_privacy_meter.visualization.visualize import compare_models
+from sklearn.metrics import accuracy_score
 
 from .WHITEBOX.autoencoder import create_encoder
 from .WHITEBOX.create_cnn import (cnn_for_cnn_gradients,
@@ -101,6 +104,7 @@ class initialize(object):
                  attack_datahandler,
                  device=None,
                  optimizer="adam",
+                 model_name="sample_model",
                  layers_to_exploit=None,
                  gradients_to_exploit=None,
                  exploit_loss=True,
@@ -113,7 +117,9 @@ class initialize(object):
         self.attack_utils = attack_utils()
         self.logger = get_logger(self.attack_utils.root_dir, "attack",
                                  "whitebox", "info", time_stamp)
-
+        self.aprefix = os.path.join('logs',
+                                    "attack", "tensorboard")
+        self.summary_writer = tf.summary.create_file_writer(self.aprefix)
         self.target_train_model = target_train_model
         self.target_attack_model = target_attack_model
         self.train_datahandler = train_datahandler
@@ -128,7 +134,7 @@ class initialize(object):
         self.learning_rate = learning_rate
         self.output_size = int(target_train_model.output.shape[1])
         self.ohencoding = self.attack_utils.createOHE(self.output_size)
-
+        self.model_name = model_name
         # Create input containers for attack & encoder model.
         self.create_input_containers()
         layers = target_train_model.layers
@@ -255,7 +261,6 @@ class initialize(object):
         output = self.encoder
         self.attackmodel = tf.compat.v1.keras.Model(inputs=self.attackinputs,
                                                     outputs=output)
-        self.attackmodel.summary()
 
     def get_layer_outputs(self, model, features):
         """
@@ -389,7 +394,13 @@ class initialize(object):
         Trains the whitebox attack model
         """
         assert self.attackmodel, "Attack model not initialized"
-        mtrainset, nmtrainset = self.train_datahandler.load_train()
+        mtrainset, nmtrainset, nm_features, nm_labels = self.train_datahandler.load_train()
+        model = self.target_train_model
+
+        pred = model(nm_features)
+        acc = accuracy_score(nm_labels, np.argmax(pred, axis=1))
+        print('Target model test accuracy', acc)
+
         mtestset, nmtestset = self.attack_datahandler.load_test()
         attack_acc = tf.keras.metrics.Accuracy(
             'attack_acc', dtype=tf.float32)
@@ -399,7 +410,6 @@ class initialize(object):
         nmtestset = self.attack_utils.intersection(
             nmtrainset, nmtestset, self.attack_datahandler.batch_size)
         # main training procedure begins
-        model = self.target_train_model
 
         with tf.device(self.device):
             best_accuracy = 0
@@ -407,6 +417,7 @@ class initialize(object):
                 zipped = zip(mtrainset, nmtrainset)
                 for((mfeatures, mlabels), (nmfeatures, nmlabels)) in zipped:
                     with tf.GradientTape() as tape:
+
                         tape.reset()
                         # Getting outputs of forward pass of attack model
                         moutputs = self.forward_pass(model, mfeatures, mlabels)
@@ -419,10 +430,12 @@ class initialize(object):
                         probs = tf.concat((moutputs, nmoutputs), 0)
                         attackloss = mse(target, probs)
                     # Computing gradients
+
                     grads = tape.gradient(attackloss,
                                           self.attackmodel.variables)
                     self.optimizer.apply_gradients(zip(grads,
                                                        self.attackmodel.variables))
+
                 # Calculating Attack accuracy
                 attack_acc(probs > 0.5, target)
 
@@ -430,7 +443,11 @@ class initialize(object):
                 if attack_accuracy > best_accuracy:
                     best_accuracy = attack_accuracy
 
-                print("Epoch {} over,"
+                with self.summary_writer.as_default(), tf.name_scope(self.model_name):
+                    tf.summary.scalar('loss', np.average(attackloss), step=e+1)
+                    tf.summary.scalar('accuracy', attack_accuracy, step=e+1)
+
+                print("Epoch {} over :"
                       "Attack test accuracy: {}, Best accuracy : {}"
                       .format(e, attack_accuracy, best_accuracy))
 
@@ -440,6 +457,90 @@ class initialize(object):
                                  .format(e, attackloss, attack_accuracy))
         # main training procedure ends
 
+        data = None
+        if os.path.isfile('logs/attack/results') and os.stat("logs/attack/results").st_size > 0:
+            with open('logs/attack/results', 'r+') as json_file:
+                data = json.load(json_file)
+                if data:
+                    data = data['result']
+                else:
+                    data = []
+        if not data:
+            data = []
+        data.append(
+            {self.model_name: {'target_acc': float(acc), 'attack_acc': float(best_accuracy.numpy())}})
+        with open('logs/attack/results', 'w+') as json_file:
+            json.dump({'result': data}, json_file)
+
         # logging best attack accuracy
         self.logger.info("Best attack accuracy %.2f%%\n\n",
                          100 * best_accuracy)
+
+
+    def test_attack(self, create_graph=False):
+        mtrainset, nmtrainset, _, _ = self.train_datahandler.load_train()
+        model = self.target_train_model
+        mpreds = []
+        mlab = []
+        nmpreds = []
+        nmlab = []
+        mfeat = []
+        nmfeat = []
+        if create_graph:
+            tensorboard_callback = tf.keras.callbacks.TensorBoard(
+                log_dir=self.aprefix, histogram_freq=0, write_graph=True)
+            self.attackmodel.compile(
+                optimizer='adam', loss='categorical_crossentropy')
+            self.attackmodel.fit(self.inputArray, tf.zeros((np.array(
+                self.inputArray).shape[1])), callbacks=[tensorboard_callback])
+
+        # Histogram by label
+        with tf.device(self.device):
+            zipped = zip(mtrainset, nmtrainset)
+            for((mfeatures, mlabels), (nmfeatures, nmlabels)) in zipped:
+                # Getting outputs of forward pass of attack model
+                moutputs = self.forward_pass(model, mfeatures, mlabels)
+                nmoutputs = self.forward_pass(
+                    model, nmfeatures, nmlabels)
+                # Computing the true values for loss function according
+                mpreds.extend(moutputs.numpy())
+                mlab.extend(mlabels)
+                mfeat.extend(mfeatures)
+                nmpreds.extend(nmoutputs.numpy())
+                nmlab.extend(nmlabels)
+                nmfeat.extend(nmfeatures)
+
+                memtrue = tf.ones(moutputs.shape)
+                nonmemtrue = tf.zeros(nmoutputs.shape)
+                target = tf.concat((memtrue, nonmemtrue), 0)
+                probs = tf.concat((moutputs, nmoutputs), 0)
+
+        with self.summary_writer.as_default(), tf.name_scope(self.model_name):
+            tf.summary.histogram('Member', mpreds, step=0)
+            tf.summary.histogram('NonMember', nmpreds, step=0)
+
+        # Members
+        unique_mem_lab = sorted(np.unique(mlab))
+        for lab in unique_mem_lab:
+            labs = []
+            for l, p in zip(mlab, mpreds):
+                if l == lab:
+                    labs.append(p)
+            with self.summary_writer.as_default(), tf.name_scope(self.model_name + ' (Labels)'):
+                tf.summary.histogram(
+                    'Member' + ' Label_' + str(lab), labs, step=0)
+
+        # Non Members
+        unique_nmem_lab = sorted(np.unique(nmlab))
+        for lab in unique_nmem_lab:
+            labs = []
+            for l, p in zip(nmlab, nmpreds):
+                if l == lab:
+                    labs.append(p)
+            with self.summary_writer.as_default(), tf.name_scope(self.model_name + ' (Labels)'):
+                tf.summary.histogram(
+                    'NonMember' + ' Label_' + str(lab), labs, step=0)
+
+        np.save('logs/member_probs.npy', np.array(mpreds))
+        np.save('logs/nonmember_probs.npy', np.array(nmpreds))
+        compare_models()

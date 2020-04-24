@@ -1,0 +1,7 @@
+*.pyc
+venv/
+*.egg-info/
+.vscode/
+datasets/*.txt*
+logs/
+

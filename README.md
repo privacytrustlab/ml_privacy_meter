@@ -98,6 +98,52 @@ Note 1: The `whitebox` class can also be used to train the whitebox attack model
 
 Note 2: The `target_attack_model` is not a attack model but rather a classification model that the attack model will be evaluated on.
 
+## Running the Alexnet CIFAR-100 Attack
+To perform an attack as in Nasr et al [2], we use the Alexnet model trained on the CIFAR-100 dataset. We perform the whitebox attack on the model while exploiting the gradients, final layer outputs, loss values and label values.
+First, extract the pretrained model from the `tutorials/models` directory and place it in the root directory of the project. `unzip tutorials/models/alexnet_pretrained.zip -d .`
+Note : The user can also train their own model to attack simliar to the example in `tutorials/alexnet.py`
+Then, run the script to download the required data files.
+```
+cd datasets
+chmod +x download_cifar100.sh
+./download_cifar100.sh
+```
+This downloads the dataset file and training set file and converts them into the format required by the tool.
+We then run the attack code `python tutorials/attack_alexnet.py`. 
+The `attackobj` initializes the whitebox class and the attack configuration. Following are some examples of configurations that can be changed in the function.
+Note : The code explicitly sets the means and standard deviations for normalizing the images, according to the CIFAR-100 distribution.
+1. Whitebox attack - Exploit the final layer gradients, final layer outputs, loss values and label values (DEFAULT)
+```
+attackobj = ml_privacy_meter.attack.whitebox.initialize(
+    target_train_model=cmodelA,
+    target_attack_model=cmodelA,
+    train_datahandler=datahandlerA,
+    attack_datahandler=datahandlerA,ew
+    layers_to_exploit=[26],
+    gradients_to_exploit=[6],
+    device=None)
+```
+2. Whitebox attack - Exploit final two model layer outputs, loss values and label values
+```
+attackobj = ml_privacy_meter.attack.whitebox.initialize(
+    target_train_model=cmodelA,
+    target_attack_model=cmodelA,
+    train_datahandler=datahandlerA,
+    attack_datahandler=datahandlerA,
+    layers_to_exploit=[22, 26],
+    device=None)
+```
+2. Blackbox attack - Exploit final layer output and label values
+```
+attackobj = ml_privacy_meter.attack.whitebox.initialize(
+    target_train_model=cmodelA,
+    target_attack_model=cmodelA,
+    train_datahandler=datahandlerA,
+    attack_datahandler=datahandlerA,
+    layers_to_exploit=[26],
+	exploit_loss=False,
+    device=None)
+```
 
 ## Available optimizers:
 
@@ -107,6 +153,36 @@ Note 2: The `target_attack_model` is not a attack model but rather a classificat
 4. Vanilla SGD
 5. SGD with Momentum
 6. RMSProp
+
+## Visualization
+The attack models can also be visualized in Tensorboard's dashboard. The user can view the privacy risk of the model, compare privacy risk for multiple models, compare privacy risk between datapoints with different labels. They can also view the inference model graph, attack accuracy at each epoch. Additionally, if multiple models are trained, the target model training accuracies and inference model attack accuracies can be compared. This comparison can be done between multiple target models on the same data, or multiple attack configurations (Example : Blackbox vs whitebox).
+To create the visualizations, the user needs to call
+```
+attackobj.test_attack()
+```
+This function can be called for different instances of the attack setup, `attackobj` (ml_privacy_meter.attack.whitebox) to compare them.
+
+To view the data, the following command is run. The command output returns a URL, which can be accessed via a browser.
+```
+tensorboard --bind_all --logdir logs/attack
+```
+![Tensorboard dashboard](images/tb1.png)
+
+
+A histogram of the privacy risk of the models can be viewed in the histogram tab. Here, a membership probability of 0 corresponds to a greater chance of datapoints being non-members of the training set, while 1 corresponds to a greater chance of being in the training set. 
+![Privacy-risk histogram](images/tb_hist.png)
+
+The privacy risk can also be viewed for each label in the same tab. 
+![Privacy-risk histogram by label](images/tb_hist_label.png)
+
+The accuracy and loss of the attack model while getting trained can be visualized in the Scalars tab.
+![Model accuracy and loss](images/tb_acc.png)
+
+A `comparison.png` graph is also created to compare multiple runs of the attack, with the inference accuracy and target model test accuracy.
+![Comparison](images/comparison.png)
+
+
+The `logs/attack` folder can be deleted to refresh the data.
 
 ## References:
 
