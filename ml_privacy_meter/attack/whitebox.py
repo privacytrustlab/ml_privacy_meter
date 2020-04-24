@@ -485,12 +485,13 @@ class initialize(object):
         nmlab = []
         mfeat = []
         nmfeat = []
-        tensorboard_callback = tf.keras.callbacks.TensorBoard(
-            log_dir=self.aprefix, histogram_freq=0, write_graph=True)
-        self.attackmodel.compile(
-            optimizer='adam', loss='categorical_crossentropy')
-        self.attackmodel.fit(self.inputArray, np.zeros((np.array(
-            self.inputArray).shape[1])), callbacks=[tensorboard_callback])
+        if create_graph:
+            tensorboard_callback = tf.keras.callbacks.TensorBoard(
+                log_dir=self.aprefix, histogram_freq=0, write_graph=True)
+            self.attackmodel.compile(
+                optimizer='adam', loss='categorical_crossentropy')
+            self.attackmodel.fit(self.inputArray, tf.zeros((np.array(
+                self.inputArray).shape[1])), callbacks=[tensorboard_callback])
 
         # Histogram by label
         with tf.device(self.device):
