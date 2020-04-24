@@ -455,13 +455,7 @@ class initialize(object):
                                  "Attack accuracy: {}"
                                  .format(e, attackloss, attack_accuracy))
         # main training procedure ends
-        
-        tensorboard_callback = tf.keras.callbacks.TensorBoard(
-            log_dir=self.aprefix, histogram_freq=0, write_graph=True)
-        self.attackmodel.compile(
-            optimizer='adam', loss='categorical_crossentropy')
-        self.attackmodel.fit(self.inputArray, nonmemtrue[:np.array(
-            self.inputArray).shape[1]], callbacks=[tensorboard_callback])
+
         data = None
         if os.path.isfile('logs/attack/results') and os.stat("logs/attack/results").st_size > 0:
             with open('logs/attack/results', 'r+') as json_file:
@@ -475,15 +469,14 @@ class initialize(object):
         data.append(
             {self.model_name: {'target_acc': float(acc), 'attack_acc': float(best_accuracy.numpy())}})
         with open('logs/attack/results', 'w+') as json_file:
-            json.dump({'result' : data}, json_file)
+            json.dump({'result': data}, json_file)
 
         # logging best attack accuracy
         self.logger.info("Best attack accuracy %.2f%%\n\n",
                          100 * best_accuracy)
-        self.test_attack()
 
 
-    def test_attack(self):
+    def test_attack(self, create_graph=False):
         mtrainset, nmtrainset, _, _ = self.train_datahandler.load_train()
         model = self.target_train_model
         mpreds = []
@@ -492,6 +485,13 @@ class initialize(object):
         nmlab = []
         mfeat = []
         nmfeat = []
+        tensorboard_callback = tf.keras.callbacks.TensorBoard(
+            log_dir=self.aprefix, histogram_freq=0, write_graph=True)
+        self.attackmodel.compile(
+            optimizer='adam', loss='categorical_crossentropy')
+        self.attackmodel.fit(self.inputArray, np.zeros((np.array(
+            self.inputArray).shape[1])), callbacks=[tensorboard_callback])
+
         # Histogram by label
         with tf.device(self.device):
             zipped = zip(mtrainset, nmtrainset)
@@ -512,7 +512,7 @@ class initialize(object):
                 nonmemtrue = tf.zeros(nmoutputs.shape)
                 target = tf.concat((memtrue, nonmemtrue), 0)
                 probs = tf.concat((moutputs, nmoutputs), 0)
-        
+
         with self.summary_writer.as_default(), tf.name_scope(self.model_name):
             tf.summary.histogram('Member', mpreds, step=0)
             tf.summary.histogram('NonMember', nmpreds, step=0)
@@ -524,8 +524,9 @@ class initialize(object):
             for l, p in zip(mlab, mpreds):
                 if l == lab:
                     labs.append(p)
-            with self.summary_writer.as_default(), tf.name_scope(self.model_name):
-                tf.summary.histogram('Member' + '_Label_' + str(lab), labs, step=0)
+            with self.summary_writer.as_default(), tf.name_scope(self.model_name + ' (Labels)'):
+                tf.summary.histogram(
+                    'Member' + ' Label_' + str(lab), labs, step=0)
 
         # Non Members
         unique_nmem_lab = sorted(np.unique(nmlab))
@@ -534,9 +535,9 @@ class initialize(object):
             for l, p in zip(nmlab, nmpreds):
                 if l == lab:
                     labs.append(p)
-            with self.summary_writer.as_default(), tf.name_scope(self.model_name):
-                tf.summary.histogram('NonMember' + '_Label_' + str(lab), labs, step=0)
+            with self.summary_writer.as_default(), tf.name_scope(self.model_name + ' (Labels)'):
+                tf.summary.histogram(
+                    'NonMember' + ' Label_' + str(lab), labs, step=0)
 
         np.save('logs/member_probs.npy', np.array(mpreds))
         np.save('logs/nonmember_probs.npy', np.array(nmpreds))
-

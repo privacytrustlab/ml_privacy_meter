@@ -50,4 +50,5 @@ attackobj = ml_privacy_meter.attack.whitebox.initialize(
     device=None, epochs=2, model_name='blackbox1')
 
 attackobj.train_attack()
+attackobj.test_attack()
 compare_models()

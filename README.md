@@ -154,6 +154,10 @@ attackobj = ml_privacy_meter.attack.whitebox.initialize(
 5. SGD with Momentum
 6. RMSProp
 
+## Visualization
+The attack models can also be visualized in Tensorboard's dashboard. The user can view the privacy risk of the model, compare privacy risk for multiple models, compare privacy risk between datapoints with different labels. They can also view the inference model graph, attack accuracy at each epoch. Additionally, if multiple models are trained, the target model training accuracies and inference model attack accuracies can be compared. This comparison can be done between multiple target models on the same data, or multiple attack configurations (Example : Blackbox vs whitebox).
+
+
 ## References:
 
 1. R. Shokri, M. Stronati, C. Song, and V. Shmatikov. [Membership Inference Attacks against Machine Learning Models](https://www.comp.nus.edu.sg/~reza/files/Shokri-SP2017.pdf) in IEEE Symposium on Security and Privacy, 2017.
