@@ -487,7 +487,12 @@ class initialize(object):
         mtrainset, nmtrainset, _, _ = self.train_datahandler.load_train()
         model = self.target_train_model
         mpreds = []
+        mlab = []
         nmpreds = []
+        nmlab = []
+        mfeat = []
+        nmfeat = []
+        # Histogram by label
         with tf.device(self.device):
             zipped = zip(mtrainset, nmtrainset)
             for((mfeatures, mlabels), (nmfeatures, nmlabels)) in zipped:
@@ -497,7 +502,12 @@ class initialize(object):
                     model, nmfeatures, nmlabels)
                 # Computing the true values for loss function according
                 mpreds.extend(moutputs.numpy())
+                mlab.extend(np.argmax(mlabels, axis=1))
+                mfeat.extend(mfeatures)
                 nmpreds.extend(nmoutputs.numpy())
+                nmlab.extend(np.argmax(nmlabels, axis=1))
+                nmfeat.extend(nmfeatures)
+
                 memtrue = tf.ones(moutputs.shape)
                 nonmemtrue = tf.zeros(nmoutputs.shape)
                 target = tf.concat((memtrue, nonmemtrue), 0)
@@ -505,5 +515,26 @@ class initialize(object):
         
         with self.summary_writer.as_default(), tf.name_scope(self.model_name):
             tf.summary.histogram('Member', mpreds, step=0)
-            tf.summary.histogram('Nonmember', nmpreds, step=0)
+            tf.summary.histogram('NonMember', nmpreds, step=0)
+
+        # Members
+        unique_mem_lab = sorted(np.unique(mlab))
+        for lab in unique_mem_lab:
+            labs = []
+            for l, p in zip(mlab, mpreds):
+                if l == lab:
+                    labs.append(p)
+            tf.summary.histogram('Member' + '_Label_' + lab, labs, step=0)
+
+        # Non Members
+        unique_nmem_lab = sorted(np.unique(nmlab))
+        for lab in unique_nmem_lab:
+            labs = []
+            for l, p in zip(nmlab, nmpreds):
+                if l == lab:
+                    labs.append(p)
+            tf.summary.histogram('NonMember' + '_Label_' + lab, labs, step=0)
+
+        np.save(mpreds, 'logs/member_probs.npy')
+        np.save(nmpreds, 'logs/nonmember_probs.npy')
 
