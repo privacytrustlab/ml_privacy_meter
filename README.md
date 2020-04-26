@@ -169,7 +169,7 @@ tensorboard --bind_all --logdir logs/attack
 ![Tensorboard dashboard](images/tb1.png)
 
 
-A histogram of the privacy risk of the models can be viewed in the histogram tab. Here, a membership probability of 0 corresponds to a greater chance of datapoints being non-members of the training set, while 1 corresponds to a greater chance of being in the training set. 
+A histogram of the privacy risk of the models can be viewed in the histogram tab. Here, a membership probability of 0 corresponds to a greater chance of datapoints being non-members of the training set, while 1 corresponds to a greater chance of being in the training set. Numpy files with the privacy risk values for members and non members are also generated in the  `logs` folder.
 ![Privacy-risk histogram](images/tb_hist.png)
 
 The privacy risk can also be viewed for each label in the same tab. 
