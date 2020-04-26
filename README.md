@@ -154,6 +154,36 @@ attackobj = ml_privacy_meter.attack.whitebox.initialize(
 5. SGD with Momentum
 6. RMSProp
 
+## Visualization
+The attack models can also be visualized in Tensorboard's dashboard. The user can view the privacy risk of the model, compare privacy risk for multiple models, compare privacy risk between datapoints with different labels. They can also view the inference model graph, attack accuracy at each epoch. Additionally, if multiple models are trained, the target model training accuracies and inference model attack accuracies can be compared. This comparison can be done between multiple target models on the same data, or multiple attack configurations (Example : Blackbox vs whitebox).
+To create the visualizations, the user needs to call
+```
+attackobj.test_attack()
+```
+This function can be called for different instances of the attack setup, `attackobj` (ml_privacy_meter.attack.whitebox) to compare them.
+
+To view the data, the following command is run. The command output returns a URL, which can be accessed via a browser.
+```
+tensorboard --bind_all --logdir logs/attack
+```
+![Tensorboard dashboard](images/tb1.png)
+
+
+A histogram of the privacy risk of the models can be viewed in the histogram tab. Here, a membership probability of 0 corresponds to a greater chance of datapoints being non-members of the training set, while 1 corresponds to a greater chance of being in the training set. Numpy files with the privacy risk values for members and non members are also generated in the  `logs` folder.
+![Privacy-risk histogram](images/tb_hist.png)
+
+The privacy risk can also be viewed for each label in the same tab. 
+![Privacy-risk histogram by label](images/tb_hist_label.png)
+
+The accuracy and loss of the attack model while getting trained can be visualized in the Scalars tab.
+![Model accuracy and loss](images/tb_acc.png)
+
+A `comparison.png` graph is also created to compare multiple runs of the attack, with the inference accuracy and target model test accuracy.
+![Comparison](images/comparison.png)
+
+
+The `logs/attack` folder can be deleted to refresh the data.
+
 ## References:
 
 1. R. Shokri, M. Stronati, C. Song, and V. Shmatikov. [Membership Inference Attacks against Machine Learning Models](https://www.comp.nus.edu.sg/~reza/files/Shokri-SP2017.pdf) in IEEE Symposium on Security and Privacy, 2017.

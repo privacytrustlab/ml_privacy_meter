@@ -134,7 +134,7 @@ class attack_data:
         mtrain = mtrain.batch(self.batch_size)
         nmtrain = nmtrain.batch(self.batch_size)
 
-        return mtrain, nmtrain
+        return mtrain, nmtrain, nm_features, nm_labels
 
     def load_test(self):
         """
