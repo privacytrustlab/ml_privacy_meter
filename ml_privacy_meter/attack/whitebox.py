@@ -16,6 +16,10 @@ from ml_privacy_meter.utils.losses import CrossEntropyLoss, mse
 from ml_privacy_meter.utils.optimizers import optimizer_op
 from ml_privacy_meter.visualization.visualize import compare_models
 from sklearn.metrics import accuracy_score
+import datetime
+import numpy as np
+from matplotlib.backends.backend_pdf import PdfPages
+import matplotlib.pyplot as plt
 
 from .WHITEBOX.autoencoder import create_encoder
 from .WHITEBOX.create_cnn import (cnn_for_cnn_gradients,
@@ -518,6 +522,25 @@ class initialize(object):
         with self.summary_writer.as_default(), tf.name_scope(self.model_name):
             tf.summary.histogram('Member', mpreds, step=0)
             tf.summary.histogram('NonMember', nmpreds, step=0)
+
+        with PdfPages('logs/report.pdf') as pdf:
+            plt.figure(1)
+            plt.subplot(211)
+            plt.hist(mpreds, density=False, bins=10)
+            plt.xlabel('Privacy Leakage')
+            plt.ylabel('Probability')
+            plt.title('Member Privacy Leakage')
+
+            plt.subplot(212)
+            plt.hist(nmpreds, density=False, bins=10)
+            plt.xlabel('Privacy Leakage')
+            plt.ylabel('Probability')
+            plt.title('Non-Member Privacy Leakage')         
+            pdf.savefig()  # saves the current figure into a pdf page
+            plt.close()
+
+
+
 
         # Members
         unique_mem_lab = sorted(np.unique(mlab))
