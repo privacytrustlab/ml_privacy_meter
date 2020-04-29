@@ -9,10 +9,10 @@ import time
 
 import numpy as np
 
-import matplotlib.pyplot as plt
-import matplotlib.gridspec as gridspec
-import tensorflow as tf
 import matplotlib
+import matplotlib.gridspec as gridspec
+import matplotlib.pyplot as plt
+import tensorflow as tf
 from matplotlib.backends.backend_pdf import PdfPages
 from ml_privacy_meter.utils.attack_utils import attack_utils, sanity_check
 from ml_privacy_meter.utils.logger import get_logger
@@ -340,6 +340,16 @@ class initialize(object):
 
             self.inputArray.append(array)
 
+    def get_gradient_norms(self, model, features, labels):
+        """
+        Retrieves the gradients for each example
+        """
+        gradient_arr = self.compute_gradients(model, features, labels)
+        batch_gradients = []
+        for grads in gradient_arr:
+            batch_gradients.append(np.linalg.norm(grads[-1]))
+        return batch_gradients
+
     def forward_pass(self, model, features, labels):
         """
         Computes and collects necessary inputs for attack model
@@ -489,6 +499,7 @@ class initialize(object):
         nmlab = []
         mfeat = []
         nmfeat = []
+        mgradnorm, nmgradnorm = [], []
         if create_graph:
             tensorboard_callback = tf.keras.callbacks.TensorBoard(
                 log_dir=self.aprefix, histogram_freq=0, write_graph=True)
@@ -505,6 +516,8 @@ class initialize(object):
                 moutputs = self.forward_pass(model, mfeatures, mlabels)
                 nmoutputs = self.forward_pass(
                     model, nmfeatures, nmlabels)
+                mgradientnorm = self.get_gradient_norms(model, mfeatures, mlabels)
+                nmgradientnorm = self.get_gradient_norms(model, nmfeatures, nmlabels)
                 # Computing the true values for loss function according
                 mpreds.extend(moutputs.numpy())
                 mlab.extend(mlabels)
@@ -512,6 +525,8 @@ class initialize(object):
                 nmpreds.extend(nmoutputs.numpy())
                 nmlab.extend(nmlabels)
                 nmfeat.extend(nmfeatures)
+                mgradnorm.extend(mgradientnorm)
+                nmgradnorm.extend(nmgradientnorm)
 
                 memtrue = tf.ones(moutputs.shape)
                 nonmemtrue = tf.zeros(nmoutputs.shape)
@@ -524,38 +539,38 @@ class initialize(object):
             tf.summary.histogram('NonMember', nmpreds, step=0)
         print('Creating plot')
         font = {
-            'weight' : 'bold',
-            'size'   : 5}
+            'weight': 'bold',
+            'size': 5}
 
         matplotlib.rc('font', **font)
+        unique_mem_lab = sorted(np.unique(mlab))
+        unique_nmem_lab = sorted(np.unique(nmlab))
 
         with PdfPages('logs/report.pdf') as pdf:
             fig = plt.figure(1)
             gs = gridspec.GridSpec(2, 2)
-
-
-
-            #plt.subplot(121)
+            # plt.subplot(121)
             ax = plt.subplot(gs[0, 0])
             plt.hist(np.array(mpreds).flatten(), bins=20,
                      histtype='bar', range=(0, 1), weights=(np.ones_like(mpreds) / len(mpreds)))
             plt.xlabel('Privacy Leakage')
             plt.ylabel('Fraction')
-            plt.title('Member Privacy Leakage\nHigh privacy leakage if\nmore member data has higher membership probability.')
+            plt.title(
+                'Member Privacy Leakage\nHigh privacy leakage if\nmore member data has higher membership probability.')
 
-            #plt.subplot(122)
+            # plt.subplot(122)
             ax = plt.subplot(gs[0, 1])
             plt.hist(np.array(nmpreds).flatten(), bins=20,
                      histtype='bar', range=(0, 1), weights=(np.ones_like(nmpreds) / len(nmpreds)))
             plt.xlabel('Privacy Leakage')
             plt.ylabel('Fraction')
-            plt.title('Non-Member Privacy Leakage\nHigh privacy leakage if\nmore non-member data has lower membership probability')
-
+            plt.title(
+                'Non-Member Privacy Leakage\nHigh privacy leakage if\nmore non-member data has lower membership probability')
 
             fpr, tpr, _ = roc_curve(target, probs)
             roc_auc = auc(fpr, tpr)
 
-            #plt.subplot(211)
+            # plt.subplot(211)
             ax = plt.subplot(gs[1, 0])
             plt.title('Receiver Operating Characteristic')
             plt.plot(fpr, tpr, 'b', label='AUC = %0.2f' % roc_auc)
@@ -566,17 +581,43 @@ class initialize(object):
             plt.ylabel('True Positive Rate')
             plt.xlabel('False Positive Rate')
 
-            #ax = plt.subplot(gs[1, 1])
+            #############
+            ax = plt.subplot(gs[1, 1])
+            xs = []
+            ys = []
+            for lab in unique_mem_lab:
+                gradnorm = []
+                for l, p in zip(mlab, mgradientnorm):
+                    if l == lab:
+                        gradnorm.append(p)
+                xs.append(lab)
+                ys.append(np.mean(gradnorm))
+            
+            plt.plot(xs, ys, label='Member')
+
+            xs = []
+            ys = []
+            for lab in unique_nmem_lab:
+                gradnorm = []
+                for l, p in zip(nmlab, nmgradientnorm):
+                    if l == lab:
+                        gradnorm.append(p)
+                xs.append(lab)
+                ys.append(np.mean(gradnorm))
+            plt.plot(xs, ys, label='Non-Member')
+            plt.xlabel('Label')
+            plt.ylabel('Average Gradient Norm')
 
             gs.tight_layout(fig)
 
-            #fig.tight_layout()
+            # fig.tight_layout()
             pdf.savefig()  # saves the current figure into a pdf page
             plt.close()
 
+
+
         print('Creating label-wise Tensorboard data')
         # Members
-        unique_mem_lab = sorted(np.unique(mlab))
         for lab in unique_mem_lab:
             labs = []
             for l, p in zip(mlab, mpreds):
@@ -587,7 +628,6 @@ class initialize(object):
                     'Member' + ' Label_' + str(lab), labs, step=0)
 
         # Non Members
-        unique_nmem_lab = sorted(np.unique(nmlab))
         for lab in unique_nmem_lab:
             labs = []
             for l, p in zip(nmlab, nmpreds):
