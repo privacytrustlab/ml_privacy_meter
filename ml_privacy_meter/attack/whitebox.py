@@ -10,7 +10,9 @@ import time
 import numpy as np
 
 import matplotlib.pyplot as plt
+import matplotlib.gridspec as gridspec
 import tensorflow as tf
+import matplotlib
 from matplotlib.backends.backend_pdf import PdfPages
 from ml_privacy_meter.utils.attack_utils import attack_utils, sanity_check
 from ml_privacy_meter.utils.logger import get_logger
@@ -521,28 +523,40 @@ class initialize(object):
             tf.summary.histogram('Member', mpreds, step=0)
             tf.summary.histogram('NonMember', nmpreds, step=0)
         print('Creating plot')
+        font = {
+            'weight' : 'bold',
+            'size'   : 5}
+
+        matplotlib.rc('font', **font)
+
         with PdfPages('logs/report.pdf') as pdf:
             fig = plt.figure(1)
+            gs = gridspec.GridSpec(2, 2)
 
-            plt.subplot(121)
+
+
+            #plt.subplot(121)
+            ax = plt.subplot(gs[0, 0])
             plt.hist(np.array(mpreds).flatten(), bins=20,
-                     histtype='bar', range=(0, 1))
+                     histtype='bar', range=(0, 1), weights=(np.ones_like(mpreds) / len(mpreds)))
             plt.xlabel('Privacy Leakage')
-            plt.ylabel('Count')
-            plt.title('Member Privacy Leakage')
+            plt.ylabel('Fraction')
+            plt.title('Member Privacy Leakage\nHigh privacy leakage if\nmore member data has higher membership probability.')
 
-            plt.subplot(122)
+            #plt.subplot(122)
+            ax = plt.subplot(gs[0, 1])
             plt.hist(np.array(nmpreds).flatten(), bins=20,
-                     histtype='bar', range=(0, 1))
+                     histtype='bar', range=(0, 1), weights=(np.ones_like(nmpreds) / len(nmpreds)))
             plt.xlabel('Privacy Leakage')
-            plt.ylabel('Count')
-            plt.title('Non-Member Privacy Leakage')
+            plt.ylabel('Fraction')
+            plt.title('Non-Member Privacy Leakage\nHigh privacy leakage if\nmore non-member data has lower membership probability')
 
-            txt = fig.text(.5, 15, "Privacy Leakage for members and non-members. Privacy Leakage refers to the probability of the data being a member of the training set.", ha='center')
 
             fpr, tpr, _ = roc_curve(target, probs)
             roc_auc = auc(fpr, tpr)
-            plt.subplot(213)
+
+            #plt.subplot(211)
+            ax = plt.subplot(gs[1, 0])
             plt.title('Receiver Operating Characteristic')
             plt.plot(fpr, tpr, 'b', label='AUC = %0.2f' % roc_auc)
             plt.legend(loc='lower right')
@@ -552,8 +566,11 @@ class initialize(object):
             plt.ylabel('True Positive Rate')
             plt.xlabel('False Positive Rate')
 
+            #ax = plt.subplot(gs[1, 1])
 
-            fig.tight_layout()
+            gs.tight_layout(fig)
+
+            #fig.tight_layout()
             pdf.savefig()  # saves the current figure into a pdf page
             plt.close()
 
