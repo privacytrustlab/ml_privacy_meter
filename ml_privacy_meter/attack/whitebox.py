@@ -563,7 +563,7 @@ class initialize(object):
             ax = plt.subplot(gs[0, 1])
             plt.hist(np.array(nmpreds).flatten(), bins=20,
                      histtype='bar', range=(0, 1), weights=(np.ones_like(nmpreds) / len(nmpreds)))
-            plt.xlabel('Privacy Leakage')
+            plt.xlabel('Membership Probability')
             plt.ylabel('Fraction')
             plt.title(
                 'Non-Member Privacy Leakage\nHigh privacy leakage if\nmore non-member data has lower membership probability')
@@ -583,6 +583,7 @@ class initialize(object):
             plt.xlabel('False Positive Rate')
 
             #############
+            
             ax = plt.subplot(gs[1, 1])
             xs = []
             ys = []
@@ -610,14 +611,47 @@ class initialize(object):
             plt.xlabel('Label')
             plt.ylabel('Average Gradient Norm')
             plt.legend(loc="upper left")
+            
 
 
             gs.tight_layout(fig)
 
             # fig.tight_layout()
+
+            for lab in range(len(unique_mem_lab)):
+                if lab % 4 == 0:
+                    pdf.savefig()
+                    plt.close()
+                    fig, axs = plt.subplots(
+                        2, 2, figsize=(6, 6), facecolor='w', edgecolor='k')
+                    fig.subplots_adjust(hspace=.5, wspace=.001)
+                    axs = axs.ravel()
+
+                labs = []
+                for l, p in zip(mlab, mpreds):
+                    if l == lab:
+                        labs.append(p)
+
+                axs[lab % 4].hist(np.array(labs).flatten(), bins=20, label='Member',
+                            histtype='bar', range=(0, 1), weights=(np.ones_like(labs) / len(labs)))
+
+                labs = []
+                for l, p in zip(nmlab, nmpreds):
+                    if l == lab:
+                        labs.append(p)
+
+                axs[lab % 4].hist(np.array(labs).flatten(), bins=20, label='Non-member',
+                            histtype='bar', range=(0, 1), weights=(np.ones_like(labs) / len(labs)))
+
+                axs[lab % 4].legend()
+                axs[lab % 4].set_xlabel('Membership Probability')
+                axs[lab % 4].set_ylabel('Fraction')
+
+                axs[lab % 4].set_title('Privacy Leakage - Label ' + str(lab))
+                fig.tight_layout()
+
             pdf.savefig()  # saves the current figure into a pdf page
             plt.close()
-
 
 
         print('Creating label-wise Tensorboard data')
