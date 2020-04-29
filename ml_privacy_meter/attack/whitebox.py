@@ -9,17 +9,15 @@ import time
 
 import numpy as np
 
+import matplotlib.pyplot as plt
 import tensorflow as tf
+from matplotlib.backends.backend_pdf import PdfPages
 from ml_privacy_meter.utils.attack_utils import attack_utils, sanity_check
 from ml_privacy_meter.utils.logger import get_logger
 from ml_privacy_meter.utils.losses import CrossEntropyLoss, mse
 from ml_privacy_meter.utils.optimizers import optimizer_op
 from ml_privacy_meter.visualization.visualize import compare_models
-from sklearn.metrics import accuracy_score
-import datetime
-import numpy as np
-from matplotlib.backends.backend_pdf import PdfPages
-import matplotlib.pyplot as plt
+from sklearn.metrics import accuracy_score, auc, roc_curve
 
 from .WHITEBOX.autoencoder import create_encoder
 from .WHITEBOX.create_cnn import (cnn_for_cnn_gradients,
@@ -480,7 +478,6 @@ class initialize(object):
         self.logger.info("Best attack accuracy %.2f%%\n\n",
                          100 * best_accuracy)
 
-
     def test_attack(self, create_graph=False):
         mtrainset, nmtrainset, _, _ = self.train_datahandler.load_train()
         model = self.target_train_model
@@ -518,6 +515,7 @@ class initialize(object):
                 nonmemtrue = tf.zeros(nmoutputs.shape)
                 target = tf.concat((memtrue, nonmemtrue), 0)
                 probs = tf.concat((moutputs, nmoutputs), 0)
+
         print('Saving data to Tensorboard')
         with self.summary_writer.as_default(), tf.name_scope(self.model_name):
             tf.summary.histogram('Member', mpreds, step=0)
@@ -527,16 +525,34 @@ class initialize(object):
             fig = plt.figure(1)
 
             plt.subplot(121)
-            plt.hist(np.array(mpreds).flatten(), bins=20, histtype='bar')
+            plt.hist(np.array(mpreds).flatten(), bins=20,
+                     histtype='bar', range=(0, 1))
             plt.xlabel('Privacy Leakage')
             plt.ylabel('Count')
             plt.title('Member Privacy Leakage')
 
             plt.subplot(122)
-            plt.hist(np.array(nmpreds).flatten(), bins=20, histtype='bar')
+            plt.hist(np.array(nmpreds).flatten(), bins=20,
+                     histtype='bar', range=(0, 1))
             plt.xlabel('Privacy Leakage')
             plt.ylabel('Count')
-            plt.title('Non-Member Privacy Leakage')         
+            plt.title('Non-Member Privacy Leakage')
+
+            txt = fig.text(.5, 15, "Privacy Leakage for members and non-members. Privacy Leakage refers to the probability of the data being a member of the training set.", ha='center')
+
+            fpr, tpr, _ = roc_curve(target, probs)
+            roc_auc = auc(fpr, tpr)
+            plt.subplot(213)
+            plt.title('Receiver Operating Characteristic')
+            plt.plot(fpr, tpr, 'b', label='AUC = %0.2f' % roc_auc)
+            plt.legend(loc='lower right')
+            plt.plot([0, 1], [0, 1], 'r--')
+            plt.xlim([0, 1])
+            plt.ylim([0, 1])
+            plt.ylabel('True Positive Rate')
+            plt.xlabel('False Positive Rate')
+
+
             fig.tight_layout()
             pdf.savefig()  # saves the current figure into a pdf page
             plt.close()
