@@ -20,6 +20,7 @@ from ml_privacy_meter.utils.losses import CrossEntropyLoss, mse
 from ml_privacy_meter.utils.optimizers import optimizer_op
 from ml_privacy_meter.visualization.visualize import compare_models
 from sklearn.metrics import accuracy_score, auc, roc_curve
+from scipy.ndimage.filters import gaussian_filter1d
 
 from .WHITEBOX.autoencoder import create_encoder
 from .WHITEBOX.create_cnn import (cnn_for_cnn_gradients,
@@ -593,7 +594,7 @@ class initialize(object):
                 xs.append(lab)
                 ys.append(np.mean(gradnorm))
             
-            plt.plot(xs, ys, label='Member')
+            plt.plot(xs, ys, 'g.', label='Member')
 
             xs = []
             ys = []
@@ -604,9 +605,12 @@ class initialize(object):
                         gradnorm.append(p)
                 xs.append(lab)
                 ys.append(np.mean(gradnorm))
-            plt.plot(xs, ys, label='Non-Member')
+            plt.plot(xs, ys, 'r.', label='Non-Member')
+            plt.title('Average Gradient Norms per Label')
             plt.xlabel('Label')
             plt.ylabel('Average Gradient Norm')
+            plt.legend(loc="upper left")
+
 
             gs.tight_layout(fig)
 
