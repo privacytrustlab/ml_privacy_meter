@@ -518,30 +518,30 @@ class initialize(object):
                 nonmemtrue = tf.zeros(nmoutputs.shape)
                 target = tf.concat((memtrue, nonmemtrue), 0)
                 probs = tf.concat((moutputs, nmoutputs), 0)
-
+        print('Saving data to Tensorboard')
         with self.summary_writer.as_default(), tf.name_scope(self.model_name):
             tf.summary.histogram('Member', mpreds, step=0)
             tf.summary.histogram('NonMember', nmpreds, step=0)
-
+        print('Creating plot')
         with PdfPages('logs/report.pdf') as pdf:
-            plt.figure(1)
-            plt.subplot(211)
-            plt.hist(mpreds, density=False, bins=10)
+            fig = plt.figure(1)
+
+            plt.subplot(121)
+            plt.hist(np.array(mpreds).flatten(), bins=20, histtype='bar')
             plt.xlabel('Privacy Leakage')
-            plt.ylabel('Probability')
+            plt.ylabel('Count')
             plt.title('Member Privacy Leakage')
 
-            plt.subplot(212)
-            plt.hist(nmpreds, density=False, bins=10)
+            plt.subplot(122)
+            plt.hist(np.array(nmpreds).flatten(), bins=20, histtype='bar')
             plt.xlabel('Privacy Leakage')
-            plt.ylabel('Probability')
+            plt.ylabel('Count')
             plt.title('Non-Member Privacy Leakage')         
+            fig.tight_layout()
             pdf.savefig()  # saves the current figure into a pdf page
             plt.close()
 
-
-
-
+        print('Creating label-wise Tensorboard data')
         # Members
         unique_mem_lab = sorted(np.unique(mlab))
         for lab in unique_mem_lab:
