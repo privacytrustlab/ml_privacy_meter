@@ -44,7 +44,7 @@ The library uses GPU for optimal execution. For more details on TensorFlow GPU s
 To use `ml_privacy_meter's` datahandler, the datasets need to be in a particular format.  README in `datasets/`  directory contain the details about the required format. It also consists of scripts to download some datasets in the required format. 
 
 ## Attacking a Trained Model
-`ml_privacy_meter.attacks.whitebox` can be used to attack any target classification model using the method is given in Nasr et al [2]. 
+`ml_privacy_meter.attacks.meminf` can be used to attack any target classification model using the method is given in Nasr et al [2]. 
 With `ml_privacy_meter`, helps create a customized attack model by choosing the elements of an already trained classification model. This could include the gradients (of layers with trainable parameters), intermediate outputs of hidden layers, output of the target model and value of loss function to train the inference model.  
 
 #### Sample code to initialize whitebox attack
@@ -59,7 +59,7 @@ Important arguments among them:
 
 To attack:
 ```
-attackobj = ml_privacy_meter.attacks.whitebox.initialize(
+attackobj = ml_privacy_meter.attacks.meminf.initialize(
                  target_train_model=cmodel, 
                  target_attack_model=cmodel, 
                  train_datahandler=datahandler, 
@@ -94,58 +94,13 @@ The description of the arguments:
 - `learning_rate`: learning rate of the optimizer op
 - `epochs`: The number of epochs to train the attack model.
 
-Note 1: The `whitebox` class can also be used to train the whitebox attack model on a target classification model (call it model A) and evaluate it on a different classification model (call it model B). Model A's training set is used for training the attack model and model B's test set is used for evaluating the attack model (with no intersection among them).
+Note 1: The `meminf` class can also be used to train the attack model on a target classification model (call it model A) and evaluate it on a different classification model (call it model B). Model A's training set is used for training the attack model and model B's test set is used for evaluating the attack model (with no intersection among them).
 
 Note 2: The `target_attack_model` is not a attack model but rather a classification model that the attack model will be evaluated on.
 
-## Running the Alexnet CIFAR-100 Attack
-To perform an attack as in Nasr et al [2], we use the Alexnet model trained on the CIFAR-100 dataset. We perform the whitebox attack on the model while exploiting the gradients, final layer outputs, loss values and label values.
-First, extract the pretrained model from the `tutorials/models` directory and place it in the root directory of the project. `unzip tutorials/models/alexnet_pretrained.zip -d .` 
-Note : The user can also train their own model to attack simliar to the example in `tutorials/alexnet.py`
-Then, run the script to download the required data files. This script calls the data processing programs using `python2`, so you need to have Python 2 and `numpy` with Python 2 support (e.g. `v1.16.6`) installed before running the following commands:
-```
-cd datasets
-chmod +x download_cifar100.sh
-./download_cifar100.sh
-```
-This downloads the dataset file and training set file and converts them into the format required by the tool.
-We then run the attack code `python tutorials/attack_alexnet.py`. 
-The `attackobj` initializes the whitebox class and the attack configuration. Following are some examples of configurations that can be changed in the function.
-Note : The code explicitly sets the means and standard deviations for normalizing the images, according to the CIFAR-100 distribution.
-1. Whitebox attack - Exploit the final layer gradients, final layer outputs, loss values and label values (DEFAULT)
-```
-attackobj = ml_privacy_meter.attack.whitebox.initialize(
-    target_train_model=cmodelA,
-    target_attack_model=cmodelA,
-    train_datahandler=datahandlerA,
-    attack_datahandler=datahandlerA,ew
-    layers_to_exploit=[26],
-    gradients_to_exploit=[6],
-    device=None)
-```
-2. Whitebox attack - Exploit final two model layer outputs, loss values and label values
-```
-attackobj = ml_privacy_meter.attack.whitebox.initialize(
-    target_train_model=cmodelA,
-    target_attack_model=cmodelA,
-    train_datahandler=datahandlerA,
-    attack_datahandler=datahandlerA,
-    layers_to_exploit=[22, 26],
-    device=None)
-```
-2. Blackbox attack - Exploit final layer output and label values
-```
-attackobj = ml_privacy_meter.attack.whitebox.initialize(
-    target_train_model=cmodelA,
-    target_attack_model=cmodelA,
-    train_datahandler=datahandlerA,
-    attack_datahandler=datahandlerA,
-    layers_to_exploit=[26],
-	exploit_loss=False,
-    device=None)
-```
+A tutorial to run the attack on CIFAR-100 Alexnet model can be found [here](tutorials/README.md).
 
-## Available optimizers:
+### Available optimizers:
 
 1. AdaDelta
 2. AdaGrad
@@ -155,34 +110,30 @@ attackobj = ml_privacy_meter.attack.whitebox.initialize(
 6. RMSProp
 
 ## Visualization
-The attack models can also be visualized in Tensorboard's dashboard. The user can view the privacy risk of the model, compare privacy risk for multiple models, compare privacy risk between datapoints with different labels. They can also view the inference model graph, attack accuracy at each epoch. Additionally, if multiple models are trained, the target model training accuracies and inference model attack accuracies can be compared. This comparison can be done between multiple target models on the same data, or multiple attack configurations (Example : Blackbox vs whitebox).
+The attack models can also be visualized in Tensorboard's dashboard. The user can view the privacy risk of the model, ROC of membership inference attack, compare privacy risk between datapoints from different classes. 
 To create the visualizations, the user needs to call
 ```
 attackobj.test_attack()
 ```
-This function can be called for different instances of the attack setup, `attackobj` (ml_privacy_meter.attack.whitebox) to compare them.
+This function can be called for different instances of the attack setup, `attackobj` (ml_privacy_meter.attack.meminf) to compare them.
 
-To view the data, the following command is run. The command output returns a URL, which can be accessed via a browser.
-```
-tensorboard --bind_all --logdir logs/attack
-```
-![Tensorboard dashboard](images/tb1.png)
+A set of plots are generated for the data, which includes histograms for privacy risk, ROC curve for the membership probabilities, gradient norm distributions for member and non-member data, and label-wise privacy risk plots. This data is created in the `logs/plots` folder. 
 
+The below are some sample plots created for the blackbox setting, where the attacker can exploit the final layer outputs, loss and label.
 
-A histogram of the privacy risk of the models can be viewed in the histogram tab. Here, a membership probability of 0 corresponds to a greater chance of datapoints being non-members of the training set, while 1 corresponds to a greater chance of being in the training set. Numpy files with the privacy risk values for members and non members are also generated in the  `logs` folder.
-![Privacy-risk histogram](images/tb_hist.png)
+The below plot shows the histogram of the membership probabilities for training set member data and non-member data from the population. A higher membership probability shows that the model has predicted a higher probability that the data is part of the training data.
 
-The privacy risk can also be viewed for each label in the same tab. 
-![Privacy-risk histogram by label](images/tb_hist_label.png)
+![Privacy Risk Histogram](images/privacy_risk.png)
 
-The accuracy and loss of the attack model while getting trained can be visualized in the Scalars tab.
-![Model accuracy and loss](images/tb_acc.png)
+The next plot shows the Receiver Operating Characteristic (ROC) curve for the membership inference attack. It also displays the AUC value for the plot.
 
-A `comparison.png` graph is also created to compare multiple runs of the attack, with the inference accuracy and target model test accuracy.
-![Comparison](images/comparison.png)
+![ROC Plot](images/roc.png)
 
+The user can also use privacy risk histograms for each output class.
 
-The `logs/attack` folder can be deleted to refresh the data.
+![Privacy Risk - Class 15](images/privacy_risk_label15.png)  ![Privacy Risk - Class 45](images/privacy_risk_label45.png) 
+
+The membership probability predictions by the model are also saved as numpy files in the `logs` folder.
 
 ## References:
 

@@ -1,9 +1,10 @@
 import numpy as np
+
+import ml_privacy_meter
 import tensorflow as tf
 import tensorflow.compat.v1.keras.layers as keraslayers
 from tensorflow.compat.v1.train import Saver
 
-import ml_privacy_meter
 # input_features should be changed according to the model
 input_shape = (32, 32, 3)
 
@@ -39,14 +40,14 @@ datahandlerA = ml_privacy_meter.utils.attack_data.attack_data(dataset_path=datas
 datahandlerA.means, datahandlerA.stddevs = [
     0.4914, 0.4822, 0.4465], [0.2023, 0.1994, 0.2010]
 
-attackobj = ml_privacy_meter.attack.whitebox.initialize(
+attackobj = ml_privacy_meter.attack.meminf.initialize(
     target_train_model=cmodelA,
     target_attack_model=cmodelA,
     train_datahandler=datahandlerA,
     attack_datahandler=datahandlerA,
     layers_to_exploit=[26],
-    gradients_to_exploit=[],
-    device=None, epochs=2, model_name='blackbox1')
+    gradients_to_exploit=[6],
+    device=None, epochs=10, model_name='blackbox1')
 
 attackobj.train_attack()
 attackobj.test_attack()

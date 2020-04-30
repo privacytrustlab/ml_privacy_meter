@@ -28,7 +28,7 @@ def time_taken(self, start_time, end_time):
 
 class attack_utils():
   """
-  Utilities required for conducting whitebox attack
+  Utilities required for conducting membership inference attack
   """
   def __init__(self, directory_name='latest'):
     self.root_dir = os.path.abspath(os.path.join(
