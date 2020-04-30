@@ -1,90 +1,95 @@
-import ml_privacy_meter
-import tensorflow as tf
-keras = tf.keras
-keraslayers = tf.compat.v1.keras.layers 
-import numpy as np
 import os
 
+import numpy as np
+
+import ml_privacy_meter
+import tensorflow as tf
+
+keras = tf.keras
+keraslayers = tf.compat.v1.keras.layers
+
+
 def classification_cnn(input_shape):
-  """
-  AlexNet:
-  Described in: http://arxiv.org/pdf/1404.5997v2.pdf
-  Parameters from:
-  github.com/akrizhevsky/cuda-convnet2/blob/master/layers/
-  """
-  # Creating initializer, optimizer and the regularizer ops
-  initializer = tf.compat.v1.keras.initializers.random_normal(0.0, 0.01)
-  regularizer = tf.keras.regularizers.l2(5e-4)
+    """
+    AlexNet:
+    Described in: http://arxiv.org/pdf/1404.5997v2.pdf
+    Parameters from:
+    github.com/akrizhevsky/cuda-convnet2/blob/master/layers/
+    """
+    # Creating initializer, optimizer and the regularizer ops
+    initializer = tf.compat.v1.keras.initializers.random_normal(0.0, 0.01)
+    regularizer = tf.keras.regularizers.l2(5e-4)
 
-  inputshape = (input_shape[0], input_shape[1], input_shape[2],)
+    inputshape = (input_shape[0], input_shape[1], input_shape[2],)
 
-  #Creating the model
-  model = tf.compat.v1.keras.Sequential( 
+    # Creating the model
+    model = tf.compat.v1.keras.Sequential(
         [
-          keraslayers.Conv2D(
-              64, 11, 4, 
-              padding='same', 
-              activation=tf.nn.relu,
-              kernel_initializer=initializer,
-              kernel_regularizer=regularizer,
-              input_shape = inputshape,
-              data_format = 'channels_last'
+            keraslayers.Conv2D(
+                64, 11, 4,
+                padding='same',
+                activation=tf.nn.relu,
+                kernel_initializer=initializer,
+                kernel_regularizer=regularizer,
+                input_shape=inputshape,
+                data_format='channels_last'
             ),
-          keraslayers.MaxPooling2D(
-              2, 2, padding='valid' 
+            keraslayers.MaxPooling2D(
+                2, 2, padding='valid'
             ),
-          keraslayers.Conv2D(
-              192, 5, 
-              padding='same', 
-              kernel_initializer=initializer,
-              kernel_regularizer=regularizer,
-              activation=tf.nn.relu
+            keraslayers.Conv2D(
+                192, 5,
+                padding='same',
+                kernel_initializer=initializer,
+                kernel_regularizer=regularizer,
+                activation=tf.nn.relu
             ),
-          keraslayers.MaxPooling2D(
-              2, 2, padding='valid'
+            keraslayers.MaxPooling2D(
+                2, 2, padding='valid'
             ),
-          keraslayers.Conv2D(
-              384, 3, 
-              padding='same', 
-              kernel_initializer=initializer,
-              kernel_regularizer=regularizer,
-              activation=tf.nn.relu
+            keraslayers.Conv2D(
+                384, 3,
+                padding='same',
+                kernel_initializer=initializer,
+                kernel_regularizer=regularizer,
+                activation=tf.nn.relu
             ),
-          keraslayers.Conv2D(
-              256, 3, 
-              padding='same', 
-              kernel_initializer=initializer,
-              kernel_regularizer=regularizer,
-              activation=tf.nn.relu
-            ),    
-          keraslayers.Conv2D(
-              256, 3, 
-              padding='same', 
-              kernel_initializer=initializer,
-              kernel_regularizer=regularizer,
-              activation=tf.nn.relu
-            ),    
-          keraslayers.MaxPooling2D(
-              2, 2, padding='valid'
+            keraslayers.Conv2D(
+                256, 3,
+                padding='same',
+                kernel_initializer=initializer,
+                kernel_regularizer=regularizer,
+                activation=tf.nn.relu
             ),
-          keraslayers.Flatten(),
-          keraslayers.Dropout(0.3),
-          keraslayers.Dense(
-              100,
-              kernel_initializer=initializer,
-              kernel_regularizer=regularizer,
-              activation=tf.nn.softmax
+            keraslayers.Conv2D(
+                256, 3,
+                padding='same',
+                kernel_initializer=initializer,
+                kernel_regularizer=regularizer,
+                activation=tf.nn.relu
+            ),
+            keraslayers.MaxPooling2D(
+                2, 2, padding='valid'
+            ),
+            keraslayers.Flatten(),
+            keraslayers.Dropout(0.3),
+            keraslayers.Dense(
+                100,
+                kernel_initializer=initializer,
+                kernel_regularizer=regularizer,
+                activation=tf.nn.softmax
             )
-         ]
-      )
-  return model
+        ]
+    )
+    return model
+
 
 input_shape = (32, 32, 3)
 cmodel = classification_cnn(input_shape)
-advreg_wrapper = ml_privacy_meter.defense.advreg.initialize()
 
 # Get the datahandler ('tf.data.Dataset' instance)
 dataset_path = "datasets/cifar100.txt"
+
 
 def scheduler(epoch):
     lr = 0.0001
@@ -96,36 +101,79 @@ def scheduler(epoch):
     return lr
 
 
+def generate(dataset, input_shape):
+    """
+    Parses each record of the dataset and extracts 
+    the class (first column of the record) and the 
+    features. This assumes 'csv' form of data.
+    """
+    features, labels = dataset[:, :-1], dataset[:, -1]
+    features = map(lambda y: np.array(list(map(lambda i: i.split(","), y))).flatten(),
+                   features)
+
+    features = np.array(list(features))
+    features = np.ndarray.astype(features, np.float32)
+
+    if input_shape:
+        if len(input_shape) == 3:
+            reshape_input = (
+                len(features),) + (input_shape[2], input_shape[0], input_shape[1])
+            features = np.transpose(np.reshape(
+                features, reshape_input), (0, 2, 3, 1))
+        else:
+            reshape_input = (len(features),) + input_shape
+            features = np.reshape(features, reshape_input)
+
+    labels = np.ndarray.astype(labels, np.float32)
+    return features, labels
+
+
+def extract(filepath):
+    """
+    """
+    with open(filepath, "r") as f:
+        dataset = f.readlines()
+    dataset = map(lambda i: i.strip('\n').split(';'), dataset)
+    dataset = np.array(list(dataset))
+    return dataset
+
+
+def normalize(f, means, stddevs):
+    """
+    """
+    normalized = (f/255 - means) / stddevs
+    return normalized
+
+
 if __name__ == '__main__':
+    training_size = 30000
+    batch_size = 128
+
     callback = tf.keras.callbacks.LearningRateScheduler(scheduler)
-    datahandler = advreg_wrapper.get_datahandler(dataset_path=dataset_path, 
-                                                 batch_size=128, 
-                                                 training_size=30000,
-                                                 input_shape=input_shape,
-                                                 normalization=True)
 
+    dataset = extract(dataset_path)
+    np.random.shuffle(dataset)
 
-    features, labels = datahandler.train_features, datahandler.train_labels
-    print('Train features', np.array(datahandler.train_features).shape, np.array(datahandler.train_labels).shape)
+    features, labels = generate(dataset, input_shape)
+
     opt = keras.optimizers.Adam(learning_rate=0.0001)
 
     cmodel.compile(loss='categorical_crossentropy',
-                  optimizer=opt,
-                  metrics=['accuracy'])
+                   optimizer=opt,
+                   metrics=['accuracy'])
 
     size = len(features)
     num_classes = 100
-    
-    reshape_input = (len(features),) + (self.input_shape[2], self.input_shape[0], self.input_shape[1])
-    features = np.transpose(np.reshape(features, reshape_input), (0, 2, 3, 1))
 
-    features_train = features[int(0.2 * size) :]
+    features_train = features[int(0.2 * size):]
     features_test = features[: int(0.2 * size)]
 
-    features_train = datahandler.normalize(features_train)
-    features_train = datahandler.normalize(features_test)
+    features_train = normalize(features_train, [
+        0.4914, 0.4822, 0.4465], [0.2023, 0.1994, 0.2010])
+    features_train = normalize(features_test, [
+        0.4914, 0.4822, 0.4465], [0.2023, 0.1994, 0.2010])
 
-    labels_train = labels[int(0.2 * size) :]
+    labels_train = labels[int(0.2 * size):]
     labels_test = labels[: int(0.2 * size)]
 
     labels_train = keras.utils.to_categorical(labels_train, num_classes)
@@ -133,10 +181,10 @@ if __name__ == '__main__':
     print(cmodel.summary())
 
     cmodel.fit(features_train, labels_train,
-              batch_size=128,
-              epochs=100,
-              validation_data=(features_test, labels_test),
-              shuffle=True, callbacks=[callback])
+               batch_size=128,
+               epochs=100,
+               validation_data=(features_test, labels_test),
+               shuffle=True, callbacks=[callback])
 
     model_path = os.path.join('cifar100_model')
     cmodel.save(model_path)

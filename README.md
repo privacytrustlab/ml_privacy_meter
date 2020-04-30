@@ -133,7 +133,7 @@ The user can also use privacy risk histograms for each output label.
 
 ![Privacy Risk - Label 15](images/privacy_risk_label15.png)  ![Privacy Risk - Label 45](images/privacy_risk_label45.png) 
 
-The membership probability predictions by the model are also saved as numpy files in the logs folder as numpy files.
+The membership probability predictions by the model are also saved as numpy files in the `logs` folder.
 
 ## References:
 
