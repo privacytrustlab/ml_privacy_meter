@@ -162,7 +162,9 @@ attackobj.test_attack()
 ```
 This function can be called for different instances of the attack setup, `attackobj` (ml_privacy_meter.attack.whitebox) to compare them.
 
-To view the data, the following command is run. The command output returns a URL, which can be accessed via a browser.
+A PDF report is generated for the data, which includes histograms for privacy leakage, ROC curve for the membership probabilities, gradient norm distributions for member and non-member data, and label-wise privacy leakage plots. This data is created in the `logs` folder as `report.pdf`. A sample report is present [here](logs/report.pdf)
+
+To view the data on Tensorboard, the following command is run. The command output returns a URL, which can be accessed via a browser.
 ```
 tensorboard --bind_all --logdir logs/attack
 ```

@@ -554,7 +554,7 @@ class initialize(object):
             ax = plt.subplot(gs[0, 0])
             plt.hist(np.array(mpreds).flatten(), bins=20,
                      histtype='bar', range=(0, 1), weights=(np.ones_like(mpreds) / len(mpreds)))
-            plt.xlabel('Privacy Leakage')
+            plt.xlabel('Membership Probability')
             plt.ylabel('Fraction')
             plt.title(
                 'Member Privacy Leakage\nHigh privacy leakage if\nmore member data has higher membership probability.')
