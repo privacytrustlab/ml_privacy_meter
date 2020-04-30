@@ -553,27 +553,19 @@ class initialize(object):
             fig = plt.figure(1)
             gs = gridspec.GridSpec(2, 2)
             # plt.subplot(121)
-            ax = plt.subplot(gs[0, 0])
-            plt.hist(np.array(mpreds).flatten(), bins=20,
+            ax = plt.subplot(gs[0, :])
+            plt.hist(np.array(mpreds).flatten(), color='xkcd:blue', alpha=0.5, bins=20,
                      histtype='bar', range=(0, 1), weights=(np.ones_like(mpreds) / len(mpreds)))
-            plt.xlabel('Membership Probability')
-            plt.ylabel('Fraction')
-            plt.title(
-                'Member Privacy Leakage\nHigh privacy leakage if\nmore member data has higher membership probability.')
-
-            # plt.subplot(122)
-            ax = plt.subplot(gs[0, 1])
-            plt.hist(np.array(nmpreds).flatten(), bins=20,
+            plt.hist(np.array(nmpreds).flatten(), color='xkcd:light blue', alpha=0.5, bins=20,
                      histtype='bar', range=(0, 1), weights=(np.ones_like(nmpreds) / len(nmpreds)))
             plt.xlabel('Membership Probability')
             plt.ylabel('Fraction')
-            plt.title(
-                'Non-Member Privacy Leakage\nHigh privacy leakage if\nmore non-member data has lower membership probability')
+            plt.title('Privacy Risk')
+            plt.legend()
 
             fpr, tpr, _ = roc_curve(target, probs)
             roc_auc = auc(fpr, tpr)
 
-            # plt.subplot(211)
             ax = plt.subplot(gs[1, 0])
             plt.title('Receiver Operating Characteristic')
             plt.plot(fpr, tpr, 'b', label='AUC = %0.2f' % roc_auc)
@@ -632,7 +624,7 @@ class initialize(object):
                     if l == lab:
                         labs.append(p)
 
-                axs[lab % 4].hist(np.array(labs).flatten(), bins=20, label='Member',
+                axs[lab % 4].hist(np.array(labs).flatten(), color='xkcd:blue', alpha=0.5, bins=20, label='Member',
                                   histtype='bar', range=(0, 1), weights=(np.ones_like(labs) / len(labs)))
 
                 labs = []
@@ -640,7 +632,7 @@ class initialize(object):
                     if l == lab:
                         labs.append(p)
 
-                axs[lab % 4].hist(np.array(labs).flatten(), bins=20, label='Non-member',
+                axs[lab % 4].hist(np.array(labs).flatten(), color='xkcd:blue', alpha=0.5, bins=20, label='Non-member',
                                   histtype='bar', range=(0, 1), weights=(np.ones_like(labs) / len(labs)))
 
                 axs[lab % 4].legend()
