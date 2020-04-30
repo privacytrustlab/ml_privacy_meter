@@ -532,7 +532,7 @@ class initialize(object):
 
         font = {
             'weight': 'bold',
-            'size': 5}
+            'size': 10}
 
         matplotlib.rc('font', **font)
         unique_mem_lab = sorted(np.unique(mlab))
@@ -615,7 +615,7 @@ class initialize(object):
             plt.xlabel('Membership Probability')
             plt.ylabel('Fraction')
 
-            plt.title('Privacy Risk - Label ' + str(lab))
+            plt.title('Privacy Risk - Class ' + str(lab))
             plt.savefig('logs/plots/privacy_risk_label' + str(lab) + '.png')
             plt.close()
 

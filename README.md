@@ -110,7 +110,7 @@ A tutorial to run the attack on CIFAR-100 Alexnet model can be found [here](tuto
 6. RMSProp
 
 ## Visualization
-The attack models can also be visualized in Tensorboard's dashboard. The user can view the privacy risk of the model, ROC of membership inference attack, compare privacy risk between datapoints with different labels. 
+The attack models can also be visualized in Tensorboard's dashboard. The user can view the privacy risk of the model, ROC of membership inference attack, compare privacy risk between datapoints from different classes. 
 To create the visualizations, the user needs to call
 ```
 attackobj.test_attack()
@@ -129,9 +129,9 @@ The next plot shows the Receiver Operating Characteristic (ROC) curve for the me
 
 ![ROC Plot](images/roc.png)
 
-The user can also use privacy risk histograms for each output label.
+The user can also use privacy risk histograms for each output class.
 
-![Privacy Risk - Label 15](images/privacy_risk_label15.png)  ![Privacy Risk - Label 45](images/privacy_risk_label45.png) 
+![Privacy Risk - Class 15](images/privacy_risk_label15.png)  ![Privacy Risk - Class 45](images/privacy_risk_label45.png) 
 
 The membership probability predictions by the model are also saved as numpy files in the `logs` folder.
 
