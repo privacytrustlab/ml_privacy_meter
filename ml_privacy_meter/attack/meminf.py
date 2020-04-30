@@ -22,11 +22,11 @@ from ml_privacy_meter.visualization.visualize import compare_models
 from scipy.ndimage.filters import gaussian_filter1d
 from sklearn.metrics import accuracy_score, auc, roc_curve
 
-from .WHITEBOX.autoencoder import create_encoder
-from .WHITEBOX.create_cnn import (cnn_for_cnn_gradients,
+from .meminf_modules.autoencoder import create_encoder
+from .meminf_modules.create_cnn import (cnn_for_cnn_gradients,
                                   cnn_for_cnn_layeroutputs,
                                   cnn_for_fcn_gradients)
-from .WHITEBOX.create_fcn import fcn_module
+from .meminf_modules.create_fcn import fcn_module
 
 gpus = tf.config.experimental.list_physical_devices('GPU')
 if gpus:
@@ -121,7 +121,7 @@ class initialize(object):
         time_stamp = datetime.datetime.today().strftime('%Y-%m-%d_%H:%M:%S')
         self.attack_utils = attack_utils()
         self.logger = get_logger(self.attack_utils.root_dir, "attack",
-                                 "whitebox", "info", time_stamp)
+                                 "meminf", "info", time_stamp)
         self.aprefix = os.path.join('logs',
                                     "attack", "tensorboard")
         self.summary_writer = tf.summary.create_file_writer(self.aprefix)
@@ -406,7 +406,7 @@ class initialize(object):
 
     def train_attack(self):
         """
-        Trains the whitebox attack model
+        Trains the attack model
         """
         assert self.attackmodel, "Attack model not initialized"
         mtrainset, nmtrainset, nm_features, nm_labels = self.train_datahandler.load_train()
