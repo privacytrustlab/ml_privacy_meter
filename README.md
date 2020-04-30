@@ -110,36 +110,30 @@ A tutorial to run the attack on CIFAR-100 Alexnet model can be found [here](tuto
 6. RMSProp
 
 ## Visualization
-The attack models can also be visualized in Tensorboard's dashboard. The user can view the privacy risk of the model, compare privacy risk for multiple models, compare privacy risk between datapoints with different labels. They can also view the inference model graph, attack accuracy at each epoch. Additionally, if multiple models are trained, the target model training accuracies and inference model attack accuracies can be compared. This comparison can be done between multiple target models on the same data, or multiple attack configurations (Example : Blackbox vs whitebox).
+The attack models can also be visualized in Tensorboard's dashboard. The user can view the privacy risk of the model, ROC of membership inference attack, compare privacy risk between datapoints with different labels. 
 To create the visualizations, the user needs to call
 ```
 attackobj.test_attack()
 ```
 This function can be called for different instances of the attack setup, `attackobj` (ml_privacy_meter.attack.whitebox) to compare them.
 
-A PDF report is generated for the data, which includes histograms for privacy leakage, ROC curve for the membership probabilities, gradient norm distributions for member and non-member data, and label-wise privacy leakage plots. This data is created in the `logs` folder as `report.pdf`. A sample report is present [here](logs/report.pdf).
+A set of plots are generated for the data, which includes histograms for privacy risk, ROC curve for the membership probabilities, gradient norm distributions for member and non-member data, and label-wise privacy risk plots. This data is created in the `logs/plots` folder. 
 
-To view the data on Tensorboard, the following command is run. The command output returns a URL, which can be accessed via a browser.
-```
-tensorboard --bind_all --logdir logs/attack
-```
-![Tensorboard dashboard](images/tb1.png)
+The below are some sample plots created for the blackbox setting, where the attacker can exploit the final layer outputs, loss and label.
 
+The below plot shows the histogram of the membership probabilities for training set member data and non-member data from the population. A higher membership probability shows that the model has predicted a higher probability that the data is part of the training data.
 
-A histogram of the privacy risk of the models can be viewed in the histogram tab. Here, a membership probability of 0 corresponds to a greater chance of datapoints being non-members of the training set, while 1 corresponds to a greater chance of being in the training set. 
-![Privacy-risk histogram](images/tb_hist.png)
+![Privacy Risk Histogram](images/privacy_risk.png)
 
-The privacy risk can also be viewed for each label in the same tab. 
-![Privacy-risk histogram by label](images/tb_hist_label.png)
+The next plot shows the Receiver Operating Characteristic (ROC) curve for the membership inference attack. It also displays the AUC value for the plot.
 
-The accuracy and loss of the attack model while getting trained can be visualized in the Scalars tab.
-![Model accuracy and loss](images/tb_acc.png)
+![ROC Plot](images/roc.png)
 
-A `comparison.png` graph is also created to compare multiple runs of the attack, with the inference accuracy and target model test accuracy.
-![Comparison](images/comparison.png)
+The user can also use privacy risk histograms for each output label.
 
+![Privacy Risk - Label 15](images/privacy_risk_label15.png)  ![Privacy Risk - Label 45](images/privacy_risk_label45.png) 
 
-The `logs/attack` folder can be deleted to refresh the data.
+The membership probability predictions by the model are also saved as numpy files in the logs folder as numpy files.
 
 ## References:
 
