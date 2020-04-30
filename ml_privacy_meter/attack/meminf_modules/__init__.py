@@ -1,3 +1,2 @@
-from ml_privacy_meter.attack.WHITEBOX import autoencoder	
-from ml_privacy_meter.attack.WHITEBOX import create_cnn  
-from ml_privacy_meter.attack.WHITEBOX import create_fcn
+from ml_privacy_meter.attack.meminf_modules import autoencoder, create_cnn, create_fcn
+
