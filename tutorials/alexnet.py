@@ -165,20 +165,22 @@ if __name__ == '__main__':
     size = len(features)
     num_classes = 100
 
+
     features_train = features[int(0.2 * size):]
-    features_test = features[: int(0.2 * size)]
+    features_test = features[:int(0.2 * size)]
 
     features_train = normalize(features_train, [
         0.4914, 0.4822, 0.4465], [0.2023, 0.1994, 0.2010])
-    features_train = normalize(features_test, [
+
+    features_test = normalize(features_test, [
         0.4914, 0.4822, 0.4465], [0.2023, 0.1994, 0.2010])
 
+
     labels_train = labels[int(0.2 * size):]
-    labels_test = labels[: int(0.2 * size)]
+    labels_test = labels[:int(0.2 * size)]
 
     labels_train = keras.utils.to_categorical(labels_train, num_classes)
     labels_test = keras.utils.to_categorical(labels_test, num_classes)
-    print(cmodel.summary())
 
     cmodel.fit(features_train, labels_train,
                batch_size=128,
