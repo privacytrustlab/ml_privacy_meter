@@ -491,7 +491,7 @@ class initialize(object):
         self.logger.info("Best attack accuracy %.2f%%\n\n",
                          100 * best_accuracy)
 
-    def test_attack(self, create_graph=False):
+    def test_attack(self):
         mtrainset, nmtrainset, _, _ = self.train_datahandler.load_train()
         model = self.target_train_model
         mpreds = []
@@ -501,15 +501,7 @@ class initialize(object):
         mfeat = []
         nmfeat = []
         mgradnorm, nmgradnorm = [], []
-        if create_graph:
-            tensorboard_callback = tf.keras.callbacks.TensorBoard(
-                log_dir=self.aprefix, histogram_freq=0, write_graph=True)
-            self.attackmodel.compile(
-                optimizer='adam', loss='categorical_crossentropy')
-            self.attackmodel.fit(self.inputArray, tf.zeros((np.array(
-                self.inputArray).shape[1])), callbacks=[tensorboard_callback])
 
-        # Histogram by label
         with tf.device(self.device):
             zipped = zip(mtrainset, nmtrainset)
             for((mfeatures, mlabels), (nmfeatures, nmlabels)) in zipped:
@@ -536,11 +528,6 @@ class initialize(object):
                 target = tf.concat((memtrue, nonmemtrue), 0)
                 probs = tf.concat((moutputs, nmoutputs), 0)
 
-        print('Saving data to Tensorboard')
-        with self.summary_writer.as_default(), tf.name_scope(self.model_name):
-            tf.summary.histogram('Member', mpreds, step=0)
-            tf.summary.histogram('NonMember', nmpreds, step=0)
-        print('Creating plot')
         font = {
             'weight': 'bold',
             'size': 5}
@@ -549,125 +536,91 @@ class initialize(object):
         unique_mem_lab = sorted(np.unique(mlab))
         unique_nmem_lab = sorted(np.unique(nmlab))
 
-        with PdfPages('logs/report.pdf') as pdf:
-            model_details = "Model name : " + self.model_name + "\nExploited gradients : " + str(self.gradients_to_exploit) + "\nExploited Layer Outputs : " + str(self.layers_to_exploit) + "\nExploit Loss : " + str(self.exploit_loss) + "\nExploit Label : " + str(self.exploit_label) 
+        model_details = "Model name : " + self.model_name + "\nExploited gradients : " + str(self.gradients_to_exploit) + "\nExploited Layer Outputs : " + str(
+            self.layers_to_exploit) + "\nExploit Loss : " + str(self.exploit_loss) + "\nExploit Label : " + str(self.exploit_label)
 
-            fig = plt.figure(1)
-            gs = gridspec.GridSpec(2, 2)
-            ax = plt.subplot(gs[0, 0])
-            plt.hist(np.array(mpreds).flatten(), color='xkcd:blue', alpha=0.7, bins=20,
-                     histtype='bar', range=(0, 1), weights=(np.ones_like(mpreds) / len(mpreds)), label='Training Data (Members)')
-            plt.hist(np.array(nmpreds).flatten(), color='xkcd:light blue', alpha=0.7, bins=20,
-                     histtype='bar', range=(0, 1), weights=(np.ones_like(nmpreds) / len(nmpreds)), label='Population Data (Non-members)')
-            plt.xlabel('Membership Probability')
-            plt.ylabel('Fraction')
-            plt.figtext(0.5, 0.5, model_details)
-            plt.title('Privacy Risk')
-            plt.legend(loc='upper left')
+        fig = plt.figure(1)
+        plt.hist(np.array(mpreds).flatten(), color='xkcd:blue', alpha=0.7, bins=20,
+                 histtype='bar', range=(0, 1), weights=(np.ones_like(mpreds) / len(mpreds)), label='Training Data (Members)')
+        plt.hist(np.array(nmpreds).flatten(), color='xkcd:light blue', alpha=0.7, bins=20,
+                 histtype='bar', range=(0, 1), weights=(np.ones_like(nmpreds) / len(nmpreds)), label='Population Data (Non-members)')
+        plt.xlabel('Membership Probability')
+        plt.ylabel('Fraction')
+        plt.figtext(0.5, 0.5, model_details)
+        plt.title('Privacy Risk')
+        plt.legend(loc='upper left')
+        plt.savefig('logs/privacy_risk.png')
+        plt.close()
 
-            fpr, tpr, _ = roc_curve(target, probs)
-            roc_auc = auc(fpr, tpr)
+        fpr, tpr, _ = roc_curve(target, probs)
+        roc_auc = auc(fpr, tpr)
+        plt.title('ROC of Membership Inference Attack')
+        plt.plot(fpr, tpr, 'b', label='AUC = %0.2f' % roc_auc)
+        plt.legend(loc='lower right')
+        plt.figtext(0.5, 0.5, model_details)
+        plt.plot([0, 1], [0, 1], 'r--')
+        plt.xlim([0, 1])
+        plt.ylim([0, 1])
+        plt.ylabel('True Positive Rate')
+        plt.xlabel('False Positive Rate')
+        plt.savefig('logs/roc.png')
+        plt.close()
 
-            ax = plt.subplot(gs[1, 0])
-            plt.title('ROC of Membership Inference Attack')
-            plt.plot(fpr, tpr, 'b', label='AUC = %0.2f' % roc_auc)
-            plt.legend(loc='lower right')
-            plt.figtext(0.5, 0.5, model_details)
-            plt.plot([0, 1], [0, 1], 'r--')
-            plt.xlim([0, 1])
-            plt.ylim([0, 1])
-            plt.ylabel('True Positive Rate')
-            plt.xlabel('False Positive Rate')
+        #############
 
-            #############
-
-            ax = plt.subplot(gs[1, 1])
-            xs = []
-            ys = []
-            for lab in unique_mem_lab:
-                gradnorm = []
-                for l, p in zip(mlab, mgradientnorm):
-                    if l == lab:
-                        gradnorm.append(p)
-                xs.append(lab)
-                ys.append(np.mean(gradnorm))
-
-            plt.plot(xs, ys, 'g.', label='Training Data (Members)')
-
-            xs = []
-            ys = []
-            for lab in unique_nmem_lab:
-                gradnorm = []
-                for l, p in zip(nmlab, nmgradientnorm):
-                    if l == lab:
-                        gradnorm.append(p)
-                xs.append(lab)
-                ys.append(np.mean(gradnorm))
-            plt.plot(xs, ys, 'r.', label='Population Data (Non-Members)')
-            plt.title('Average Gradient Norms per Label')
-            plt.xlabel('Label')
-            plt.ylabel('Average Gradient Norm')
-            plt.legend(loc="upper left")
-
-            gs.tight_layout(fig)
-
-            # fig.tight_layout()
-
-            for lab in range(len(unique_mem_lab)):
-                if lab % 4 == 0:
-                    pdf.savefig()
-                    plt.close()
-                    fig, axs = plt.subplots(
-                        2, 2, figsize=(6, 6), facecolor='w', edgecolor='k')
-                    fig.subplots_adjust(hspace=.5, wspace=.001)
-                    axs = axs.ravel()
-
-                labs = []
-                for l, p in zip(mlab, mpreds):
-                    if l == lab:
-                        labs.append(p)
-
-                axs[lab % 4].hist(np.array(labs).flatten(), color='xkcd:blue', alpha=0.7, bins=20, label='Training Data (Members)',
-                                  histtype='bar', range=(0, 1), weights=(np.ones_like(labs) / len(labs)))
-
-                labs = []
-                for l, p in zip(nmlab, nmpreds):
-                    if l == lab:
-                        labs.append(p)
-
-                axs[lab % 4].hist(np.array(labs).flatten(), color='xkcd:light blue', alpha=0.7, bins=20, label='Population Data (Non-members)',
-                                  histtype='bar', range=(0, 1), weights=(np.ones_like(labs) / len(labs)))
-
-                axs[lab % 4].legend()
-                axs[lab % 4].set_xlabel('Membership Probability')
-                axs[lab % 4].set_ylabel('Fraction')
-
-                axs[lab % 4].set_title('Privacy Risk - Label ' + str(lab))
-                fig.tight_layout()
-
-            pdf.savefig()  # saves the current figure into a pdf page
-            plt.close()
-
-        print('Creating label-wise Tensorboard data')
-        # Members
+        xs = []
+        ys = []
         for lab in unique_mem_lab:
+            gradnorm = []
+            for l, p in zip(mlab, mgradientnorm):
+                if l == lab:
+                    gradnorm.append(p)
+            xs.append(lab)
+            ys.append(np.mean(gradnorm))
+
+        plt.plot(xs, ys, 'g.', label='Training Data (Members)')
+
+        xs = []
+        ys = []
+        for lab in unique_nmem_lab:
+            gradnorm = []
+            for l, p in zip(nmlab, nmgradientnorm):
+                if l == lab:
+                    gradnorm.append(p)
+            xs.append(lab)
+            ys.append(np.mean(gradnorm))
+        plt.plot(xs, ys, 'r.', label='Population Data (Non-Members)')
+        plt.title('Average Gradient Norms per Label')
+        plt.xlabel('Label')
+        plt.ylabel('Average Gradient Norm')
+        plt.legend(loc="upper left")
+        plt.savefig('logs/gradient_norm.png')
+        plt.close()
+
+        for lab in range(len(unique_mem_lab)):
             labs = []
             for l, p in zip(mlab, mpreds):
                 if l == lab:
                     labs.append(p)
-            with self.summary_writer.as_default(), tf.name_scope(self.model_name + ' (Labels)'):
-                tf.summary.histogram(
-                    'Member' + ' Label_' + str(lab), labs, step=0)
 
-        # Non Members
-        for lab in unique_nmem_lab:
+            plt.hist(np.array(labs).flatten(), color='xkcd:blue', alpha=0.7, bins=20, label='Training Data (Members)',
+                     histtype='bar', range=(0, 1), weights=(np.ones_like(labs) / len(labs)))
+
             labs = []
             for l, p in zip(nmlab, nmpreds):
                 if l == lab:
                     labs.append(p)
-            with self.summary_writer.as_default(), tf.name_scope(self.model_name + ' (Labels)'):
-                tf.summary.histogram(
-                    'NonMember' + ' Label_' + str(lab), labs, step=0)
+
+            plt.hist(np.array(labs).flatten(), color='xkcd:light blue', alpha=0.7, bins=20, label='Population Data (Non-members)',
+                     histtype='bar', range=(0, 1), weights=(np.ones_like(labs) / len(labs)))
+
+            plt.legend()
+            plt.xlabel('Membership Probability')
+            plt.ylabel('Fraction')
+
+            plt.set_title('Privacy Risk - Label ' + str(lab))
+            plt.savefig('logs/privacy_risk_label' + str(lab) + '.png')
+            plt.close()
 
         np.save('logs/member_probs.npy', np.array(mpreds))
         np.save('logs/nonmember_probs.npy', np.array(nmpreds))
