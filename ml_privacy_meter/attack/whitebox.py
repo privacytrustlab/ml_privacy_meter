@@ -550,26 +550,29 @@ class initialize(object):
         unique_nmem_lab = sorted(np.unique(nmlab))
 
         with PdfPages('logs/report.pdf') as pdf:
+            model_details = "Model name : " + self.model_name + "\nExploited gradients : " + str(self.gradients_to_exploit) + "\nExploited Layer Outputs : " + str(self.layers_to_exploit) + "\nExploit Loss : " + str(self.exploit_loss) + "\nExploit Label : " + str(self.exploit_label) 
+
             fig = plt.figure(1)
             gs = gridspec.GridSpec(2, 2)
-            # plt.subplot(121)
-            ax = plt.subplot(gs[0, :])
-            plt.hist(np.array(mpreds).flatten(), color='xkcd:blue', alpha=0.5, bins=20,
-                     histtype='bar', range=(0, 1), weights=(np.ones_like(mpreds) / len(mpreds)))
-            plt.hist(np.array(nmpreds).flatten(), color='xkcd:light blue', alpha=0.5, bins=20,
-                     histtype='bar', range=(0, 1), weights=(np.ones_like(nmpreds) / len(nmpreds)))
+            ax = plt.subplot(gs[0, 0])
+            plt.hist(np.array(mpreds).flatten(), color='xkcd:blue', alpha=0.7, bins=20,
+                     histtype='bar', range=(0, 1), weights=(np.ones_like(mpreds) / len(mpreds)), label='Training Data (Members)')
+            plt.hist(np.array(nmpreds).flatten(), color='xkcd:light blue', alpha=0.7, bins=20,
+                     histtype='bar', range=(0, 1), weights=(np.ones_like(nmpreds) / len(nmpreds)), label='Population Data (Non-members)')
             plt.xlabel('Membership Probability')
             plt.ylabel('Fraction')
+            plt.figtext(0.5, 0.5, model_details)
             plt.title('Privacy Risk')
-            plt.legend()
+            plt.legend(loc='upper left')
 
             fpr, tpr, _ = roc_curve(target, probs)
             roc_auc = auc(fpr, tpr)
 
             ax = plt.subplot(gs[1, 0])
-            plt.title('Receiver Operating Characteristic')
+            plt.title('ROC of Membership Inference Attack')
             plt.plot(fpr, tpr, 'b', label='AUC = %0.2f' % roc_auc)
             plt.legend(loc='lower right')
+            plt.figtext(0.5, 0.5, model_details)
             plt.plot([0, 1], [0, 1], 'r--')
             plt.xlim([0, 1])
             plt.ylim([0, 1])
@@ -589,7 +592,7 @@ class initialize(object):
                 xs.append(lab)
                 ys.append(np.mean(gradnorm))
 
-            plt.plot(xs, ys, 'g.', label='Member')
+            plt.plot(xs, ys, 'g.', label='Training Data (Members)')
 
             xs = []
             ys = []
@@ -600,7 +603,7 @@ class initialize(object):
                         gradnorm.append(p)
                 xs.append(lab)
                 ys.append(np.mean(gradnorm))
-            plt.plot(xs, ys, 'r.', label='Non-Member')
+            plt.plot(xs, ys, 'r.', label='Population Data (Non-Members)')
             plt.title('Average Gradient Norms per Label')
             plt.xlabel('Label')
             plt.ylabel('Average Gradient Norm')
@@ -624,7 +627,7 @@ class initialize(object):
                     if l == lab:
                         labs.append(p)
 
-                axs[lab % 4].hist(np.array(labs).flatten(), color='xkcd:blue', alpha=0.5, bins=20, label='Member',
+                axs[lab % 4].hist(np.array(labs).flatten(), color='xkcd:blue', alpha=0.7, bins=20, label='Training Data (Members)',
                                   histtype='bar', range=(0, 1), weights=(np.ones_like(labs) / len(labs)))
 
                 labs = []
@@ -632,14 +635,14 @@ class initialize(object):
                     if l == lab:
                         labs.append(p)
 
-                axs[lab % 4].hist(np.array(labs).flatten(), color='xkcd:blue', alpha=0.5, bins=20, label='Non-member',
+                axs[lab % 4].hist(np.array(labs).flatten(), color='xkcd:light blue', alpha=0.7, bins=20, label='Population Data (Non-members)',
                                   histtype='bar', range=(0, 1), weights=(np.ones_like(labs) / len(labs)))
 
                 axs[lab % 4].legend()
                 axs[lab % 4].set_xlabel('Membership Probability')
                 axs[lab % 4].set_ylabel('Fraction')
 
-                axs[lab % 4].set_title('Privacy Leakage - Label ' + str(lab))
+                axs[lab % 4].set_title('Privacy Risk - Label ' + str(lab))
                 fig.tight_layout()
 
             pdf.savefig()  # saves the current figure into a pdf page
