@@ -501,7 +501,9 @@ class initialize(object):
         mfeat = []
         nmfeat = []
         mgradnorm, nmgradnorm = [], []
-
+        path = 'logs/plots'
+        if not os.path.exists(path):
+            os.makedirs(path)
         with tf.device(self.device):
             zipped = zip(mtrainset, nmtrainset)
             for((mfeatures, mlabels), (nmfeatures, nmlabels)) in zipped:
@@ -536,9 +538,6 @@ class initialize(object):
         unique_mem_lab = sorted(np.unique(mlab))
         unique_nmem_lab = sorted(np.unique(nmlab))
 
-        model_details = "Model name : " + self.model_name + "\nExploited gradients : " + str(self.gradients_to_exploit) + "\nExploited Layer Outputs : " + str(
-            self.layers_to_exploit) + "\nExploit Loss : " + str(self.exploit_loss) + "\nExploit Label : " + str(self.exploit_label)
-
         fig = plt.figure(1)
         plt.hist(np.array(mpreds).flatten(), color='xkcd:blue', alpha=0.7, bins=20,
                  histtype='bar', range=(0, 1), weights=(np.ones_like(mpreds) / len(mpreds)), label='Training Data (Members)')
@@ -546,10 +545,9 @@ class initialize(object):
                  histtype='bar', range=(0, 1), weights=(np.ones_like(nmpreds) / len(nmpreds)), label='Population Data (Non-members)')
         plt.xlabel('Membership Probability')
         plt.ylabel('Fraction')
-        plt.figtext(0.5, 0.5, model_details)
         plt.title('Privacy Risk')
         plt.legend(loc='upper left')
-        plt.savefig('logs/privacy_risk.png')
+        plt.savefig('logs/plots/privacy_risk.png')
         plt.close()
 
         fpr, tpr, _ = roc_curve(target, probs)
@@ -557,13 +555,12 @@ class initialize(object):
         plt.title('ROC of Membership Inference Attack')
         plt.plot(fpr, tpr, 'b', label='AUC = %0.2f' % roc_auc)
         plt.legend(loc='lower right')
-        plt.figtext(0.5, 0.5, model_details)
         plt.plot([0, 1], [0, 1], 'r--')
         plt.xlim([0, 1])
         plt.ylim([0, 1])
         plt.ylabel('True Positive Rate')
         plt.xlabel('False Positive Rate')
-        plt.savefig('logs/roc.png')
+        plt.savefig('logs/plots/roc.png')
         plt.close()
 
         #############
@@ -594,7 +591,7 @@ class initialize(object):
         plt.xlabel('Label')
         plt.ylabel('Average Gradient Norm')
         plt.legend(loc="upper left")
-        plt.savefig('logs/gradient_norm.png')
+        plt.savefig('logs/plots/gradient_norm.png')
         plt.close()
 
         for lab in range(len(unique_mem_lab)):
@@ -618,8 +615,8 @@ class initialize(object):
             plt.xlabel('Membership Probability')
             plt.ylabel('Fraction')
 
-            plt.set_title('Privacy Risk - Label ' + str(lab))
-            plt.savefig('logs/privacy_risk_label' + str(lab) + '.png')
+            plt.title('Privacy Risk - Label ' + str(lab))
+            plt.savefig('logs/plots/privacy_risk_label' + str(lab) + '.png')
             plt.close()
 
         np.save('logs/member_probs.npy', np.array(mpreds))
