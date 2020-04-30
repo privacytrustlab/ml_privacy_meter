@@ -19,8 +19,8 @@ from ml_privacy_meter.utils.logger import get_logger
 from ml_privacy_meter.utils.losses import CrossEntropyLoss, mse
 from ml_privacy_meter.utils.optimizers import optimizer_op
 from ml_privacy_meter.visualization.visualize import compare_models
-from sklearn.metrics import accuracy_score, auc, roc_curve
 from scipy.ndimage.filters import gaussian_filter1d
+from sklearn.metrics import accuracy_score, auc, roc_curve
 
 from .WHITEBOX.autoencoder import create_encoder
 from .WHITEBOX.create_cnn import (cnn_for_cnn_gradients,
@@ -517,8 +517,10 @@ class initialize(object):
                 moutputs = self.forward_pass(model, mfeatures, mlabels)
                 nmoutputs = self.forward_pass(
                     model, nmfeatures, nmlabels)
-                mgradientnorm = self.get_gradient_norms(model, mfeatures, mlabels)
-                nmgradientnorm = self.get_gradient_norms(model, nmfeatures, nmlabels)
+                mgradientnorm = self.get_gradient_norms(
+                    model, mfeatures, mlabels)
+                nmgradientnorm = self.get_gradient_norms(
+                    model, nmfeatures, nmlabels)
                 # Computing the true values for loss function according
                 mpreds.extend(moutputs.numpy())
                 mlab.extend(mlabels)
@@ -583,7 +585,7 @@ class initialize(object):
             plt.xlabel('False Positive Rate')
 
             #############
-            
+
             ax = plt.subplot(gs[1, 1])
             xs = []
             ys = []
@@ -594,7 +596,7 @@ class initialize(object):
                         gradnorm.append(p)
                 xs.append(lab)
                 ys.append(np.mean(gradnorm))
-            
+
             plt.plot(xs, ys, 'g.', label='Member')
 
             xs = []
@@ -611,8 +613,6 @@ class initialize(object):
             plt.xlabel('Label')
             plt.ylabel('Average Gradient Norm')
             plt.legend(loc="upper left")
-            
-
 
             gs.tight_layout(fig)
 
@@ -633,7 +633,7 @@ class initialize(object):
                         labs.append(p)
 
                 axs[lab % 4].hist(np.array(labs).flatten(), bins=20, label='Member',
-                            histtype='bar', range=(0, 1), weights=(np.ones_like(labs) / len(labs)))
+                                  histtype='bar', range=(0, 1), weights=(np.ones_like(labs) / len(labs)))
 
                 labs = []
                 for l, p in zip(nmlab, nmpreds):
@@ -641,7 +641,7 @@ class initialize(object):
                         labs.append(p)
 
                 axs[lab % 4].hist(np.array(labs).flatten(), bins=20, label='Non-member',
-                            histtype='bar', range=(0, 1), weights=(np.ones_like(labs) / len(labs)))
+                                  histtype='bar', range=(0, 1), weights=(np.ones_like(labs) / len(labs)))
 
                 axs[lab % 4].legend()
                 axs[lab % 4].set_xlabel('Membership Probability')
@@ -652,7 +652,6 @@ class initialize(object):
 
             pdf.savefig()  # saves the current figure into a pdf page
             plt.close()
-
 
         print('Creating label-wise Tensorboard data')
         # Members
