@@ -505,30 +505,35 @@ class initialize(object):
         if not os.path.exists(path):
             os.makedirs(path)
         with tf.device(self.device):
-            zipped = zip(mtrainset, nmtrainset)
-            for((mfeatures, mlabels), (nmfeatures, nmlabels)) in zipped:
+            for(mfeatures, mlabels) in mtrainset:
                 # Getting outputs of forward pass of attack model
                 moutputs = self.forward_pass(model, mfeatures, mlabels)
-                nmoutputs = self.forward_pass(
-                    model, nmfeatures, nmlabels)
                 mgradientnorm = self.get_gradient_norms(
                     model, mfeatures, mlabels)
-                nmgradientnorm = self.get_gradient_norms(
-                    model, nmfeatures, nmlabels)
                 # Computing the true values for loss function according
                 mpreds.extend(moutputs.numpy())
                 mlab.extend(mlabels)
                 mfeat.extend(mfeatures)
+                mgradnorm.extend(mgradientnorm)
+
+            memtrue = tf.ones((len(mpreds), ))
+
+            for(nmfeatures, nmlabels) in nmtrainset:
+                # Getting outputs of forward pass of attack model
+                nmoutputs = self.forward_pass(
+                    model, nmfeatures, nmlabels)
+                nmgradientnorm = self.get_gradient_norms(
+                    model, nmfeatures, nmlabels)
+                # Computing the true values for loss function according
                 nmpreds.extend(nmoutputs.numpy())
                 nmlab.extend(nmlabels)
                 nmfeat.extend(nmfeatures)
-                mgradnorm.extend(mgradientnorm)
                 nmgradnorm.extend(nmgradientnorm)
 
-                memtrue = tf.ones(moutputs.shape)
-                nonmemtrue = tf.zeros(nmoutputs.shape)
-                target = tf.concat((memtrue, nonmemtrue), 0)
-                probs = tf.concat((moutputs, nmoutputs), 0)
+            nonmemtrue = tf.zeros((len(nmoutputs), ))
+
+            target = tf.concat((memtrue, nonmemtrue), 0)
+            probs = tf.concat((moutputs, nmoutputs), 0)
 
         font = {
             'weight': 'bold',
@@ -621,4 +626,6 @@ class initialize(object):
 
         np.save('logs/member_probs.npy', np.array(mpreds))
         np.save('logs/nonmember_probs.npy', np.array(nmpreds))
+        print('LEN2', len(mpreds), len(nmpreds))
+
         compare_models()
