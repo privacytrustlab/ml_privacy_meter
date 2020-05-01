@@ -133,7 +133,7 @@ The user can also use privacy risk histograms for each output class.
 
 ![Privacy Risk - Class 15](images/privacy_risk_label15.png)  ![Privacy Risk - Class 45](images/privacy_risk_label45.png) 
 
-The membership probability predictions by the model are also saved as numpy files in the `logs` folder.
+The membership probability predictions for training set member data and population set non-member data by the model are also saved as numpy files in the `logs` folder as `member_probs.npy` and `nonmember_probs.npy`. They correspond to the features and labels in `m_features.npy`, `m_labels.npy` and `nm_features.npy` and `nm_labels.npy` respectively.
 
 ## References:
 

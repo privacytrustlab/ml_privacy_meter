@@ -136,6 +136,46 @@ class attack_data:
 
         return mtrain, nmtrain, nm_features, nm_labels
 
+    def load_vis(self, batch_size=256):
+        """
+        Returns a tf.data.Dataset object for visualization testing
+        """
+        member_train = self.train_data
+        self.nonmember_train = []
+
+        index = 0
+
+        while len(self.nonmember_train) != len(member_train) and index < len(self.dataset):
+            datapoint = self.dataset[index]
+            datapointhash = hash(bytes(datapoint))
+            if datapointhash not in self.train_hashes:
+                self.nonmember_train.append(datapoint)
+            index += 1
+        self.nonmember_train = np.vstack(self.nonmember_train)
+
+        m_features, m_labels = self.generate(member_train)
+        nm_features, nm_labels = self.generate(self.nonmember_train)
+        if self.normalization:
+            train_features, _ = self.generate(self.train_data)
+            if not self.means and not self.stddevs:
+                self.compute_moments(train_features)
+            m_features = self.normalize(m_features)
+            nm_features = self.normalize(nm_features)
+
+        np.save('logs/m_features', m_features)
+        np.save('logs/m_labels', m_labels)
+        np.save('logs/nm_features', nm_features)
+        np.save('logs/nm_labels', nm_labels)
+
+        mtrain = get_tfdataset(m_features, m_labels)
+        nmtrain = get_tfdataset(nm_features, nm_labels)
+
+        mtrain = mtrain.batch(batch_size)
+        nmtrain = nmtrain.batch(batch_size)
+
+        return mtrain, nmtrain, nm_features, nm_labels
+
+
     def load_test(self):
         """
         Returns a tf.data.Dataset object for testing
