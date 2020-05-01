@@ -492,7 +492,7 @@ class initialize(object):
                          100 * best_accuracy)
 
     def test_attack(self):
-        mtrainset, nmtrainset, _, _ = self.train_datahandler.load_train()
+        mtrainset, nmtrainset, _, _ = self.train_datahandler.load_vis(2048)
         model = self.target_train_model
         mpreds = []
         mlab = []
@@ -500,6 +500,9 @@ class initialize(object):
         nmlab = []
         mfeat = []
         nmfeat = []
+        mtrue = []
+        nmtrue = []
+
         mgradnorm, nmgradnorm = [], []
         path = 'logs/plots'
         if not os.path.exists(path):
@@ -515,8 +518,8 @@ class initialize(object):
                 mlab.extend(mlabels)
                 mfeat.extend(mfeatures)
                 mgradnorm.extend(mgradientnorm)
-
-            memtrue = tf.ones((len(mpreds), ))
+                memtrue = np.ones(moutputs.shape)
+                mtrue.extend(memtrue)
 
             for(nmfeatures, nmlabels) in nmtrainset:
                 # Getting outputs of forward pass of attack model
@@ -529,11 +532,11 @@ class initialize(object):
                 nmlab.extend(nmlabels)
                 nmfeat.extend(nmfeatures)
                 nmgradnorm.extend(nmgradientnorm)
+                nonmemtrue = np.zeros(nmoutputs.shape)
+                nmtrue.extend(nonmemtrue)
 
-            nonmemtrue = tf.zeros((len(nmoutputs), ))
-
-            target = tf.concat((memtrue, nonmemtrue), 0)
-            probs = tf.concat((moutputs, nmoutputs), 0)
+            target = tf.concat((mtrue, nmtrue), 0)
+            probs = tf.concat((mpreds, nmpreds), 0)
 
         font = {
             'weight': 'bold',
@@ -626,6 +629,5 @@ class initialize(object):
 
         np.save('logs/member_probs.npy', np.array(mpreds))
         np.save('logs/nonmember_probs.npy', np.array(nmpreds))
-        print('LEN2', len(mpreds), len(nmpreds))
 
         compare_models()

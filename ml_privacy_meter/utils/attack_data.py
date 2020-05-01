@@ -136,7 +136,7 @@ class attack_data:
 
         return mtrain, nmtrain, nm_features, nm_labels
 
-    def load_vis(self):
+    def load_vis(self, batch_size=256):
         """
         Returns a tf.data.Dataset object for visualization testing
         """
@@ -170,8 +170,8 @@ class attack_data:
         mtrain = get_tfdataset(m_features, m_labels)
         nmtrain = get_tfdataset(nm_features, nm_labels)
 
-        mtrain = mtrain.batch(self.batch_size)
-        nmtrain = nmtrain.batch(self.batch_size)
+        mtrain = mtrain.batch(batch_size)
+        nmtrain = nmtrain.batch(batch_size)
 
         return mtrain, nmtrain, nm_features, nm_labels
 
