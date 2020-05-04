@@ -6,7 +6,7 @@ Privacy regulations, such as GDPR, and AI governance frameworks require personal
 
 ML Privacy Meter is a Python library (`ml_privacy_meter`) that enables quantifying the privacy risks of machine learning models. The tool provides privacy risk scores which helps identifying which data records among the training data are under the high risk for being leaked through the model parameters or predictions. 
 
-![ROC Plot](images/diagram.png)
+![ML Privacy Meter Diagram](images/ml-privacy-meter.png)
 
 The tool is designed and developed at NUS Data Privacy and Trustworthy Machine Learning Lab, by (alphabetical order): Mihir Harshavardhan Khandekar, Milad Nasr, Shadab Shaikh, and Reza Shokri.
 
