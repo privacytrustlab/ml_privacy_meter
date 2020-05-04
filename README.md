@@ -1,54 +1,52 @@
 # ML Privacy Meter
 
-`ml_privacy_meter` is a python library to carry out membership inference attacks (whitebox or blackbox) against already trained models, which can help benchmark the membership information leakage of such models. The tool generates attacks on a target model assuming blackbox or whitebox access to the target model to get the inference accuracy of the attack. Whitebox attacks can exploit the target model's parameters to infer training set membership of the input, while blackbox attacks only use the target model's predictions to infer data membership. 
+Machine learning is playing a central role in automated decision making in a wide range of organization and service providers.  The data, which is used to train the models, typically contain sensitive inforamtion about individuals. Although the data in most cases cannot be released, due to privacy concerns, the models are usually made public or deployed as a service for inference on new test data. For a safe and secure use of machine learning models, it is important to have a quantitative assessment of the privacy risks of these models, and to make sure that they do not reveal sensitive information about their training data. This is of a great importance as there has been a surge in use of machine learning in sensitive domains such as medical and finance applications. 
+
+Privacy regulations, such as GDPR, and AI governance frameworks require personal data to be protected when used in AI systems, and that the users have control over their data and awareness about how it is being used.  Thus, proper mechanisms need to be in place to evaluate and verify the privacy of individuals in every steps of the data processing pipeline in AI systems.
+
+ML Privacy Meter is a Python library (`ml_privacy_meter`) that enables quantifying the privacy risks of machine learning models. The tool provides privacy risk scores which helps identifying which data records among the training data are under the high risk for being leaked through the model parameters or predictions. 
+
+![ROC Plot](images/diagram.png)
+
+The tool is designed and developed at NUS Data Privacy and Trustworthy Machine Learning Lab, by (alphabetical order): Mihir Harshavardhan Khandekar, Milad Nasr, Shadab Shaikh, and Reza Shokri.
+
+# Privacy Risks of Machine Learning Models
+
+Machine learning models encode information about the datasets on which they are trained. The encoded information is supposed to reflect the general patterns underlying the population data. However, it is commonly observed that the models memorize specific information about some members of their training data. This is reflected in the predictions of a model, which exhibit a different behavior on training data versus test data, and in the model's parameters which store statistically correlated inforamtion about specific data points in their training set.  Models with high generalization gap as well as the models with high capacity (such as deep neural networks) are more susceptible to memorizing data points from their training set. 
+
+Recent inference algorithms, e.g., [[1](https://www.comp.nus.edu.sg/~reza/files/Shokri-SP2017.pdf), [2](https://www.comp.nus.edu.sg/~reza/files/Shokri-SP2019.pdf)], have demonstrated this vulnerability of machine learning models and crafted algorithms to extract information about the training data of models. Specifically these algorithms detect the presence of a particular record in the training dataset of a model, thus called *membership infernece attacks*. The privacy risks of models, with respect to their predictions (black-box setting) and parameters (white-box setting), can be evaluated as the accuracy of such attacks against their training data. **ML Privacy Meter** implements membership inference attacks in both the black-box and white-box settings. Ability to detect membership in the dataset using the released models is a measure of information leakage about the individuals in the dataset from the model.
+
+In the black-box setting, we can only observe predictions of the model. The attack involves training inference algorithms that can distinguish between training set members and non-members from the model predictions. This scenario can be used to measure the privacy risks against legitimate users of a model who seek predictions on their queries. In the white-box setting, we can also observe the parameters of the model. This reflects the scenario where a model is outsourced to a potentially untrusted server or to the cloud, or is shared with an aggregator in the federated learning setting. 
+
+Membership probability (in the range of 0-1) is calculated for all the records in the training data using the attack. This is compared with that of test data to determine if the model leaks the presence of its members to the attacker. When an attacker tries to detect the presence of an individual in the dataset, there is a trade-off between its achieved power and error. Power refers to the fraction of individuals in the training dataset that the attacker can correctly identify as members. Error refers to the fraction of individuals that the attacker claims as members of dataset but are not part of the dataset. The tool can quantify and report the membership probability and accuracy of the attack per record, to reflect the privacy risk of the model for each record. It also reports the aggregated results. 
+
+# Overview of ML Privacy Meter
 
 ## Setup
 
-### Dependencies
-
 The API is built on top of `TensorFlow 2.1` with Python 3.6. `TensorFlow` can be installed [in a virtual environment](https://www.tensorflow.org/install/pip#2.-create-a-virtual-environment-recommended).
 
-### To activate `virtualenv`:
-```
-~$ python3 -m virtualenv ~/path/to/venv
-~$ source ~/path/to/venv/bin/activate
-```
-
-### Installing `ml_privacy_meter` on local machine
-
-**1**. Clone this repository:
-```
-~$ cd ml_privacy_meter/
-```
-
-**2**.  Install all the dependencies:
+Install the dependencies and the library for the tool:
 ```
 ~$ pip install -r requirements.txt
-```
-
-**3**. Install the library locally on your machine:
-```
 ~$ pip install -e .
 ```
+
 The library uses GPU for optimal execution. For more details on TensorFlow GPU support, [look here](https://www.tensorflow.org/install/gpu).
 
 **Note** :  Though `ml_privacy_meter` makes use of the [Eager Execution](https://www.tensorflow.org/guide/eager) mode of TensorFlow, `"tf.enable_eager_execution()"` need not be called explicitly. Importing `ml_privacy_meter` will do that job for you.
-
-
-# Overview
-
-- `ml_privacy_meter.attack` consists of attacks that can be mounted against trained machine learning models. The tool implements the blackbox and whitebox membership inference attack described in Shokri, Stronati, Song, Shmatikov [1], and Nasr, Shokri, Houmansadr [2]. The tool is designed and developed at NUS Data Privacy and Trustworthy Machine Learning Lab, by (alphabetical order): Mihir Harshavardhan Khandekar, Milad Nasr, Shadab Shaikh, and Reza Shokri.
 
 ## Data 
 
 To use `ml_privacy_meter's` datahandler, the datasets need to be in a particular format.  README in `datasets/`  directory contain the details about the required format. It also consists of scripts to download some datasets in the required format. 
 
-## Attacking a Trained Model
-`ml_privacy_meter.attacks.meminf` can be used to attack any target classification model using the method is given in Nasr et al [2]. 
-With `ml_privacy_meter`, helps create a customized attack model by choosing the elements of an already trained classification model. This could include the gradients (of layers with trainable parameters), intermediate outputs of hidden layers, output of the target model and value of loss function to train the inference model.  
+## Analyzing a Trained Model
 
-#### Sample code to initialize whitebox attack
-In the below example, the number of epochs is set to 100 and the attack model exploits the intermediate activations of last 3 layers and the gradients of the last layer on a Fully connected Neural Network as the target model. This target model consists of 5 layers. Here, both the target classification models (used for training and the one evaluated on) are the same, but they can differ [See Note 1]. For the `blackbox` attack (exploiting only the output of final classification layer), the output dimension of Model A and B needs to be the same, whereas rest of the architecture can be different. For `whitebox` attack, the architectures need to be same. The difference between Model A and Model B for such an attack is that Model B could be trained on a different dataset.
+`ml_privacy_meter` creates a customized attack model by choosing the elements of an already trained classification model. This could include the gradients (of layers with trainable parameters), intermediate outputs of hidden layers, output of the target model and value of loss function to train the inference model. These are the signals that the inference algorithm uses to perform the membership inference attack and distinguish between members of the training set and population data.  `ml_privacy_meter.attacks.meminf` can be used to run inference attacks against any target classification model.
+
+#### Sample code to run a whitebox attack
+
+In this example, the number of epochs is set to 100 and the attack model exploits the intermediate activations of last 3 layers and the gradients of the last layer on a fully connected neural network as the target model. This target model consists of 5 layers. Here, both the target classification models (used for training and the one evaluated on) are the same, but they can differ [See Note 1]. For the `blackbox` attack (exploiting only the output of final classification layer), the output dimension of Model A and B needs to be the same, whereas rest of the architecture can be different. For `whitebox` attack, the architectures need to be same. The difference between Model A and Model B for such an attack is that Model B could be trained on a different dataset.
 
 Important arguments among them:
 
@@ -100,17 +98,9 @@ Note 2: The `target_attack_model` is not a attack model but rather a classificat
 
 A tutorial to run the attack on CIFAR-100 Alexnet model can be found [here](tutorials/README.md).
 
-### Available optimizers:
+# Report and Visualization of the Results
 
-1. AdaDelta
-2. AdaGrad
-3. Adam
-4. Vanilla SGD
-5. SGD with Momentum
-6. RMSProp
-
-## Visualization
-The attack models can also be visualized in Tensorboard's dashboard. The user can view the privacy risk of the model, ROC of membership inference attack, compare privacy risk between datapoints from different classes. 
+The attack models can be visualized in Tensorboard's dashboard. The user can view the privacy risk of the model, ROC of membership inference attack, compare privacy risk between datapoints from different classes. 
 To create the visualizations, the user needs to call
 ```
 attackobj.test_attack()
