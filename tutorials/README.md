@@ -18,11 +18,11 @@ chmod +x download_cifar100.sh
 ```
 This downloads the dataset file and training set file and converts them into the format required by the tool.
 We then run the attack code `python tutorials/attack_alexnet.py`. 
-The `attackobj` initializes the whitebox class and the attack configuration. Following are some examples of configurations that can be changed in the function.
+The `attackobj` initializes the meminf class and the attack configuration. Following are some examples of configurations that can be changed in the function.
 Note : The code explicitly sets the means and standard deviations for normalizing the images, according to the CIFAR-100 distribution.
 1. Whitebox attack - Exploit the final layer gradients, final layer outputs, loss values and label values (DEFAULT)
 ```
-attackobj = ml_privacy_meter.attack.whitebox.initialize(
+attackobj = ml_privacy_meter.attack.meminf.initialize(
     target_train_model=cmodelA,
     target_attack_model=cmodelA,
     train_datahandler=datahandlerA,
@@ -33,7 +33,7 @@ attackobj = ml_privacy_meter.attack.whitebox.initialize(
 ```
 2. Whitebox attack - Exploit final two model layer outputs, loss values and label values
 ```
-attackobj = ml_privacy_meter.attack.whitebox.initialize(
+attackobj = ml_privacy_meter.attack.meminf.initialize(
     target_train_model=cmodelA,
     target_attack_model=cmodelA,
     train_datahandler=datahandlerA,
@@ -43,7 +43,7 @@ attackobj = ml_privacy_meter.attack.whitebox.initialize(
 ```
 2. Blackbox attack - Exploit final layer output and label values
 ```
-attackobj = ml_privacy_meter.attack.whitebox.initialize(
+attackobj = ml_privacy_meter.attack.meminf.initialize(
     target_train_model=cmodelA,
     target_attack_model=cmodelA,
     train_datahandler=datahandlerA,

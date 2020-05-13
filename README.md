@@ -44,7 +44,7 @@ The library uses GPU for optimal execution. For more details on TensorFlow GPU s
 To use `ml_privacy_meter's` datahandler, the datasets need to be in a particular format.  README in `datasets/`  directory contain the details about the required format. It also consists of scripts to download some datasets in the required format. 
 
 ## Attacking a Trained Model
-`ml_privacy_meter.attacks.whitebox` can be used to attack any target classification model using the method is given in Nasr et al [2]. 
+`ml_privacy_meter.attacks.meminf` can be used to attack any target classification model using the method is given in Nasr et al [2]. 
 With `ml_privacy_meter`, helps create a customized attack model by choosing the elements of an already trained classification model. This could include the gradients (of layers with trainable parameters), intermediate outputs of hidden layers, output of the target model and value of loss function to train the inference model.  
 
 #### Sample code to initialize whitebox attack
@@ -59,7 +59,7 @@ Important arguments among them:
 
 To attack:
 ```
-attackobj = ml_privacy_meter.attacks.whitebox.initialize(
+attackobj = ml_privacy_meter.attacks.meminf.initialize(
                  target_train_model=cmodel, 
                  target_attack_model=cmodel, 
                  train_datahandler=datahandler, 
@@ -94,7 +94,7 @@ The description of the arguments:
 - `learning_rate`: learning rate of the optimizer op
 - `epochs`: The number of epochs to train the attack model.
 
-Note 1: The `whitebox` class can also be used to train the whitebox attack model on a target classification model (call it model A) and evaluate it on a different classification model (call it model B). Model A's training set is used for training the attack model and model B's test set is used for evaluating the attack model (with no intersection among them).
+Note 1: The `meminf` class can also be used to train the attack model on a target classification model (call it model A) and evaluate it on a different classification model (call it model B). Model A's training set is used for training the attack model and model B's test set is used for evaluating the attack model (with no intersection among them).
 
 Note 2: The `target_attack_model` is not a attack model but rather a classification model that the attack model will be evaluated on.
 
@@ -110,12 +110,12 @@ A tutorial to run the attack on CIFAR-100 Alexnet model can be found [here](tuto
 6. RMSProp
 
 ## Visualization
-The attack models can also be visualized in Tensorboard's dashboard. The user can view the privacy risk of the model, ROC of membership inference attack, compare privacy risk between datapoints with different labels. 
+The attack models can also be visualized in Tensorboard's dashboard. The user can view the privacy risk of the model, ROC of membership inference attack, compare privacy risk between datapoints from different classes. 
 To create the visualizations, the user needs to call
 ```
 attackobj.test_attack()
 ```
-This function can be called for different instances of the attack setup, `attackobj` (ml_privacy_meter.attack.whitebox) to compare them.
+This function can be called for different instances of the attack setup, `attackobj` (ml_privacy_meter.attack.meminf) to compare them.
 
 A set of plots are generated for the data, which includes histograms for privacy risk, ROC curve for the membership probabilities, gradient norm distributions for member and non-member data, and label-wise privacy risk plots. This data is created in the `logs/plots` folder. 
 
@@ -129,11 +129,11 @@ The next plot shows the Receiver Operating Characteristic (ROC) curve for the me
 
 ![ROC Plot](images/roc.png)
 
-The user can also use privacy risk histograms for each output label.
+The user can also use privacy risk histograms for each output class.
 
-![Privacy Risk - Label 15](images/privacy_risk_label15.png)  ![Privacy Risk - Label 45](images/privacy_risk_label45.png) 
+![Privacy Risk - Class 15](images/privacy_risk_label15.png)  ![Privacy Risk - Class 45](images/privacy_risk_label45.png) 
 
-The membership probability predictions by the model are also saved as numpy files in the `logs` folder.
+The membership probability predictions for training set member data and population set non-member data by the model are also saved as numpy files in the `logs` folder as `member_probs.npy` and `nonmember_probs.npy`. They correspond to the features and labels in `m_features.npy`, `m_labels.npy` and `nm_features.npy` and `nm_labels.npy` respectively.
 
 ## References:
 

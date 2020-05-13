@@ -22,11 +22,11 @@ from ml_privacy_meter.visualization.visualize import compare_models
 from scipy.ndimage.filters import gaussian_filter1d
 from sklearn.metrics import accuracy_score, auc, roc_curve
 
-from .WHITEBOX.autoencoder import create_encoder
-from .WHITEBOX.create_cnn import (cnn_for_cnn_gradients,
+from .meminf_modules.autoencoder import create_encoder
+from .meminf_modules.create_cnn import (cnn_for_cnn_gradients,
                                   cnn_for_cnn_layeroutputs,
                                   cnn_for_fcn_gradients)
-from .WHITEBOX.create_fcn import fcn_module
+from .meminf_modules.create_fcn import fcn_module
 
 gpus = tf.config.experimental.list_physical_devices('GPU')
 if gpus:
@@ -121,7 +121,7 @@ class initialize(object):
         time_stamp = datetime.datetime.today().strftime('%Y-%m-%d_%H:%M:%S')
         self.attack_utils = attack_utils()
         self.logger = get_logger(self.attack_utils.root_dir, "attack",
-                                 "whitebox", "info", time_stamp)
+                                 "meminf", "info", time_stamp)
         self.aprefix = os.path.join('logs',
                                     "attack", "tensorboard")
         self.summary_writer = tf.summary.create_file_writer(self.aprefix)
@@ -406,7 +406,7 @@ class initialize(object):
 
     def train_attack(self):
         """
-        Trains the whitebox attack model
+        Trains the attack model
         """
         assert self.attackmodel, "Attack model not initialized"
         mtrainset, nmtrainset, nm_features, nm_labels = self.train_datahandler.load_train()
@@ -492,7 +492,7 @@ class initialize(object):
                          100 * best_accuracy)
 
     def test_attack(self):
-        mtrainset, nmtrainset, _, _ = self.train_datahandler.load_train()
+        mtrainset, nmtrainset, _, _ = self.train_datahandler.load_vis(2048)
         model = self.target_train_model
         mpreds = []
         mlab = []
@@ -500,39 +500,47 @@ class initialize(object):
         nmlab = []
         mfeat = []
         nmfeat = []
+        mtrue = []
+        nmtrue = []
+
         mgradnorm, nmgradnorm = [], []
         path = 'logs/plots'
         if not os.path.exists(path):
             os.makedirs(path)
         with tf.device(self.device):
-            zipped = zip(mtrainset, nmtrainset)
-            for((mfeatures, mlabels), (nmfeatures, nmlabels)) in zipped:
+            for(mfeatures, mlabels) in mtrainset:
                 # Getting outputs of forward pass of attack model
                 moutputs = self.forward_pass(model, mfeatures, mlabels)
-                nmoutputs = self.forward_pass(
-                    model, nmfeatures, nmlabels)
                 mgradientnorm = self.get_gradient_norms(
                     model, mfeatures, mlabels)
-                nmgradientnorm = self.get_gradient_norms(
-                    model, nmfeatures, nmlabels)
                 # Computing the true values for loss function according
                 mpreds.extend(moutputs.numpy())
                 mlab.extend(mlabels)
                 mfeat.extend(mfeatures)
+                mgradnorm.extend(mgradientnorm)
+                memtrue = np.ones(moutputs.shape)
+                mtrue.extend(memtrue)
+
+            for(nmfeatures, nmlabels) in nmtrainset:
+                # Getting outputs of forward pass of attack model
+                nmoutputs = self.forward_pass(
+                    model, nmfeatures, nmlabels)
+                nmgradientnorm = self.get_gradient_norms(
+                    model, nmfeatures, nmlabels)
+                # Computing the true values for loss function according
                 nmpreds.extend(nmoutputs.numpy())
                 nmlab.extend(nmlabels)
                 nmfeat.extend(nmfeatures)
-                mgradnorm.extend(mgradientnorm)
                 nmgradnorm.extend(nmgradientnorm)
+                nonmemtrue = np.zeros(nmoutputs.shape)
+                nmtrue.extend(nonmemtrue)
 
-                memtrue = tf.ones(moutputs.shape)
-                nonmemtrue = tf.zeros(nmoutputs.shape)
-                target = tf.concat((memtrue, nonmemtrue), 0)
-                probs = tf.concat((moutputs, nmoutputs), 0)
+            target = tf.concat((mtrue, nmtrue), 0)
+            probs = tf.concat((mpreds, nmpreds), 0)
 
         font = {
             'weight': 'bold',
-            'size': 5}
+            'size': 10}
 
         matplotlib.rc('font', **font)
         unique_mem_lab = sorted(np.unique(mlab))
@@ -615,10 +623,11 @@ class initialize(object):
             plt.xlabel('Membership Probability')
             plt.ylabel('Fraction')
 
-            plt.title('Privacy Risk - Label ' + str(lab))
+            plt.title('Privacy Risk - Class ' + str(lab))
             plt.savefig('logs/plots/privacy_risk_label' + str(lab) + '.png')
             plt.close()
 
         np.save('logs/member_probs.npy', np.array(mpreds))
         np.save('logs/nonmember_probs.npy', np.array(nmpreds))
+
         compare_models()
