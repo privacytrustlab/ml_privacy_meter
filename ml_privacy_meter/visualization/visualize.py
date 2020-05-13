@@ -1,8 +1,14 @@
-import numpy as np 
 import json
+
+import numpy as np
+
 import matplotlib.pyplot as plt
 
+
 def compare_models():
+    """
+    Compares multiple saved models and creates comparison plot.
+    """
     with open('logs/attack/results', 'r') as json_file:
         data = json.load(json_file)['result']
         n_groups = len(data)
@@ -18,9 +24,11 @@ def compare_models():
                 model_names.append(key)
                 target_acc.append(value['target_acc'])
                 attack_acc.append(value['attack_acc'])
-            
-        rects1 = plt.bar(index, target_acc, bar_width, alpha=opacity, label='Target model Acc')
-        rects2 = plt.bar(index + bar_width, attack_acc, bar_width, alpha=opacity, label='Inference model Acc')
+
+        rects1 = plt.bar(index, target_acc, bar_width,
+                         alpha=opacity, label='Target model Acc')
+        rects2 = plt.bar(index + bar_width, attack_acc, bar_width,
+                         alpha=opacity, label='Inference model Acc')
 
         plt.xlabel('Accuracy')
         plt.ylabel('Attack/Model setup')

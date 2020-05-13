@@ -92,6 +92,9 @@ dataset_path = "datasets/cifar100.txt"
 
 
 def scheduler(epoch):
+    """
+    Learning rate scheduler
+    """
     lr = 0.0001
     if epoch > 25:
         lr = 0.00001
@@ -130,6 +133,7 @@ def generate(dataset, input_shape):
 
 def extract(filepath):
     """
+    Extracts dataset from given filepath
     """
     with open(filepath, "r") as f:
         dataset = f.readlines()
@@ -140,6 +144,7 @@ def extract(filepath):
 
 def normalize(f, means, stddevs):
     """
+    Normalizes data using means and stddevs
     """
     normalized = (f/255 - means) / stddevs
     return normalized
@@ -165,7 +170,6 @@ if __name__ == '__main__':
     size = len(features)
     num_classes = 100
 
-
     features_train = features[int(0.2 * size):]
     features_test = features[:int(0.2 * size)]
 
@@ -174,7 +178,6 @@ if __name__ == '__main__':
 
     features_test = normalize(features_test, [
         0.4914, 0.4822, 0.4465], [0.2023, 0.1994, 0.2010])
-
 
     labels_train = labels[int(0.2 * size):]
     labels_test = labels[:int(0.2 * size)]

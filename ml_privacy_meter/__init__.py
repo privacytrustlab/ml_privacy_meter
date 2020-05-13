@@ -1,4 +1,4 @@
-from ml_privacy_meter import attack
-from ml_privacy_meter import utils
-import tensorflow as tf 
+import tensorflow as tf
+from ml_privacy_meter import attack, utils
+
 tf.compat.v1.enable_eager_execution()

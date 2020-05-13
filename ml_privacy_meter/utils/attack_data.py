@@ -1,10 +1,12 @@
 import numpy as np
+
 import tensorflow as tf
 from sklearn.utils import shuffle
 
 
 def compute_hashes(to_compute):
     """
+    Compute hash of given input. Used while avoiding duplicates in training and test sets.
     """
     hasharr = []
     for arr in to_compute:
@@ -15,12 +17,14 @@ def compute_hashes(to_compute):
 
 def get_tfdataset(features, labels):
     """
+    Create Tensorflow dataset from features and labels.
     """
     return tf.data.Dataset.from_tensor_slices((features, labels))
 
 
 class attack_data:
     """
+    Attack data class to perform operations on dataset.
     """
 
     def __init__(self, dataset_path, member_dataset_path, batch_size,
@@ -33,7 +37,8 @@ class attack_data:
         self.train_data = np.load(member_dataset_path)
         self.training_size = len(self.train_data)
 
-        self.attack_size = int(attack_percentage / float(100) * self.training_size)
+        self.attack_size = int(attack_percentage /
+                               float(100) * self.training_size)
 
         # Specifically for image datasets
         self.input_shape = input_shape
@@ -51,6 +56,7 @@ class attack_data:
 
     def _extract(self, filepath):
         """
+        Extracts dataset from filepath
         """
         with open(filepath, "r") as f:
             dataset = f.readlines()
@@ -73,8 +79,10 @@ class attack_data:
 
         if self.input_shape:
             if len(self.input_shape) == 3:
-                reshape_input = (len(features),) + (self.input_shape[2], self.input_shape[0], self.input_shape[1])
-                features = np.transpose(np.reshape(features, reshape_input), (0, 2, 3, 1))
+                reshape_input = (
+                    len(features),) + (self.input_shape[2], self.input_shape[0], self.input_shape[1])
+                features = np.transpose(np.reshape(
+                    features, reshape_input), (0, 2, 3, 1))
             else:
                 reshape_input = (len(features),) + self.input_shape
                 features = np.reshape(features, reshape_input)
@@ -83,6 +91,7 @@ class attack_data:
 
     def compute_moments(self, f):
         """
+        Computes means and standard deviation for 3 dimensional input for normalization.
         """
         self.means = []
         self.stddevs = []
@@ -96,15 +105,16 @@ class attack_data:
 
     def normalize(self, f):
         """
+        Normalizes data using means and stddevs
         """
         normalized = (f/255 - self.means) / self.stddevs
         return normalized
 
     def load_train(self):
         """
+        Loads, normalizes and batches training data.
         Returns a tf.data.Dataset object for training
         """
-        tsize = self.training_size
         asize = self.attack_size
         member_train = self.train_data[:asize]
         self.nonmember_train = []
@@ -138,6 +148,7 @@ class attack_data:
 
     def load_vis(self, batch_size=256):
         """
+        Loads, normalizes and batches data for visualization.
         Returns a tf.data.Dataset object for visualization testing
         """
         member_train = self.train_data
@@ -175,15 +186,15 @@ class attack_data:
 
         return mtrain, nmtrain, nm_features, nm_labels
 
-
     def load_test(self):
         """
+        Loads, normalizes and batches data for testing.
         Returns a tf.data.Dataset object for testing
         """
         tsize = self.training_size
         asize = self.attack_size
 
-        member_test = self.train_data[asize:] 
+        member_test = self.train_data[asize:]
         nonmember_test = []
 
         nmtrainhashes = compute_hashes(self.nonmember_train)
@@ -211,4 +222,3 @@ class attack_data:
         nmtest = nmtest.batch(self.batch_size)
 
         return mtest, nmtest
-
