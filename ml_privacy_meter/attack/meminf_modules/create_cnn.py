@@ -1,10 +1,11 @@
 import tensorflow as tf
+
 keraslayers = tf.compat.v1.keras.layers
 
 
 def cnn_for_fcn_gradients(input_shape):
     """
-    Creates a cnn submodule 
+    Creates a CNN submodule for Dense layer gradients.
     """
     # Input container
     dim1 = int(input_shape[0])
@@ -54,7 +55,7 @@ def cnn_for_fcn_gradients(input_shape):
 
 def cnn_for_cnn_layeroutputs(input_shape):
     """
-    Creates a cnn submodule 
+    Creates a CNN submodule for Conv Layer outputs
     """
     # Input container
     dim2 = int(input_shape[1])
@@ -110,7 +111,7 @@ def cnn_for_cnn_layeroutputs(input_shape):
 
 def cnn_for_cnn_gradients(input_shape):
     """
-    Creates a cnn submodule 
+    Creates a CNN submodule for Conv layer gradients
     """
     dim1 = int(input_shape[3])
     dim2 = int(input_shape[0])

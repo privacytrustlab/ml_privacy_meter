@@ -1,10 +1,12 @@
 import tensorflow as tf
+
 keraslayers = tf.compat.v1.keras.layers
 
 
 def create_encoder(encoder_inputs):
     """
-    Create encoder model
+    Create encoder model for membership inference attack.
+    Individual attack input components are concatenated and passed to encoder.
     """
     initializer = tf.compat.v1.keras.initializers.random_normal(0.0, 0.01)
     appended = keraslayers.concatenate(encoder_inputs, axis=1)

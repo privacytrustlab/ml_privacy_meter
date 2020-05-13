@@ -1,8 +1,7 @@
+import ml_privacy_meter
 import tensorflow as tf
 import tensorflow.compat.v1.keras.layers as keraslayers
 from tensorflow.compat.v1.train import Saver
-
-import ml_privacy_meter
 
 
 # Model to train attack model on. Should be same as the one trained.

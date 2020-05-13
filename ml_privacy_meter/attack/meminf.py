@@ -22,10 +22,10 @@ from ml_privacy_meter.visualization.visualize import compare_models
 from scipy.ndimage.filters import gaussian_filter1d
 from sklearn.metrics import accuracy_score, auc, roc_curve
 
-from .meminf_modules.autoencoder import create_encoder
+from .meminf_modules.encoder import create_encoder
 from .meminf_modules.create_cnn import (cnn_for_cnn_gradients,
-                                  cnn_for_cnn_layeroutputs,
-                                  cnn_for_fcn_gradients)
+                                        cnn_for_cnn_layeroutputs,
+                                        cnn_for_fcn_gradients)
 from .meminf_modules.create_fcn import fcn_module
 
 gpus = tf.config.experimental.list_physical_devices('GPU')
@@ -36,6 +36,8 @@ if gpus:
     except RuntimeError as e:
         print(e)
 
+
+# Sets soft placement below for GPU memory issues
 tf.config.set_soft_device_placement(True)
 
 ioldinit = tf.compat.v1.Session.__init__
@@ -51,6 +53,8 @@ tf.compat.v1.Session.__init__ = myinit
 
 # To decide what attack component (FCN or CNN) to
 # use on the basis of the layer name.
+# CNN_COMPONENTS_LIST are the layers requiring each input in 3 dimensions.
+# GRAD_COMPONENTS_LIST are the layers which have trainable components for computing gradients
 CNN_COMPONENT_LIST = ['Conv', 'MaxPool']
 GRAD_LAYERS_LIST = ['Conv', 'Dense']
 
@@ -140,11 +144,12 @@ class initialize(object):
         self.output_size = int(target_train_model.output.shape[1])
         self.ohencoding = self.attack_utils.createOHE(self.output_size)
         self.model_name = model_name
+
         # Create input containers for attack & encoder model.
         self.create_input_containers()
         layers = target_train_model.layers
 
-        # sanity checks
+        # basic sanity checks
         sanity_check(layers, layers_to_exploit)
         sanity_check(layers, gradients_to_exploit)
 
@@ -186,8 +191,10 @@ class initialize(object):
 
     def create_layer_components(self, layers):
         """
+        Creates CNN or FCN components for layers to exploit
         """
         for l in self.layers_to_exploit:
+            # For each layer to exploit, module created and added to self.attackinputs and self.encoderinputs
             layer = layers[l-1]
             input_shape = layer.output_shape[1]
             requires_cnn = map(lambda i: i in layer.__class__.__name__,
@@ -201,6 +208,7 @@ class initialize(object):
 
     def create_label_component(self, output_size):
         """
+        Creates component if OHE label is to be exploited
         """
         module = fcn_module(output_size)
         self.attackinputs.append(module.input)
@@ -208,6 +216,7 @@ class initialize(object):
 
     def create_loss_component(self):
         """
+        Creates component if loss value is to be exploited
         """
         module = fcn_module(1, 100)
         self.attackinputs.append(module.input)
@@ -215,6 +224,7 @@ class initialize(object):
 
     def create_gradient_components(self, model, layers):
         """
+        Creates CNN/FCN component for gradient values of layers of gradients to exploit
         """
         grad_layers = []
         for layer in layers:
@@ -222,6 +232,7 @@ class initialize(object):
                 grad_layers.append(layer)
         variables = model.variables
         for layerindex in self.gradients_to_exploit:
+            # For each gradient to exploit, module created and added to self.attackinputs and self.encoderinputs
             layer = grad_layers[layerindex-1]
             shape = self.attack_utils.get_gradshape(variables, layerindex)
             requires_cnn = map(lambda i: i in layer.__class__.__name__,
@@ -276,6 +287,7 @@ class initialize(object):
         for l in self.layers_to_exploit:
             x = model.input
             y = layers[l-1].output
+            # Model created to get output of specified layer
             new_model = tf.compat.v1.keras.Model(x, y)
             predicted = new_model(features)
             self.inputArray.append(predicted)
@@ -299,6 +311,7 @@ class initialize(object):
 
     def compute_gradients(self, model, features, labels):
         """
+        Computes gradients given the features and labels using the loss
         """
         split_features = self.attack_utils.split(features)
         split_labels = self.attack_utils.split(labels)
@@ -309,18 +322,19 @@ class initialize(object):
                 loss = CrossEntropyLoss(logits, label)
             targetvars = model.variables
             grads = tape.gradient(loss, targetvars)
+            # Add gradient wrt crossentropy loss to gradient_arr
             gradient_arr.append(grads)
 
         return gradient_arr
 
-    # Gradient computation for CNNs and FCNs differently.
     def get_gradients(self, model, features, labels):
         """
-        Retrieves the gradients for each example
+        Retrieves the gradients for each example.
         """
         gradient_arr = self.compute_gradients(model, features, labels)
         batch_gradients = []
         for grads in gradient_arr:
+            # gradient_arr is a list of size of number of layers having trainable parameters
             gradients_per_example = []
             for g in self.gradients_to_exploit:
                 g = (g-1)*2
@@ -330,7 +344,7 @@ class initialize(object):
                 gradients_per_example.append(toappend.numpy())
             batch_gradients.append(gradients_per_example)
 
-        # Adding the gradient matrices
+        # Adding the gradient matrices fo batches
         batch_gradients = np.asarray(batch_gradients)
         splitted = np.hsplit(batch_gradients, batch_gradients.shape[1])
         for s in splitted:
@@ -357,6 +371,7 @@ class initialize(object):
         """
         # container to extract and collect inputs from target model
         self.inputArray = []
+
         # Getting the intermediate layer computations
         if self.layers_to_exploit and len(self.layers_to_exploit):
             self.get_layer_outputs(model, features)
@@ -375,6 +390,7 @@ class initialize(object):
         # Getting the gradients
         if self.gradients_to_exploit and len(self.gradients_to_exploit):
             self.get_gradients(model, features, labels)
+
         attack_outputs = self.attackmodel(self.inputArray)
         return attack_outputs
 
@@ -432,7 +448,6 @@ class initialize(object):
                 zipped = zip(mtrainset, nmtrainset)
                 for((mfeatures, mlabels), (nmfeatures, nmlabels)) in zipped:
                     with tf.GradientTape() as tape:
-
                         tape.reset()
                         # Getting outputs of forward pass of attack model
                         moutputs = self.forward_pass(model, mfeatures, mlabels)
@@ -492,6 +507,9 @@ class initialize(object):
                          100 * best_accuracy)
 
     def test_attack(self):
+        '''
+        Test the attack model on dataset and save plots for visualization.
+        '''
         mtrainset, nmtrainset, _, _ = self.train_datahandler.load_vis(2048)
         model = self.target_train_model
         mpreds = []
@@ -546,6 +564,7 @@ class initialize(object):
         unique_mem_lab = sorted(np.unique(mlab))
         unique_nmem_lab = sorted(np.unique(nmlab))
 
+        # Creates a histogram for Membership Probability
         fig = plt.figure(1)
         plt.hist(np.array(mpreds).flatten(), color='xkcd:blue', alpha=0.7, bins=20,
                  histtype='bar', range=(0, 1), weights=(np.ones_like(mpreds) / len(mpreds)), label='Training Data (Members)')
@@ -558,6 +577,7 @@ class initialize(object):
         plt.savefig('logs/plots/privacy_risk.png')
         plt.close()
 
+        # Creates ROC curve for membership inference attack
         fpr, tpr, _ = roc_curve(target, probs)
         roc_auc = auc(fpr, tpr)
         plt.title('ROC of Membership Inference Attack')
@@ -571,8 +591,7 @@ class initialize(object):
         plt.savefig('logs/plots/roc.png')
         plt.close()
 
-        #############
-
+        # Creates plot for gradient norm per label
         xs = []
         ys = []
         for lab in unique_mem_lab:
@@ -602,6 +621,7 @@ class initialize(object):
         plt.savefig('logs/plots/gradient_norm.png')
         plt.close()
 
+        # Collect data and creates histogram for each label separately
         for lab in range(len(unique_mem_lab)):
             labs = []
             for l, p in zip(mlab, mpreds):
