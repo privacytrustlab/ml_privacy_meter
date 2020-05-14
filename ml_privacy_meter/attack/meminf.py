@@ -61,11 +61,11 @@ GRAD_LAYERS_LIST = ['Conv', 'Dense']
 
 class initialize(object):
     """
-    This attack was originally proposed by Nasr et al. It exploits 
-    intermediate layer activations, loss value of target model on 
-    data points, one-hot encoding of true labels and gradients of
-    intermediate layers to train attack model to infer training 
-    data membership. 
+    This attack was originally proposed by Nasr et al. It exploits
+    one-hot encoding of true labels, loss value, intermediate layer 
+    activations and gradients of intermediate layers of the target model 
+    on data points, for training the attack model to infer membership 
+    in training data.
 
     Paper link: https://arxiv.org/abs/1812.00910
 
@@ -73,34 +73,45 @@ class initialize(object):
     ------
     target_train_model: The target (classification) model that'll 
                         be used to train the attack model.
-    target_attack_model: The target (classification) model that'll 
-                        be used to evaluate the trained attack model,
-                        basically the trained attack model will be used 
-                        to attack this model and quantify the membership
-                        privacy leakage of this model.   
+
+    target_attack_model: The target (classification) model that we are
+                         interested in quantifying the privacy risk of. 
+                         The trained attack model will be used 
+                         for attacking this model to quantify its membership
+                         privacy leakage. 
+
     train_datahandler: an instance of `ml_privacy_meter.data.attack_data.load`,
-                       used to retrieve dataset for training the attack 
-                       model. The member set of this training set is
-                       a subset of the trained classification model's
+                       that is used to retrieve dataset for training the 
+                       attack model. The member set of this training set is
+                       a subset of the classification model's
                        training set. Check Main README on how to 
-                       load dataset for attack.
+                       load dataset for the attack.
+
     attack_datahandler: an instance of `ml_privacy_meter.data.attack_data.load`,
-                       used to retrieve dataset for evaluating the attack 
-                       model. The member set of this test/evaluation set is
-                       a subset of the target attack model's train set minus
-                       the training members of the target_train_model.
-    optimizer: The optimizer op for attack model. default op is "adam".
-    layers_to_exploit: a list of integers specifying the indices 
-                       of layers of which the activations will be 
-                       exploited by the attack model. If there is a single element
-                       present and if it is equal to the last layer, the nature of 
-                       the attack becomes "blackbox".
+                        used to retrieve dataset for evaluating the attack 
+                        model. The member set of this test/evaluation set is
+                        a subset of the target attack model's train set minus
+                        the training members of the target_train_model.
+
+    optimizer: The optimizer op for training the attack model.
+               Default op is "adam".
+
+    layers_to_exploit: a list of integers specifying the indices of layers,
+                       whose activations will be exploited by the attack model.
+                       If the list has only a single element and 
+                       it is equal to the index of last layer,
+                       the attack can be considered as a "blackbox" attack.
+
     gradients_to_exploit: a list of integers specifying the indices 
-                       of layers of which the gradients will be 
-                       exploited by the attack model. 
+                          of layers whose gradients will be 
+                          exploited by the attack model. 
+
     exploit_loss: boolean; whether to exploit loss value of target model or not.
+   
     exploit_label: boolean; whether to exploit one-hot encoded labels or not.                 
-    learning_rate: learning rate for the attack model 
+   
+    learning_rate: learning rate for training the attack model 
+    
     epochs: Number of epochs to train the attack model 
 
     Examples:
@@ -182,7 +193,7 @@ class initialize(object):
         """
         Creates arrays for inputs to the attack and 
         encoder model. 
-        (NOTE: Though the encoder is part of the attack model, 
+        (NOTE: Although the encoder is a part of the attack model, 
         two sets of containers are required for connecting 
         the TensorFlow graph).
         """
