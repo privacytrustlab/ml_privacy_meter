@@ -137,6 +137,4 @@ The membership probability predictions for training set member data and populati
 
 1. R. Shokri, M. Stronati, C. Song, and V. Shmatikov. [Membership Inference Attacks against Machine Learning Models](https://www.comp.nus.edu.sg/~reza/files/Shokri-SP2017.pdf) in IEEE Symposium on Security and Privacy, 2017.
 2. M. Nasr, R. Shokri, and A. Houmansadr. [Comprehensive Privacy Analysis of Deep Learning: Stand-alone and Federated Learning under Passive and Active White-box Inference Attacks](https://www.comp.nus.edu.sg/~reza/files/Shokri-SP2019.pdf) in IEEE Symposiumon Security and Privacy, 2019.
-3.  Moritz Hardt, Benjamin Recht, and Yoram Singer. Train faster, generalize
-better: Stability of stochastic gradient descent, [arXiv preprint:arXiv:1509.01240 (2015)].
 
