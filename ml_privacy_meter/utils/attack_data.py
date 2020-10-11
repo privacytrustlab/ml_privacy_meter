@@ -1,5 +1,4 @@
 import numpy as np
-
 import tensorflow as tf
 from sklearn.utils import shuffle
 
@@ -20,6 +19,31 @@ def get_tfdataset(features, labels):
     Create Tensorflow dataset from features and labels.
     """
     return tf.data.Dataset.from_tensor_slices((features, labels))
+
+
+class attack_data_seq2seq:
+    def __init__(self, in_path, in_target_path, out_path, out_target_path, max_length_inp, max_length_targ, attack_percentage=0.5, batch_size=32) -> None:
+        in_input = np.load(in_path)
+        out_input = np.load(out_path)
+        in_target = np.load(in_target_path)
+        out_target = np.load(out_target_path)
+
+        attack_size = int(min(len(in_input), len(out_input))
+                          * attack_percentage)
+
+        self.in_input_train = in_input[:attack_size]
+        self.out_input_train = out_input[:attack_size]
+        self.in_target_train = in_target[:attack_size]
+        self.out_target_train = out_target[:attack_size]
+
+        self.in_input_test = in_input[attack_size:]
+        self.out_input_test = out_input[attack_size:]
+        self.in_target_test = in_target[attack_size:]
+        self.out_target_test = out_target[attack_size:]
+
+        self.batch_size = batch_size
+        self.max_length_inp = max_length_inp
+        self.max_length_targ = max_length_targ
 
 
 class attack_data:

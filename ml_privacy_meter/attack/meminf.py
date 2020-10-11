@@ -2,31 +2,26 @@
 The Attack class.
 '''
 import datetime
-import itertools
 import json
 import os
-import time
-
-import numpy as np
 
 import matplotlib
-import matplotlib.gridspec as gridspec
 import matplotlib.pyplot as plt
+import numpy as np
 import tensorflow as tf
-from matplotlib.backends.backend_pdf import PdfPages
+from sklearn.metrics import accuracy_score, auc, roc_curve
+
 from ml_privacy_meter.utils.attack_utils import attack_utils, sanity_check
 from ml_privacy_meter.utils.logger import get_logger
 from ml_privacy_meter.utils.losses import CrossEntropyLoss, mse
 from ml_privacy_meter.utils.optimizers import optimizer_op
 from ml_privacy_meter.visualization.visualize import compare_models
-from scipy.ndimage.filters import gaussian_filter1d
-from sklearn.metrics import accuracy_score, auc, roc_curve
 
-from .meminf_modules.encoder import create_encoder
 from .meminf_modules.create_cnn import (cnn_for_cnn_gradients,
                                         cnn_for_cnn_layeroutputs,
                                         cnn_for_fcn_gradients)
 from .meminf_modules.create_fcn import fcn_module
+from .meminf_modules.encoder import create_encoder
 
 gpus = tf.config.experimental.list_physical_devices('GPU')
 if gpus:
@@ -59,7 +54,7 @@ CNN_COMPONENT_LIST = ['Conv', 'MaxPool']
 GRAD_LAYERS_LIST = ['Conv', 'Dense']
 
 
-class initialize(object):
+class meminf(object):
     """
     This attack was originally proposed by Nasr et al. It exploits
     one-hot encoding of true labels, loss value, intermediate layer 
@@ -107,11 +102,11 @@ class initialize(object):
                           exploited by the attack model. 
 
     exploit_loss: boolean; whether to exploit loss value of target model or not.
-   
+
     exploit_label: boolean; whether to exploit one-hot encoded labels or not.                 
-   
+
     learning_rate: learning rate for training the attack model 
-    
+
     epochs: Number of epochs to train the attack model 
 
     Examples:

@@ -1,6 +1,5 @@
 # -*- coding: future_fstrings -*-
-
-import tensorflow as tf
+# Use this to train the target model. Requires sated model to be saved in datasets/ folder
 
 import io
 import os
@@ -12,6 +11,7 @@ import unicodedata
 import numpy as np
 import tensorflow as tf
 
+from seq2seq_model import Decoder, Encoder
 
 path_to_train_en_file = "./datasets/sated-release-0.9.0/en-fr/train.en"
 path_to_train_fr_file = "./datasets/sated-release-0.9.0/en-fr/train.fr"
@@ -20,74 +20,10 @@ path_to_valid_fr_file = "./datasets/sated-release-0.9.0/en-fr/dev.fr"
 path_to_test_en_file = "./datasets/sated-release-0.9.0/en-fr/test.en"
 path_to_test_fr_file = "./datasets/sated-release-0.9.0/en-fr/test.fr"
 
-EPOCHS = 20
+EPOCHS = 5
 TO_TRAIN = True
 BATCH_SIZE = 128
-ATTACKER_KNOWLEDGE_RATIO = 0.5
 
-embedding_dim = 256
-UNITS = 512
-ATTENTION_UNITS = 4
-
-
-class Decoder(tf.keras.Model):
-    def __init__(self, vocab_size, batch_sz):
-        super(Decoder, self).__init__()
-        self.batch_sz = batch_sz
-        self.dec_units = UNITS
-        self.embedding = tf.keras.layers.Embedding(vocab_size, embedding_dim)
-        self.gru = tf.keras.layers.GRU(self.dec_units,
-                                       return_sequences=True,
-                                       return_state=True,
-                                       recurrent_initializer='glorot_uniform')
-        self.fc = tf.keras.layers.Dense(vocab_size)
-        self.attention = BahdanauAttention(self.dec_units)
-
-    def call(self, x, hidden, enc_output):
-        context_vector, attention_weights = self.attention(hidden, enc_output)
-        x = self.embedding(x)
-        x = tf.concat([tf.expand_dims(context_vector, 1), x], axis=-1)
-        output, state = self.gru(x)
-        output = tf.reshape(output, (-1, output.shape[2]))
-        x = self.fc(output)
-        return x, state, attention_weights
-
-
-class Encoder(tf.keras.Model):
-    def __init__(self, vocab_size, batch_sz):
-        super(Encoder, self).__init__()
-        self.batch_sz = batch_sz
-        self.enc_units = UNITS
-        self.embedding = tf.keras.layers.Embedding(vocab_size, embedding_dim)
-        self.gru = tf.keras.layers.GRU(self.enc_units,
-                                       return_sequences=True,
-                                       return_state=True,
-                                       recurrent_initializer='glorot_uniform')
-
-    def call(self, x, hidden):
-        x = self.embedding(x)
-        output, state = self.gru(x, initial_state=hidden)
-        return output, state
-
-    def initialize_hidden_state(self):
-        return tf.zeros((self.batch_sz, self.enc_units))
-
-
-class BahdanauAttention(tf.keras.layers.Layer):
-    def __init__(self, units=ATTENTION_UNITS):
-        super(BahdanauAttention, self).__init__()
-        self.W1 = tf.keras.layers.Dense(units)
-        self.W2 = tf.keras.layers.Dense(units)
-        self.V = tf.keras.layers.Dense(1)
-
-    def call(self, query, values):
-        query_with_time_axis = tf.expand_dims(query, 1)
-        score = self.V(tf.nn.tanh(
-            self.W1(query_with_time_axis) + self.W2(values)))
-        attention_weights = tf.nn.softmax(score, axis=1)
-        context_vector = attention_weights * values
-        context_vector = tf.reduce_sum(context_vector, axis=1)
-        return context_vector, attention_weights
 
 class Train:
     def __init__(self, encoder, decoder, optimizer, loss_function, batch_size, targ_lang):
@@ -127,6 +63,7 @@ class Train:
 
         return batch_loss
 
+
 def unicode_to_ascii(s):
     return ''.join(c for c in unicodedata.normalize('NFD', s)
                    if unicodedata.category(c) != 'Mn')
@@ -143,17 +80,14 @@ def preprocess_sated_sentence(w):
 
 
 def create_sated_dataset(path_lang1, path_lang2, num_examples):
-    lines_input_lang = io.open(path_lang1, encoding='UTF-8').read().strip().split('\n')
-    lines_target_lang = io.open(path_lang2, encoding='UTF-8').read().strip().split('\n')
+    lines_input_lang = io.open(
+        path_lang1, encoding='UTF-8').read().strip().split('\n')
+    lines_target_lang = io.open(
+        path_lang2, encoding='UTF-8').read().strip().split('\n')
 
     word_pairs = [[preprocess_sated_sentence(lang1_line), preprocess_sated_sentence(lang2_line)]
                   for lang1_line, lang2_line in zip(lines_input_lang[:num_examples], lines_target_lang[:num_examples])]
     return zip(*word_pairs)
-
-
-# en_train, fr_train = create_sated_dataset(path_to_train_en_file, path_to_train_fr_file, 10)
-# en_valid, fr_valid = create_sated_dataset(path_to_valid_en_file, path_to_valid_fr_file, 10)
-# en_test, fr_test = create_sated_dataset(path_to_test_en_file, path_to_test_fr_file, 10)
 
 
 def tokenize(lang):
@@ -170,8 +104,10 @@ def tokenize(lang):
 
 
 def load_sated_dataset(path_inp_train, path_targ_train, path_inp_test, path_targ_test, num_train=None, num_test=None):
-    inp_lang_train, targ_lang_train = create_sated_dataset(path_inp_train, path_targ_train, num_train)
-    inp_lang_test, targ_lang_test = create_sated_dataset(path_inp_test, path_targ_test, num_test)
+    inp_lang_train, targ_lang_train = create_sated_dataset(
+        path_inp_train, path_targ_train, num_train)
+    inp_lang_test, targ_lang_test = create_sated_dataset(
+        path_inp_test, path_targ_test, num_test)
 
     inp_lang = inp_lang_train + inp_lang_test
     targ_lang = targ_lang_train + targ_lang_test
@@ -196,7 +132,8 @@ with open('sated_model/inp_lang.pickle', 'wb') as handle, open('sated_model/targ
 
 max_length_targ, max_length_inp = target_tensor.shape[1], input_tensor.shape[1]
 
-print(f"max_length_targ = {max_length_targ}, max_length_inp = {max_length_inp}")
+print("max_length_targ = {}, max_length_inp = {}".format(
+    (max_length_targ), (max_length_inp)))
 
 input_tensor_train = input_tensor[:num_train]
 input_tensor_val = input_tensor[num_train:]
@@ -263,23 +200,8 @@ if TO_TRAIN:  # If train
                                             total_loss / steps_per_epoch))
         print('Time taken for 1 epoch {} sec\n'.format(time.time() - start))
 
-minimum = min(len(input_tensor_train), len(input_tensor_val))
 
-in_train = input_tensor_train[: int(ATTACKER_KNOWLEDGE_RATIO * minimum)]
-in_train_label = target_tensor_train[: int(ATTACKER_KNOWLEDGE_RATIO * minimum)]
-out_train = input_tensor_val[: int(ATTACKER_KNOWLEDGE_RATIO * minimum)]
-out_train_label = target_tensor_val[: int(ATTACKER_KNOWLEDGE_RATIO * minimum)]
-in_test = input_tensor_train[int(ATTACKER_KNOWLEDGE_RATIO * minimum):]
-in_test_label = target_tensor_train[int(ATTACKER_KNOWLEDGE_RATIO * minimum):]
-out_test = input_tensor_val[int(ATTACKER_KNOWLEDGE_RATIO * minimum):]
-out_test_label = target_tensor_val[int(ATTACKER_KNOWLEDGE_RATIO * minimum):]
-
-np.save('sated_model/in_train.npy', in_train)
-np.save('sated_model/out_train.npy', out_train)
-np.save('sated_model/in_test.npy', in_test)
-np.save('sated_model/out_test.npy', out_test)
-np.save('sated_model/in_train_label.npy', in_train_label)
-np.save('sated_model/out_train_label.npy', out_train_label)
-np.save('sated_model/in_test_label.npy', in_test_label)
-np.save('sated_model/out_test_label.npy', out_test_label)
-
+np.save('sated_model/in_input.npy', input_tensor_train)
+np.save('sated_model/out_input.npy', input_tensor_val)
+np.save('sated_model/in_target.npy', target_tensor_train)
+np.save('sated_model/out_target.npy', target_tensor_val)

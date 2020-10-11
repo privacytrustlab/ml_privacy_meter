@@ -77,7 +77,7 @@ datahandlerA = ml_privacy_meter.utils.attack_data.attack_data(dataset_path=datas
                                                               batch_size=64,
                                                               attack_percentage=50, input_shape=(input_features, ))
 
-attackobj = ml_privacy_meter.attack.meminf.initialize(
+attackobj = ml_privacy_meter.attack.meminf.meminf(
     target_train_model=cmodelA,
     target_attack_model=cmodelA,
     learning_rate=0.0001, optimizer='adam',

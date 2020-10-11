@@ -65,7 +65,7 @@ Important arguments among them:
 
 To attack:
 ```
-attackobj = ml_privacy_meter.attacks.meminf.initialize(
+attackobj = ml_privacy_meter.attacks.meminf.meminf(
                  target_train_model=cmodel, 
                  target_attack_model=cmodel, 
                  train_datahandler=datahandler, 

@@ -40,7 +40,7 @@ datahandlerA = ml_privacy_meter.utils.attack_data.attack_data(dataset_path=datas
 datahandlerA.means, datahandlerA.stddevs = [
     0.4914, 0.4822, 0.4465], [0.2023, 0.1994, 0.2010]
 
-attackobj = ml_privacy_meter.attack.meminf.initialize(
+attackobj = ml_privacy_meter.attack.meminf.meminf(
     target_train_model=cmodelA,
     target_attack_model=cmodelA,
     train_datahandler=datahandlerA,

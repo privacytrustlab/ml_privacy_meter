@@ -8,3 +8,4 @@ alexnet_pretrained/
 datasets/
 images/
 sated_model/
+**.png
