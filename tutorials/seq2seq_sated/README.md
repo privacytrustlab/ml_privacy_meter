@@ -60,4 +60,5 @@ Note: Make sure the `checkpoints` directory is created before running the attack
 
 - SATED Dataset: https://www.cs.cmu.edu/~pmichel1/sated/
 - Extreme Adaptation for Personalized Neural Machine Translation (P. Michel, G. Neubig): https://arxiv.org/pdf/1805.01817.pdf
-- Auditing Data Provenance in Text-Generation Models (C. Song, V. Shmatikov): http://www.cs.cornell.edu/~shmat/shmat_kdd19.pdf
+- Auditing Data Provenance in Text-Generation Models (C. Song, V. Shmatikov): http://www.cs.cornell.edu/~shmat/shmat_kdd19.pdf 
+- Code for Rank Generation: https://github.com/csong27/auditing-text-generation
