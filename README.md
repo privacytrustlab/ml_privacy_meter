@@ -8,8 +8,6 @@ ML Privacy Meter is a Python library (`ml_privacy_meter`) that enables quantifyi
 
 ![ML Privacy Meter Diagram](images/ml-privacy-meter.png)
 
-The tool is designed and developed at NUS Data Privacy and Trustworthy Machine Learning Lab, by (alphabetical order): Mihir Harshavardhan Khandekar, Milad Nasr, Shadab Shaikh, and Reza Shokri.
-
 # Privacy Risks of Machine Learning Models
 
 Machine learning models encode information about the datasets on which they are trained. The encoded information is supposed to reflect the general patterns underlying the population data. However, it is commonly observed that these models memorize specific information about some members of their training data. This is reflected in the predictions of a model, which exhibit a different behavior on training data versus test data, and in the model's parameters which store statistically correlated information about specific data points in their training set.  Models with high generalization gap as well as the models with high capacity (such as deep neural networks) are more susceptible to memorizing data points from their training set. 
@@ -133,8 +131,18 @@ The user can also use privacy risk histograms for each output class.
 
 The membership probability predictions for training set member data and population set non-member data by the model are also saved as numpy files in the `logs` folder as `member_probs.npy` and `nonmember_probs.npy`. They correspond to the features and labels in `m_features.npy`, `m_labels.npy` and `nm_features.npy` and `nm_labels.npy` respectively.
 
-## References:
+## References
 
 1. R. Shokri, M. Stronati, C. Song, and V. Shmatikov. [Membership Inference Attacks against Machine Learning Models](https://www.comp.nus.edu.sg/~reza/files/Shokri-SP2017.pdf) in IEEE Symposium on Security and Privacy, 2017.
 2. M. Nasr, R. Shokri, and A. Houmansadr. [Comprehensive Privacy Analysis of Deep Learning: Stand-alone and Federated Learning under Passive and Active White-box Inference Attacks](https://www.comp.nus.edu.sg/~reza/files/Shokri-SP2019.pdf) in IEEE Symposiumon Security and Privacy, 2019.
 
+## Contributors
+
+The tool is designed and developed at NUS Data Privacy and Trustworthy Machine Learning Lab. Current developers are: Rishav Chourasia, Aadyaa Maddi, Mihir Harshavardhan Khandekar, and Reza Shokri. Earlier contributors were Milad Nasr, Shadab Shaikh.
+
+<p float="left">
+<img src="https://www.comp.nus.edu.sg/~reza/img/rishav.jpg" width="100"/>
+<img src="https://www.comp.nus.edu.sg/~reza/img/aadyaa.jpg" width="100"/>
+<img src="https://www.comp.nus.edu.sg/~reza/img/mihir.jpg" width="100"/>
+<img src="https://www.comp.nus.edu.sg/~reza/img/reza.jpg" width="100"/>
+</p>
