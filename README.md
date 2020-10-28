@@ -138,11 +138,12 @@ The membership probability predictions for training set member data and populati
 
 ## Contributors
 
-The tool is designed and developed at NUS Data Privacy and Trustworthy Machine Learning Lab. Current developers are: Rishav Chourasia, Aadyaa Maddi, Mihir Harshavardhan Khandekar, and Reza Shokri. Earlier contributors were Milad Nasr, Shadab Shaikh.
+The tool is designed and developed at NUS Data Privacy and Trustworthy Machine Learning Lab. Current contributers are: Rishav Chourasia, Aadyaa Maddi, Mihir Harshavardhan Khandekar, Sasi Kumar Murakonda, and Reza Shokri. Earlier contributors were Milad Nasr, Shadab Shaikh.
 
 <p float="left">
 <img src="https://www.comp.nus.edu.sg/~reza/img/rishav.jpg" width="100"/>
 <img src="https://www.comp.nus.edu.sg/~reza/img/aadyaa.jpg" width="100"/>
 <img src="https://www.comp.nus.edu.sg/~reza/img/mihir.jpg" width="100"/>
+<img src="https://www.comp.nus.edu.sg/~reza/img/sasi.jpg" width="100"/>
 <img src="https://www.comp.nus.edu.sg/~reza/img/reza.jpg" width="100"/>
 </p>
