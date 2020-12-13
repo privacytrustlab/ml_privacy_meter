@@ -78,6 +78,9 @@ class attack_data:
         # To avoid using any of training examples for testing
         self.train_hashes = compute_hashes(self.train_data)
 
+        # Initialize None means ands std devs
+        self.means, self.stddevs = None, None
+
     def _extract(self, filepath):
         """
         Extracts dataset from filepath
