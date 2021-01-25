@@ -54,7 +54,9 @@ class attack_data:
         # To avoid using any of training examples for testing
         self.train_hashes = compute_hashes(self.train_data)
 
-        self.means, self.stddevs = None, None
+        if self.normalization:
+            train_features, _ = self.generate(self.train_data)
+            self.compute_moments(train_features)
 
     def _extract(self, filepath):
         """
@@ -134,9 +136,6 @@ class attack_data:
         m_features, m_labels = self.generate(member_train)
         nm_features, nm_labels = self.generate(self.nonmember_train)
         if self.normalization:
-            train_features, _ = self.generate(self.train_data)
-            if not self.means and not self.stddevs:
-                self.compute_moments(train_features)
             m_features = self.normalize(m_features)
             nm_features = self.normalize(nm_features)
 
@@ -169,9 +168,6 @@ class attack_data:
         m_features, m_labels = self.generate(member_train)
         nm_features, nm_labels = self.generate(self.nonmember_train)
         if self.normalization:
-            train_features, _ = self.generate(self.train_data)
-            if not self.means and not self.stddevs:
-                self.compute_moments(train_features)
             m_features = self.normalize(m_features)
             nm_features = self.normalize(nm_features)
 
@@ -195,6 +191,19 @@ class attack_data:
         """
         tsize = self.training_size
         asize = self.attack_size
+        member_train = self.train_data[:asize]
+        self.nonmember_train = []
+
+        index = 0
+
+        while len(self.nonmember_train) != len(member_train) and index < len(self.dataset):
+            datapoint = self.dataset[index]
+            datapointhash = hash(bytes(datapoint))
+            if datapointhash not in self.train_hashes:
+                self.nonmember_train.append(datapoint)
+            index += 1
+        self.nonmember_train = np.vstack(self.nonmember_train)
+
 
         member_test = self.train_data[asize:]
         nonmember_test = []
