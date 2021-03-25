@@ -31,7 +31,7 @@ pylint==2.4.4
 pyparsing==2.4.6
 python-dateutil==2.8.1
 pytz==2019.3
-PyYAML==5.1.1
+PyYAML==5.4
 requests==2.22.0
 requests-oauthlib==1.3.0
 rsa==4.0
