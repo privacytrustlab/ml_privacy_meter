@@ -1,14 +1,30 @@
 import os
 from pathlib import Path
 
+import tensorflow as tf
+
 import numpy as np
 from sklearn.model_selection import StratifiedShuffleSplit
 from sklearn.metrics import accuracy_score, confusion_matrix, roc_auc_score
 
+MODEL_TYPE_OPENVINO = 'openvino'
+MODEL_TYPE_TENSORFLOW = 'tensorflow'
+MODEL_TYPE_PYTORCH = 'pytorch'
+
 
 # TODO: implement this based on type of model: tensorflow, openVINO, etc.
-def get_predictions(model, data):
-    return data
+def get_predictions(model_filepath, model_type, data):
+    predictions = []
+    if model_type == MODEL_TYPE_OPENVINO:
+        print("implementation in progress")
+    if model_type == MODEL_TYPE_TENSORFLOW:
+        model = tf.keras.models.load_model(model_filepath)
+        predictions = model(data)
+    elif model_type == MODEL_TYPE_PYTORCH:
+        print("implementation in progress")
+    else:
+        raise ValueError("Please specify one of the supported model types: `openvino`, `tensorflow`, or `pytorch`!")
+    return predictions
 
 
 def get_per_class_indices(x, y, num_data_in_class, seed):
@@ -45,20 +61,21 @@ class PopulationAttack:
     def __init__(self, exp_name, x_population, y_population,
                  x_target_train, y_target_train,
                  x_target_test, y_target_test,
-                 target_model, loss_fn,
-                 num_data_in_class, seed):
+                 target_model_filepath, target_model_type,
+                 loss_fn, num_data_in_class, seed):
         self.x_population = x_population
         self.y_population = y_population
         self.x_target_train = x_target_train
         self.y_target_train = y_target_train
         self.x_target_test = x_target_test
         self.y_target_test = y_target_test
-        self.target_model = target_model
+        self.target_model_filepath = target_model_filepath
+        self.target_model_type = target_model_type
         self.loss_fn = loss_fn
         self.num_data_in_class = num_data_in_class
         self.seed = seed
 
-        self.num_classes = self.y_population.shape[0]
+        self.num_classes = self.y_population.shape[1]
 
         # create results directory
         self.attack_results_dirpath = f'logs/population_attack_{exp_name}/'
@@ -73,11 +90,11 @@ class PopulationAttack:
 
         train_losses = self.loss_fn(
             y_true=self.y_target_train,
-            y_pred=get_predictions(self.target_model, self.x_target_train)
+            y_pred=get_predictions(self.target_model_filepath, self.target_model_type, self.x_target_train)
         )
         test_losses = self.loss_fn(
             y_true=self.y_target_test,
-            y_pred=get_predictions(self.target_model, self.x_target_test)
+            y_pred=get_predictions(self.target_model_filepath, self.target_model_type, self.x_target_test)
         )
 
         np.savez(f"{self.attack_results_dirpath}/target_model_losses",
@@ -101,7 +118,9 @@ class PopulationAttack:
         per_class_indices = get_per_class_indices(
             x=self.x_population, y=self.y_population,
             num_data_in_class=self.num_data_in_class,
-            seed=self.seed)
+            seed=self.seed
+        )
+        print(np.array(per_class_indices).shape)
 
         # load per class losses, compute them if they don't exist
         filepath = f"{self.attack_results_dirpath}/target_model_pop_losses_{self.num_data_in_class}.npz"
@@ -115,7 +134,7 @@ class PopulationAttack:
                 x_class, y_class = self.x_population[indices], self.y_population[indices]
                 losses = self.loss_fn(
                     y_true=y_class,
-                    y_pred=get_predictions(self.target_model, x_class)
+                    y_pred=get_predictions(self.target_model_filepath, self.target_model_type, x_class)
                 )
                 pop_losses.append(losses)
             np.savez(f"{self.attack_results_dirpath}/target_model_pop_losses_{self.num_data_in_class}",
