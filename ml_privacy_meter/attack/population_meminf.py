@@ -6,15 +6,15 @@ import tensorflow as tf
 from openvino.inference_engine import IECore
 
 import numpy as np
+import matplotlib.pyplot as plt
 from sklearn.model_selection import StratifiedShuffleSplit
-from sklearn.metrics import accuracy_score, confusion_matrix, roc_auc_score
+from sklearn.metrics import accuracy_score, auc, confusion_matrix, roc_auc_score
 
 MODEL_TYPE_OPENVINO = 'openvino'
 MODEL_TYPE_TENSORFLOW = 'tensorflow'
 MODEL_TYPE_PYTORCH = 'pytorch'
 
 
-# TODO: implement this based on type of model: tensorflow, openVINO, etc.
 def get_predictions(model_filepath, model_type, data):
     predictions = []
     if model_type == MODEL_TYPE_OPENVINO:
@@ -205,3 +205,41 @@ class PopulationAttack:
                 f"FPR: {fp / (fp + tn)}\n"
                 f"TN, FP, FN, TP = {tn, fp, fn, tp}"
             )
+
+    def visualize_attack(self, alphas):
+        alphas = sorted(alphas)
+
+        tpr_values = []
+        fpr_values = []
+
+        for alpha in alphas:
+            filepath = f'{self.attack_results_dirpath}/attack_results_{alpha}_{self.num_data_in_class}.npz'
+            with np.load(filepath, allow_pickle=True) as data:
+                tp = data['tp'][()]
+                fp = data['fp'][()]
+                tn = data['tn'][()]
+                fn = data['fn'][()]
+            tpr = tp / (tp + fn)
+            fpr = fp / (fp + tn)
+            tpr_values.append(tpr)
+            fpr_values.append(fpr)
+
+        tpr_values.insert(0, 0)
+        fpr_values.insert(0, 0)
+        tpr_values.append(1)
+        fpr_values.append(1)
+
+        auc_value = round(auc(x=fpr_values, y=tpr_values), 5)
+
+        fig, ax = plt.subplots()
+        ax.plot(fpr_values,
+                tpr_values,
+                linewidth=2.0,
+                color='b',
+                label=f'AUC = {auc_value}')
+        ax.set_xlabel("FPR")
+        ax.set_ylabel("TPR")
+        ax.set_ylim([0.0, 1.1])
+        ax.legend(loc='lower right')
+        plt.savefig(f'{self.attack_results_dirpath}/tpr_vs_fpr', dpi=250)
+        plt.close(fig)

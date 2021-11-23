@@ -99,8 +99,9 @@ if __name__ == '__main__':
     alphas = [0.1, 0.3, 0.5]
     population_attack_obj.run_attack(alphas=alphas)
 
+    population_attack_obj.visualize_attack(alphas=alphas)
+
     # Part 2: Train and attack an openvino model
-    
     # convert existing tensorflow model to an openvino model
     openvino_model_filepath = Path(f"{model_train_dirpath}/tutorial_tensorflow_cifar10/saved_model.xml")
     mo_command = f"""mo
@@ -135,5 +136,7 @@ if __name__ == '__main__':
 
     alphas = [0.1, 0.3, 0.5]
     population_attack_obj.run_attack(alphas=alphas)
+
+    population_attack_obj.visualize_attack(alphas=alphas)
 
 
