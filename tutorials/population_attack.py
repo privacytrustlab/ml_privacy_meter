@@ -1,8 +1,13 @@
 import os
+from pathlib import Path
+
 import numpy as np
+
 import tensorflow as tf
 from tensorflow.python.keras import Sequential
 from tensorflow.python.keras.layers import Dense, Conv2D, MaxPool2D, Flatten, Dropout
+
+from openvino.inference_engine import IECore
 
 import ml_privacy_meter
 
@@ -76,7 +81,7 @@ if __name__ == '__main__':
     # create population attack object
     exp_name = 'tutorial_tensorflow_cifar10'
     loss_fn = tf.keras.losses.CategoricalCrossentropy(from_logits=True, reduction=tf.keras.losses.Reduction.NONE)
-    num_data_in_class = 200
+    num_data_in_class = 400
     population_attack_obj = ml_privacy_meter.attack.population_meminf.PopulationAttack(
         exp_name=exp_name,
         x_population=x_train[num_datapoints:], y_population=y_train[num_datapoints:],
@@ -91,8 +96,44 @@ if __name__ == '__main__':
 
     population_attack_obj.prepare_attack()
 
-    alphas = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5]
+    alphas = [0.1, 0.3, 0.5]
     population_attack_obj.run_attack(alphas=alphas)
 
+    # Part 2: Train and attack an openvino model
+    
+    # convert existing tensorflow model to an openvino model
+    openvino_model_filepath = Path(f"{model_train_dirpath}/tutorial_tensorflow_cifar10/saved_model.xml")
+    mo_command = f"""mo
+                  --saved_model_dir "{tensorflow_model_filepath}"
+                  --disable_nhwc_to_nchw
+                  --input_model_is_text
+                  --input_shape "[64, 32, 32, 3]"
+                  --data_type FP16
+                  --output_dir "{openvino_model_filepath.parent}"
+                  """
+    mo_command = " ".join(mo_command.split())
+    if not openvino_model_filepath.exists():
+        print("Converting tensorflow model to openvino IR model (this may take a few minutes)...")
+        os.system(mo_command)
+    else:
+        print(f"openvino IR model already exists at {openvino_model_filepath}")
+
+    exp_name = 'tutorial_openvino_cifar10'
+    population_attack_obj = ml_privacy_meter.attack.population_meminf.PopulationAttack(
+        exp_name=exp_name,
+        x_population=x_train[num_datapoints:], y_population=y_train[num_datapoints:],
+        x_target_train=x_train[:num_datapoints], y_target_train=y_train[:num_datapoints],
+        x_target_test=x_test[:num_datapoints], y_target_test=y_train[:num_datapoints],
+        target_model_filepath=openvino_model_filepath,
+        target_model_type='openvino',
+        loss_fn=loss_fn,
+        num_data_in_class=num_data_in_class,
+        seed=1234
+    )
+
+    population_attack_obj.prepare_attack()
+
+    alphas = [0.1, 0.3, 0.5]
+    population_attack_obj.run_attack(alphas=alphas)
 
 

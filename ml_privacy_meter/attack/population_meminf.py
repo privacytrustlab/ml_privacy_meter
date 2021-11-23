@@ -3,6 +3,8 @@ from pathlib import Path
 
 import tensorflow as tf
 
+from openvino.inference_engine import IECore
+
 import numpy as np
 from sklearn.model_selection import StratifiedShuffleSplit
 from sklearn.metrics import accuracy_score, confusion_matrix, roc_auc_score
@@ -16,8 +18,22 @@ MODEL_TYPE_PYTORCH = 'pytorch'
 def get_predictions(model_filepath, model_type, data):
     predictions = []
     if model_type == MODEL_TYPE_OPENVINO:
-        print("implementation in progress")
-    if model_type == MODEL_TYPE_TENSORFLOW:
+        ie = IECore()
+        net = ie.read_network(model=model_filepath)
+        exec_net = ie.load_network(network=net, device_name='CPU')
+        input_layer = next(iter(net.input_info))
+        output_layer = next(iter(net.outputs))
+
+        input_shape_net = net.input_info[input_layer].tensor_desc.dims
+
+        # reshape network so that its batch_size = len(data)
+        new_input_shape_net = input_shape_net
+        new_input_shape_net[0] = len(data)
+        net.reshape({input_layer: new_input_shape_net})
+        exec_net = ie.load_network(network=net, device_name='CPU')
+
+        predictions = exec_net.infer({input_layer: data})[output_layer]
+    elif model_type == MODEL_TYPE_TENSORFLOW:
         model = tf.keras.models.load_model(model_filepath)
         predictions = model(data)
     elif model_type == MODEL_TYPE_PYTORCH:
@@ -113,6 +129,8 @@ class PopulationAttack:
             with np.load(losses_filepath, allow_pickle=True) as data:
                 train_losses = data['train_losses'][()]
                 test_losses = data['test_losses'][()]
+        else:
+            self.prepare_attack()
 
         # get per-class indices
         per_class_indices = get_per_class_indices(
@@ -120,7 +138,6 @@ class PopulationAttack:
             num_data_in_class=self.num_data_in_class,
             seed=self.seed
         )
-        print(np.array(per_class_indices).shape)
 
         # load per class losses, compute them if they don't exist
         filepath = f"{self.attack_results_dirpath}/target_model_pop_losses_{self.num_data_in_class}.npz"
