@@ -9,6 +9,12 @@ from tensorflow.python.keras.layers import Dense, Conv2D, MaxPool2D, Flatten, Dr
 
 from openvino.inference_engine import IECore
 
+import torch
+from torch.utils.data import TensorDataset, DataLoader
+import torch.optim as optim
+import torch.nn as nn
+import torch.nn.functional as F
+
 import ml_privacy_meter
 
 # Set input format for image data
@@ -33,7 +39,7 @@ def preprocess_cifar10_dataset():
     return x_train, y_train, x_test, y_test, input_shape, num_classes
 
 
-def get_cnn_classifier(input_shape, num_classes, regularizer):
+def get_tensorflow_cnn_classifier(input_shape, num_classes, regularizer):
     model = Sequential()
     model.add(Conv2D(32, kernel_size=(3, 3), activation='relu',
                      input_shape=input_shape, kernel_regularizer=regularizer))
@@ -45,6 +51,26 @@ def get_cnn_classifier(input_shape, num_classes, regularizer):
     model.add(Dropout(0.5))
     model.add(Dense(num_classes, activation='softmax'))
     return model
+
+
+class PyTorchCnnClassifier(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.conv1 = nn.Conv2d(3, 6, 5)
+        self.pool = nn.MaxPool2d(2, 2)
+        self.conv2 = nn.Conv2d(6, 16, 5)
+        self.fc1 = nn.Linear(16 * 5 * 5, 120)
+        self.fc2 = nn.Linear(120, 84)
+        self.fc3 = nn.Linear(84, 10)
+
+    def forward(self, x):
+        x = self.pool(F.relu(self.conv1(x)))
+        x = self.pool(F.relu(self.conv2(x)))
+        x = torch.flatten(x, 1)  # flatten all dimensions except batch
+        x = F.relu(self.fc1(x))
+        x = F.relu(self.fc2(x))
+        x = self.fc3(x)
+        return x
 
 
 if __name__ == '__main__':
@@ -70,7 +96,7 @@ if __name__ == '__main__':
         y = np.array(y_train[:num_datapoints])
 
         # initialize and compile model
-        model = get_cnn_classifier(input_shape, num_classes, regularizer)
+        model = get_tensorflow_cnn_classifier(input_shape, num_classes, regularizer)
         model.summary()
         model.compile(optimizer=optim_fn, loss=loss_fn, metrics=['accuracy'])
 
@@ -120,6 +146,8 @@ if __name__ == '__main__':
         print(f"openvino IR model already exists at {openvino_model_filepath}")
 
     exp_name = 'tutorial_openvino_cifar10'
+    loss_fn = tf.keras.losses.CategoricalCrossentropy(from_logits=True, reduction=tf.keras.losses.Reduction.NONE)
+    num_data_in_class = 400
     population_attack_obj = ml_privacy_meter.attack.population_meminf.PopulationAttack(
         exp_name=exp_name,
         x_population=x_train[num_datapoints:], y_population=y_train[num_datapoints:],
@@ -139,4 +167,64 @@ if __name__ == '__main__':
 
     population_attack_obj.visualize_attack(alphas=alphas)
 
+    # Part 3: Train and attack a pytorch model
+    epochs = 50
+    batch_size = 64
 
+    model_train_dirpath = 'models'
+    pytorch_model_filepath = f"{model_train_dirpath}/tutorial_pytorch_cifar10/final_model.pth"
+    if os.path.isfile(pytorch_model_filepath):
+        print(f"Model already trained. Continuing...")
+    else:
+        os.mkdir(Path(pytorch_model_filepath).parent)
+
+        print("Training model...")
+        x = np.array(x_train[:num_datapoints])
+        y = np.array(y_train[:num_datapoints])
+
+        # create train loader
+        tensor_x, tensor_y = torch.Tensor(x), torch.Tensor(y)
+        tensor_x = tensor_x.permute(0, 3, 1, 2)
+        train_dataset = TensorDataset(tensor_x, tensor_y)
+        train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
+
+        # initialize and compile model
+        model = PyTorchCnnClassifier()
+        criterion = nn.CrossEntropyLoss()
+        optimizer = optim.SGD(model.parameters(), lr=0.001, momentum=0.9)
+
+        for epoch in range(epochs):
+            print(f"Starting epoch {epoch}...")
+            for i, data in enumerate(train_loader, 0):
+                inputs, labels = data
+                optimizer.zero_grad()
+                outputs = model(inputs)
+                loss = criterion(outputs, labels)
+                loss.backward()
+                optimizer.step()
+
+        torch.save(model.state_dict(), pytorch_model_filepath)
+
+    # create population attack object
+    exp_name = 'tutorial_pytorch_cifar10'
+    loss_fn = tf.keras.losses.CategoricalCrossentropy(from_logits=True, reduction=tf.keras.losses.Reduction.NONE)
+    num_data_in_class = 400
+    population_attack_obj = ml_privacy_meter.attack.population_meminf.PopulationAttack(
+        exp_name=exp_name,
+        x_population=x_train[num_datapoints:], y_population=y_train[num_datapoints:],
+        x_target_train=x_train[:num_datapoints], y_target_train=y_train[:num_datapoints],
+        x_target_test=x_test[:num_datapoints], y_target_test=y_train[:num_datapoints],
+        target_model_filepath=pytorch_model_filepath,
+        target_model_type='pytorch',
+        target_model_class=PyTorchCnnClassifier,  # pass in the model class for pytorch
+        loss_fn=loss_fn,
+        num_data_in_class=num_data_in_class,
+        seed=1234
+    )
+
+    population_attack_obj.prepare_attack()
+
+    alphas = [0.1, 0.3, 0.5]
+    population_attack_obj.run_attack(alphas=alphas)
+
+    population_attack_obj.visualize_attack(alphas=alphas)

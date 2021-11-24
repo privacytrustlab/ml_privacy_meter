@@ -5,6 +5,8 @@ import tensorflow as tf
 
 from openvino.inference_engine import IECore
 
+import torch
+
 import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.model_selection import StratifiedShuffleSplit
@@ -15,7 +17,7 @@ MODEL_TYPE_TENSORFLOW = 'tensorflow'
 MODEL_TYPE_PYTORCH = 'pytorch'
 
 
-def get_predictions(model_filepath, model_type, data):
+def get_predictions(model_filepath, model_type, data, model_class=None):
     predictions = []
     if model_type == MODEL_TYPE_OPENVINO:
         ie = IECore()
@@ -37,7 +39,15 @@ def get_predictions(model_filepath, model_type, data):
         model = tf.keras.models.load_model(model_filepath)
         predictions = model(data)
     elif model_type == MODEL_TYPE_PYTORCH:
-        print("implementation in progress")
+        model = model_class()  # pytorch models need to be instantiated
+        model.load_state_dict(torch.load(model_filepath))
+        model.eval()
+
+        # pytorch models need channels-first data
+        data_nchw = torch.Tensor(data)
+        data_nchw = data_nchw.permute(0, 3, 1, 2)
+
+        predictions = model(data_nchw).detach().numpy()
     else:
         raise ValueError("Please specify one of the supported model types: `openvino`, `tensorflow`, or `pytorch`!")
     return predictions
@@ -78,7 +88,8 @@ class PopulationAttack:
                  x_target_train, y_target_train,
                  x_target_test, y_target_test,
                  target_model_filepath, target_model_type,
-                 loss_fn, num_data_in_class, seed):
+                 loss_fn, num_data_in_class, seed,
+                 target_model_class=None):
         self.x_population = x_population
         self.y_population = y_population
         self.x_target_train = x_target_train
@@ -87,6 +98,7 @@ class PopulationAttack:
         self.y_target_test = y_target_test
         self.target_model_filepath = target_model_filepath
         self.target_model_type = target_model_type
+        self.target_model_class = target_model_class
         self.loss_fn = loss_fn
         self.num_data_in_class = num_data_in_class
         self.seed = seed
@@ -106,11 +118,17 @@ class PopulationAttack:
 
         train_losses = self.loss_fn(
             y_true=self.y_target_train,
-            y_pred=get_predictions(self.target_model_filepath, self.target_model_type, self.x_target_train)
+            y_pred=get_predictions(self.target_model_filepath,
+                                   self.target_model_type,
+                                   self.x_target_train,
+                                   self.target_model_class)
         )
         test_losses = self.loss_fn(
             y_true=self.y_target_test,
-            y_pred=get_predictions(self.target_model_filepath, self.target_model_type, self.x_target_test)
+            y_pred=get_predictions(self.target_model_filepath,
+                                   self.target_model_type,
+                                   self.x_target_test,
+                                   self.target_model_class)
         )
 
         np.savez(f"{self.attack_results_dirpath}/target_model_losses",
@@ -151,7 +169,10 @@ class PopulationAttack:
                 x_class, y_class = self.x_population[indices], self.y_population[indices]
                 losses = self.loss_fn(
                     y_true=y_class,
-                    y_pred=get_predictions(self.target_model_filepath, self.target_model_type, x_class)
+                    y_pred=get_predictions(self.target_model_filepath,
+                                           self.target_model_type,
+                                           x_class,
+                                           self.target_model_class)
                 )
                 pop_losses.append(losses)
             np.savez(f"{self.attack_results_dirpath}/target_model_pop_losses_{self.num_data_in_class}",
