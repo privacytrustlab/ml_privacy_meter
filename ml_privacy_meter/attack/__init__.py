@@ -1,1 +1,1 @@
-from ml_privacy_meter.attack import meminf, meminf_modules
+from ml_privacy_meter.attack import meminf, population_meminf, meminf_modules
