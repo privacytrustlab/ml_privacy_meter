@@ -6,5 +6,5 @@ numpy==1.18.5
 scikit-learn==0.22.2.post1
 scipy==1.4.1
 tensorboard==2.0.2
-tensorflow==2.5.0
+tensorflow==2.5.2
 tensorflow-estimator==2.0.1
