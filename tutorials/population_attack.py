@@ -74,6 +74,9 @@ class PyTorchCnnClassifier(nn.Module):
 
 
 if __name__ == '__main__':
+    # Set attack hyperparameters
+    num_data_in_class = 400
+    
     # Part 1: Train and attack a tensorflow model
     loss_fn = 'categorical_crossentropy'
     optim_fn = 'adam'
@@ -107,12 +110,11 @@ if __name__ == '__main__':
     # create population attack object
     exp_name = 'tutorial_tensorflow_cifar10'
     loss_fn = tf.keras.losses.CategoricalCrossentropy(from_logits=True, reduction=tf.keras.losses.Reduction.NONE)
-    num_data_in_class = 400
     population_attack_obj = ml_privacy_meter.attack.population_meminf.PopulationAttack(
         exp_name=exp_name,
         x_population=x_train[num_datapoints:], y_population=y_train[num_datapoints:],
         x_target_train=x_train[:num_datapoints], y_target_train=y_train[:num_datapoints],
-        x_target_test=x_test[:num_datapoints], y_target_test=y_train[:num_datapoints],
+        x_target_test=x_test[:num_datapoints], y_target_test=y_test[:num_datapoints],
         target_model_filepath=tensorflow_model_filepath,
         target_model_type='tensorflow',
         loss_fn=loss_fn,
@@ -147,12 +149,11 @@ if __name__ == '__main__':
 
     exp_name = 'tutorial_openvino_cifar10'
     loss_fn = tf.keras.losses.CategoricalCrossentropy(from_logits=True, reduction=tf.keras.losses.Reduction.NONE)
-    num_data_in_class = 400
     population_attack_obj = ml_privacy_meter.attack.population_meminf.PopulationAttack(
         exp_name=exp_name,
         x_population=x_train[num_datapoints:], y_population=y_train[num_datapoints:],
         x_target_train=x_train[:num_datapoints], y_target_train=y_train[:num_datapoints],
-        x_target_test=x_test[:num_datapoints], y_target_test=y_train[:num_datapoints],
+        x_target_test=x_test[:num_datapoints], y_target_test=y_test[:num_datapoints],
         target_model_filepath=openvino_model_filepath,
         target_model_type='openvino',
         loss_fn=loss_fn,
@@ -208,12 +209,11 @@ if __name__ == '__main__':
     # create population attack object
     exp_name = 'tutorial_pytorch_cifar10'
     loss_fn = tf.keras.losses.CategoricalCrossentropy(from_logits=True, reduction=tf.keras.losses.Reduction.NONE)
-    num_data_in_class = 400
     population_attack_obj = ml_privacy_meter.attack.population_meminf.PopulationAttack(
         exp_name=exp_name,
         x_population=x_train[num_datapoints:], y_population=y_train[num_datapoints:],
         x_target_train=x_train[:num_datapoints], y_target_train=y_train[:num_datapoints],
-        x_target_test=x_test[:num_datapoints], y_target_test=y_train[:num_datapoints],
+        x_target_test=x_test[:num_datapoints], y_target_test=y_test[:num_datapoints],
         target_model_filepath=pytorch_model_filepath,
         target_model_type='pytorch',
         target_model_class=PyTorchCnnClassifier,  # pass in the model class for pytorch
