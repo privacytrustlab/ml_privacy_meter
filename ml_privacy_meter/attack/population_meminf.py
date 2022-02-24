@@ -1,86 +1,11 @@
 import os
 from pathlib import Path
 
-import tensorflow as tf
-
-from openvino.inference_engine import IECore
-
-import torch
-
 import numpy as np
 import matplotlib.pyplot as plt
-from sklearn.model_selection import StratifiedShuffleSplit
 from sklearn.metrics import accuracy_score, auc, confusion_matrix, roc_auc_score
 
-MODEL_TYPE_OPENVINO = 'openvino'
-MODEL_TYPE_TENSORFLOW = 'tensorflow'
-MODEL_TYPE_PYTORCH = 'pytorch'
-
-
-def get_predictions(model_filepath, model_type, data, model_class=None):
-    predictions = []
-    if model_type == MODEL_TYPE_OPENVINO:
-        ie = IECore()
-        net = ie.read_network(model=model_filepath)
-        exec_net = ie.load_network(network=net, device_name='CPU')
-        input_layer = next(iter(net.input_info))
-        output_layer = next(iter(net.outputs))
-
-        input_shape_net = net.input_info[input_layer].tensor_desc.dims
-
-        # reshape network so that its batch_size = len(data)
-        new_input_shape_net = input_shape_net
-        new_input_shape_net[0] = len(data)
-        net.reshape({input_layer: new_input_shape_net})
-        exec_net = ie.load_network(network=net, device_name='CPU')
-
-        predictions = exec_net.infer({input_layer: data})[output_layer]
-    elif model_type == MODEL_TYPE_TENSORFLOW:
-        model = tf.keras.models.load_model(model_filepath)
-        predictions = model(data)
-    elif model_type == MODEL_TYPE_PYTORCH:
-        model = model_class()  # pytorch models need to be instantiated
-        model.load_state_dict(torch.load(model_filepath))
-        model.eval()
-
-        # pytorch models need channels-first data
-        data_nchw = torch.Tensor(data)
-        data_nchw = data_nchw.permute(0, 3, 1, 2)
-
-        predictions = model(data_nchw).detach().numpy()
-    else:
-        raise ValueError("Please specify one of the supported model types: `openvino`, `tensorflow`, or `pytorch`!")
-    return predictions
-
-
-def get_per_class_indices(x, y, num_data_in_class, seed):
-    num_classes = y.shape[1]
-
-    per_class_splitter = StratifiedShuffleSplit(n_splits=1,
-                                                train_size=(num_data_in_class * num_classes),
-                                                test_size=100,
-                                                random_state=seed)
-
-    split_indices = []
-    for indices, _ in per_class_splitter.split(x, y):
-        split_indices = indices
-
-    per_class_indices = []
-    for c in range(num_classes):
-        indices = []
-        for idx in split_indices:
-            x_point, y_point = x[idx], y[idx]
-            if c == np.argmax(y_point):
-                indices.append(idx)
-        # print(f"Number of samples from class {c} = {len(indices)}")
-        per_class_indices.append(indices)
-
-    return per_class_indices
-
-
-def calculate_loss_threshold(alpha, loss_distribution):
-    threshold = np.quantile(loss_distribution, q=alpha, interpolation='lower')
-    return threshold
+from ml_privacy_meter.utils.attack_utils import get_predictions, get_per_class_indices, calculate_loss_threshold
 
 
 class PopulationAttack:
@@ -118,17 +43,21 @@ class PopulationAttack:
 
         train_losses = self.loss_fn(
             y_true=self.y_target_train,
-            y_pred=get_predictions(self.target_model_filepath,
-                                   self.target_model_type,
-                                   self.x_target_train,
-                                   self.target_model_class)
+            y_pred=get_predictions(
+                model_filepath=self.target_model_filepath,
+                model_type=self.target_model_type,
+                data=self.x_target_train,
+                model_class=self.target_model_class
+            )
         )
         test_losses = self.loss_fn(
             y_true=self.y_target_test,
-            y_pred=get_predictions(self.target_model_filepath,
-                                   self.target_model_type,
-                                   self.x_target_test,
-                                   self.target_model_class)
+            y_pred=get_predictions(
+                model_filepath=self.target_model_filepath,
+                model_type=self.target_model_type,
+                data=self.x_target_test,
+                model_class=self.target_model_class
+            )
         )
 
         np.savez(f"{self.attack_results_dirpath}/target_model_losses",
@@ -169,10 +98,12 @@ class PopulationAttack:
                 x_class, y_class = self.x_population[indices], self.y_population[indices]
                 losses = self.loss_fn(
                     y_true=y_class,
-                    y_pred=get_predictions(self.target_model_filepath,
-                                           self.target_model_type,
-                                           x_class,
-                                           self.target_model_class)
+                    y_pred=get_predictions(
+                        model_filepath=self.target_model_filepath,
+                        model_type=self.target_model_type,
+                        data=x_class,
+                        model_class=self.target_model_class
+                    )
                 )
                 pop_losses.append(losses)
             np.savez(f"{self.attack_results_dirpath}/target_model_pop_losses_{self.num_data_in_class}",
