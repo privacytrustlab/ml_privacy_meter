@@ -1,18 +1,11 @@
 import os
 from pathlib import Path
 
-import tensorflow as tf
-
-from openvino.inference_engine import IECore
-
-import torch
-
 import numpy as np
 import matplotlib.pyplot as plt
-from sklearn.model_selection import StratifiedShuffleSplit
 from sklearn.metrics import accuracy_score, auc, confusion_matrix, roc_auc_score
 
-from ml_privacy_meter.utils.attack_utils import get_predictions, get_per_class_indices, calculate_loss_threshold
+from ml_privacy_meter.utils.attack_utils import get_predictions, calculate_loss_threshold
 
 
 class ReferenceAttack:
