@@ -5,9 +5,10 @@ import numpy as np
 
 import tensorflow as tf
 import tensorflow.keras.backend as K
+from sklearn.model_selection import StratifiedShuffleSplit
 from tensorflow.compat.v1.train import Saver
 
-# from openvino.inference_engine import IECore
+from openvino.inference_engine import IECore
 import torch
 
 MODEL_TYPE_OPENVINO = 'openvino'
@@ -39,21 +40,21 @@ def time_taken(self, start_time, end_time):
 def get_predictions(model_filepath, model_type, data, model_class=None):
     predictions = []
     if model_type == MODEL_TYPE_OPENVINO:
-        # ie = IECore()
-        # net = ie.read_network(model=model_filepath)
-        # exec_net = ie.load_network(network=net, device_name='CPU')
-        # input_layer = next(iter(net.input_info))
-        # output_layer = next(iter(net.outputs))
-        #
-        # input_shape_net = net.input_info[input_layer].tensor_desc.dims
-        #
-        # # reshape network so that its batch_size = len(data)
-        # new_input_shape_net = input_shape_net
-        # new_input_shape_net[0] = len(data)
-        # net.reshape({input_layer: new_input_shape_net})
-        # exec_net = ie.load_network(network=net, device_name='CPU')
-        #
-        # predictions = exec_net.infer({input_layer: data})[output_layer]
+        ie = IECore()
+        net = ie.read_network(model=model_filepath)
+        exec_net = ie.load_network(network=net, device_name='CPU')
+        input_layer = next(iter(net.input_info))
+        output_layer = next(iter(net.outputs))
+
+        input_shape_net = net.input_info[input_layer].tensor_desc.dims
+
+        # reshape network so that its batch_size = len(data)
+        new_input_shape_net = input_shape_net
+        new_input_shape_net[0] = len(data)
+        net.reshape({input_layer: new_input_shape_net})
+        exec_net = ie.load_network(network=net, device_name='CPU')
+
+        predictions = exec_net.infer({input_layer: data})[output_layer]
         return predictions
     elif model_type == MODEL_TYPE_TENSORFLOW:
         model = tf.keras.models.load_model(model_filepath)
