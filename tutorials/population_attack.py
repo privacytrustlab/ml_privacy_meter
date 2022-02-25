@@ -90,7 +90,7 @@ if __name__ == '__main__':
     num_datapoints = 5000
 
     model_train_dirpath = 'models'
-    tensorflow_model_filepath = f"{model_train_dirpath}/tutorial_tensorflow_cifar10/final_model"
+    tensorflow_model_filepath = f"{model_train_dirpath}/population_tutorial_tensorflow_cifar10/final_model"
     if os.path.isdir(tensorflow_model_filepath):
         print(f"Model already trained. Continuing...")
     else:
@@ -105,10 +105,10 @@ if __name__ == '__main__':
 
         # train and save model
         model.fit(x, y, batch_size=batch_size, epochs=epochs, verbose=2)
-        model.save(f"{model_train_dirpath}/tutorial_tensorflow_cifar10/final_model")
+        model.save(f"{model_train_dirpath}/population_tutorial_tensorflow_cifar10/final_model")
 
     # create population attack object
-    exp_name = 'tutorial_tensorflow_cifar10'
+    exp_name = 'population_tutorial_tensorflow_cifar10'
     loss_fn = tf.keras.losses.CategoricalCrossentropy(from_logits=True, reduction=tf.keras.losses.Reduction.NONE)
     population_attack_obj = ml_privacy_meter.attack.population_meminf.PopulationAttack(
         exp_name=exp_name,
@@ -116,7 +116,7 @@ if __name__ == '__main__':
         x_target_train=x_train[:num_datapoints], y_target_train=y_train[:num_datapoints],
         x_target_test=x_test[:num_datapoints], y_target_test=y_test[:num_datapoints],
         target_model_filepath=tensorflow_model_filepath,
-        target_model_type='tensorflow',
+        target_model_type=ml_privacy_meter.utils.attack_utils.MODEL_TYPE_TENSORFLOW,
         loss_fn=loss_fn,
         num_data_in_class=num_data_in_class,
         seed=1234
@@ -155,7 +155,7 @@ if __name__ == '__main__':
         x_target_train=x_train[:num_datapoints], y_target_train=y_train[:num_datapoints],
         x_target_test=x_test[:num_datapoints], y_target_test=y_test[:num_datapoints],
         target_model_filepath=openvino_model_filepath,
-        target_model_type='openvino',
+        target_model_type=ml_privacy_meter.utils.attack_utils.MODEL_TYPE_OPENVINO,
         loss_fn=loss_fn,
         num_data_in_class=num_data_in_class,
         seed=1234
@@ -215,7 +215,7 @@ if __name__ == '__main__':
         x_target_train=x_train[:num_datapoints], y_target_train=y_train[:num_datapoints],
         x_target_test=x_test[:num_datapoints], y_target_test=y_test[:num_datapoints],
         target_model_filepath=pytorch_model_filepath,
-        target_model_type='pytorch',
+        target_model_type=ml_privacy_meter.utils.attack_utils.MODEL_TYPE_PYTORCH,
         target_model_class=PyTorchCnnClassifier,  # pass in the model class for pytorch
         loss_fn=loss_fn,
         num_data_in_class=num_data_in_class,

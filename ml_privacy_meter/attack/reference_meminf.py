@@ -45,7 +45,7 @@ class ReferenceAttack:
         self.seed = seed
 
         # create results directory
-        self.attack_results_dirpath = f'logs/population_attack_{exp_name}/'
+        self.attack_results_dirpath = f'logs/reference_attack_{exp_name}/'
         if not os.path.isdir(Path(self.attack_results_dirpath)):
             os.mkdir(Path(self.attack_results_dirpath))
 
@@ -89,7 +89,10 @@ class ReferenceAttack:
             for ref_idx, ref_model_filepath in enumerate(self.ref_model_filepath_list):
                 print(f"Computing train loss dist using reference model at {ref_model_filepath}...")
                 ref_model_type = self.ref_model_type_list[ref_idx]
-                ref_model_class = self.ref_model_class_list[ref_idx]
+                if self.ref_model_class_list is None:
+                    ref_model_class = None
+                else:
+                    ref_model_class = self.ref_model_class_list[ref_idx]
                 ref_train_losses = self.loss_fn(
                     y_true=self.y_target_train,
                     y_pred=get_predictions(
@@ -110,7 +113,10 @@ class ReferenceAttack:
         for ref_idx, ref_model_filepath in enumerate(self.ref_model_filepath_list):
             print(f"Computing test loss dist using reference model at {ref_model_filepath}...")
             ref_model_type = self.ref_model_type_list[ref_idx]
-            ref_model_class = self.ref_model_class_list[ref_idx]
+            if self.ref_model_class_list is None:
+                ref_model_class = None
+            else:
+                ref_model_class = self.ref_model_class_list[ref_idx]
             ref_test_losses = self.loss_fn(
                 y_true=self.y_target_test,
                 y_pred=get_predictions(
