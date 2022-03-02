@@ -1,7 +1,8 @@
 import ml_privacy_meter
 import tensorflow as tf
 import tensorflow.compat.v1.keras.layers as keraslayers
-from tensorflow.compat.v1.train import Saver
+import numpy as np
+from sklearn.model_selection import train_test_split
 
 
 # Model to train attack model on. Should be same as the one trained.
@@ -59,23 +60,52 @@ cprefix = 'logs/fcn'
 
 cmodelA = tf.keras.models.load_model(cprefix)
 
-# `saved_path` is required for obtaining the training data that was used to
-# train the target classification model. This is because
-# the datapoints that form the memberset of the training data of the attack
-# model has to be a subset of the training data of target classification model.
-# User can store the training data wherever he/she wants but the only requirement
-# is that the file has to be stored in '.npy' format.
-saved_path = "datasets/purchase100.txt.npy"
 
-# Similar to `saved_path` being used to form the memberset for attack model,
-# `dataset_path` is used for forming the nonmemberset of the training data of
-# attack model.
-dataset_path = 'datasets/purchase100.txt'
+def preprocess_purchase100_dataset():
+    input_shape = (600, )
+    num_classes = 100
 
-datahandlerA = ml_privacy_meter.utils.attack_data.attack_data(dataset_path=dataset_path,
-                                                              member_dataset_path=saved_path,
-                                                              batch_size=64,
-                                                              attack_percentage=50, input_shape=(input_features, ))
+    # Read raw dataset
+    dataset_path = "datasets/dataset_purchase"
+    with open(dataset_path, "r") as f:
+        purchase_dataset = f.readlines()
+
+    # Separate features and labels into different arrays
+    x, y = [], []
+    for datapoint in purchase_dataset:
+        split = datapoint.rstrip().split(",")
+        label = int(split[0]) - 1  # The first value is the label
+        features = np.array(split[1:], dtype=np.float32)  # The next values are the features
+
+        x.append(features)
+        y.append(label)
+
+    x = np.array(x)
+
+    # Split data into train, test sets
+    x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.25, random_state=1234)
+
+    return x_train, y_train, x_test, y_test, input_shape, num_classes
+
+
+x_train, y_train, x_test, y_test, input_shape, num_classes = preprocess_purchase100_dataset()
+
+# training data of the target model
+num_datapoints = 5000
+x_target_train, y_target_train = x_train[:num_datapoints], y_train[:num_datapoints]
+
+# population data (training data is a subset of this)
+x_population = np.concatenate((x_train, x_test))
+y_population = np.concatenate((y_train, y_test))
+
+
+datahandlerA = ml_privacy_meter.utils.attack_data.AttackData(x_population=x_population,
+                                                             y_population=y_population,
+                                                             x_target_train=x_target_train,
+                                                             y_target_train=y_target_train,
+                                                             batch_size=64,
+                                                             attack_percentage=50,
+                                                             input_shape=input_shape)
 
 attackobj = ml_privacy_meter.attack.meminf.initialize(
     target_train_model=cmodelA,

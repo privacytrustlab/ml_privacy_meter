@@ -2,11 +2,6 @@ import numpy as np
 
 import ml_privacy_meter
 import tensorflow as tf
-import tensorflow.compat.v1.keras.layers as keraslayers
-from tensorflow.compat.v1.train import Saver
-
-# input_features should be changed according to the model
-input_shape = (32, 32, 3)
 
 # Load saved target model to attack
 cprefix = 'alexnet_pretrained'
@@ -14,31 +9,39 @@ cmodelA = tf.keras.models.load_model(cprefix)
 
 cmodelA.summary()
 
-# `saved_path` is required for obtaining the training data that was used to
-# train the target classification model. This is because
-# the datapoints that form the memberset of the training data of the attack
-# model has to be a subset of the training data of target classification model.
-# User can store the training data wherever he/she wants but the only requirement
-# is that the file has to be stored in '.npy' format. The contents should be of
-# the same format as the .txt file of the dataset.
-saved_path = "datasets/cifar100_train.txt.npy"
 
-# Similar to `saved_path` being used to form the memberset for attack model,
-# `dataset_path` is used for forming the nonmemberset of the training data of
-# attack model.
-dataset_path = 'datasets/cifar100.txt'
+def preprocess_cifar100_dataset():
+    input_shape = (32, 32, 3)
+    num_classes = 100
 
-datahandlerA = ml_privacy_meter.utils.attack_data.attack_data(dataset_path=dataset_path,
-                                                              member_dataset_path=saved_path,
-                                                              batch_size=100,
-                                                              attack_percentage=10, input_shape=input_shape,
-                                                              normalization=True)
+    # Split the data between train and test sets
+    (x_train, y_train), (x_test, y_test) = tf.keras.datasets.cifar100.load_data()
+
+    return x_train, y_train, x_test, y_test, input_shape, num_classes
+
+
+x_train, y_train, x_test, y_test, input_shape, num_classes = preprocess_cifar100_dataset()
+
+# training data of the target model
+num_datapoints = 5000
+x_target_train, y_target_train = x_train[:num_datapoints], y_train[:num_datapoints]
+
+# population data (training data is a subset of this)
+x_population = np.concatenate((x_train, x_test))
+y_population = np.concatenate((y_train, y_test))
+
+datahandlerA = ml_privacy_meter.utils.attack_data.AttackData(x_population=x_population,
+                                                             y_population=y_population,
+                                                             x_target_train=x_target_train,
+                                                             y_target_train=y_target_train,
+                                                             batch_size=100,
+                                                             attack_percentage=10, input_shape=input_shape,
+                                                             normalization=True)
 
 
 # Set means and standard deviations for normalization.
 # If unset, they are calculated from the dataset.
-datahandlerA.means, datahandlerA.stddevs = [
-    0.4914, 0.4822, 0.4465], [0.2023, 0.1994, 0.2010]
+datahandlerA.means, datahandlerA.stddevs = [0.4914, 0.4822, 0.4465], [0.2023, 0.1994, 0.2010]
 
 attackobj = ml_privacy_meter.attack.meminf.initialize(
     target_train_model=cmodelA,
