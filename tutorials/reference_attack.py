@@ -4,7 +4,8 @@ import tensorflow as tf
 from tensorflow.python.keras import Sequential
 from tensorflow.python.keras.layers import Dense, Conv2D, MaxPool2D, Flatten, Dropout
 
-import ml_privacy_meter
+from ml_privacy_meter.utils.attack_utils import MODEL_TYPE_TENSORFLOW
+from ml_privacy_meter.attack import reference_meminf
 
 # Set input format for image data
 from tensorflow.keras import backend as K
@@ -91,7 +92,7 @@ if __name__ == '__main__':
         f"{model_train_dirpath}/reference_tutorial_tensorflow_cifar10/reference_model_{idx}/final_model"
         for idx in range(num_reference_models)
     ]
-    ref_model_type_list = [ml_privacy_meter.utils.attack_utils.MODEL_TYPE_TENSORFLOW] * num_reference_models
+    ref_model_type_list = [MODEL_TYPE_TENSORFLOW] * num_reference_models
     for idx in range(num_reference_models):
         ref_model_filepath = ref_model_filepath_list[idx]
         ref_model_indices = x_ref_train_indices_list[idx]
@@ -117,7 +118,7 @@ if __name__ == '__main__':
     # Create reference attack object
     exp_name = 'reference_tutorial_tensorflow_cifar10'
     loss_fn = tf.keras.losses.CategoricalCrossentropy(from_logits=True, reduction=tf.keras.losses.Reduction.NONE)
-    reference_attack_obj = ml_privacy_meter.attack.reference_meminf.ReferenceAttack(
+    reference_attack_obj = reference_meminf.ReferenceAttack(
         exp_name=exp_name,
         x_population=x_train[num_datapoints:], y_population=y_train[num_datapoints:],
         x_target_train=x_target_train, y_target_train=y_target_train,

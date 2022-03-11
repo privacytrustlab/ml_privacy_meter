@@ -15,7 +15,7 @@ import torch.optim as optim
 import torch.nn as nn
 import torch.nn.functional as F
 
-import ml_privacy_meter
+from ml_privacy_meter.attack import population_meminf
 
 # Set input format for image data
 from tensorflow.keras import backend as K
@@ -110,7 +110,7 @@ if __name__ == '__main__':
     # create population attack object
     exp_name = 'population_tutorial_tensorflow_cifar10'
     loss_fn = tf.keras.losses.CategoricalCrossentropy(from_logits=True, reduction=tf.keras.losses.Reduction.NONE)
-    population_attack_obj = ml_privacy_meter.attack.population_meminf.PopulationAttack(
+    population_attack_obj = population_meminf.PopulationAttack(
         exp_name=exp_name,
         x_population=x_train[num_datapoints:], y_population=y_train[num_datapoints:],
         x_target_train=x_train[:num_datapoints], y_target_train=y_train[:num_datapoints],

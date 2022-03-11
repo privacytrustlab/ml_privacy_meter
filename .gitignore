@@ -4,4 +4,4 @@ venv/
 .vscode/
 datasets/*.txt*
 logs/
-
+dist/
