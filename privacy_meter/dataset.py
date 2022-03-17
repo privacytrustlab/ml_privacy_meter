@@ -12,8 +12,8 @@ class Dataset:
                  preproc_fn_dict: dict = None,
                  splits_indices_dict=None
                  ):
-        """
-        Constructor
+        """Constructor
+
         Args:
             data_dict: Contains the dataset as a dict
             default_input: The key of the data_dict that should be used by default to get the input of a model
@@ -54,12 +54,13 @@ class Dataset:
                     indices: list = None
                     ):
 
-        """
-        Returns a specific feature from samples of a specific split.
+        """Returns a specific feature from samples of a specific split.
+
         Args:
             split_name: Name of the split
             feature_name: Name of the feature
             indices: Optional list of indices. If not specified, the entire subset is returned.
+
         Returns:
             The requested feature, from samples of the requested split.
         """

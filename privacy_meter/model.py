@@ -9,8 +9,8 @@ class Model(ABC):
     """
 
     def __init__(self, model_obj, loss_fn):
-        """
-        Constructor
+        """Constructor
+
         Args:
             model_obj: model object
             loss_fn: loss function
@@ -20,10 +20,11 @@ class Model(ABC):
 
     @abstractmethod
     def get_outputs(self, batch_samples):
-        """
-        Function to get the model output from a given input.
+        """Function to get the model output from a given input.
+
         Args:
             batch_samples: Model input
+
         Returns:
             Model output
         """
@@ -31,11 +32,12 @@ class Model(ABC):
 
     @abstractmethod
     def get_loss(self, batch_samples, batch_labels):
-        """
-        Function to get the model loss on a given input and an expected output.
+        """Function to get the model loss on a given input and an expected output.
+
         Args:
             batch_samples: Model input
             batch_labels: Model expected output
+
         Returns:
             The loss value, as defined by the loss_fn attribute.
         """
@@ -43,12 +45,13 @@ class Model(ABC):
 
     @abstractmethod
     def get_grad(self, batch_samples, batch_labels):
-        """
-        Function to get the gradient of the model loss with respect to the model parameters, on a given input and an
+        """Function to get the gradient of the model loss with respect to the model parameters, on a given input and an
         expected output.
+
         Args:
             batch_samples: Model input
             batch_labels: Model expected output
+
         Returns:
             A list of gradients of the model loss (one item per layer) with respect to the model parameters.
         """
@@ -56,13 +59,14 @@ class Model(ABC):
 
     @abstractmethod
     def get_intermediate_outputs(self, layers, batch_samples, forward_pass=True):
-        """
-        Function to get the intermediate output of layers (a.k.a. features), on a given input.
+        """Function to get the intermediate output of layers (a.k.a. features), on a given input.
+
         Args:
             layers: List of integers and/or strings, indicating which layers values should be returned
             batch_samples: Model input
             forward_pass: Boolean indicating if a new forward pass should be executed. If True, then a forward pass is
                 executed on batch_samples. Else, the result is the one of the last forward pass.
+
         Returns:
             A list of intermediate outputs of layers.
         """
@@ -76,8 +80,8 @@ class PytorchModel(Model):
     """
 
     def __init__(self, model_obj, loss_fn):
-        """
-        Constructor
+        """Constructor
+
         Args:
             model_obj: model object
             loss_fn: loss function
@@ -92,33 +96,36 @@ class PytorchModel(Model):
             getattr(self.model_obj, l).register_forward_hook(self.__forward_hook(l))
 
     def get_outputs(self, batch_samples):
-        """
-        Function to get the model output from a given input.
+        """Function to get the model output from a given input.
+
         Args:
             batch_samples: Model input
+
         Returns:
             Model output
         """
         return self.model_obj(batch_samples).detach().numpy()
 
     def get_loss(self, batch_samples, batch_labels):
-        """
-        Function to get the model loss on a given input and an expected output.
+        """Function to get the model loss on a given input and an expected output.
+
         Args:
             batch_samples: Model input
             batch_labels: Model expected output
+
         Returns:
             The loss value, as defined by the loss_fn attribute.
         """
         return self.loss_fn(self.model_obj(batch_samples), batch_labels).item()
 
     def get_grad(self, batch_samples, batch_labels):
-        """
-        Function to get the gradient of the model loss with respect to the model parameters, on a given input and an
+        """Function to get the gradient of the model loss with respect to the model parameters, on a given input and an
         expected output.
+
         Args:
             batch_samples: Model input
             batch_labels: Model expected output
+
         Returns:
             A list of gradients of the model loss (one item per layer) with respect to the model parameters.
         """
@@ -127,13 +134,14 @@ class PytorchModel(Model):
         return [p.grad.numpy() for p in self.model_obj.parameters()]
 
     def get_intermediate_outputs(self, layers, batch_samples, forward_pass=True):
-        """
-        Function to get the intermediate output of layers (a.k.a. features), on a given input.
+        """Function to get the intermediate output of layers (a.k.a. features), on a given input.
+
         Args:
             layers: List of integers and/or strings, indicating which layers values should be returned
             batch_samples: Model input
             forward_pass: Boolean indicating if a new forward pass should be executed. If True, then a forward pass is
                 executed on batch_samples. Else, the result is the one of the last forward pass.
+
         Returns:
             A list of intermediate outputs of layers.
         """
@@ -148,10 +156,11 @@ class PytorchModel(Model):
         return [self.intermediate_outputs[layer_name].detach().numpy() for layer_name in layer_names]
 
     def __forward_hook(self, layer_name):
-        """
-        Private helper function to access outputs of intermediate layers.
+        """Private helper function to access outputs of intermediate layers.
+
         Args:
-            layer_name:
+            layer_name: Name of the layer to access
+
         Returns:
             A hook to be registered using register_forward_hook.
         """
@@ -163,14 +172,13 @@ class PytorchModel(Model):
 
 
 class TensorflowModel(Model):
-    """
-    Inherits of the Model class, an interface to query a model without any assumption on how it is implemented.
+    """Inherits of the Model class, an interface to query a model without any assumption on how it is implemented.
     This particular class is to be used with tensorflow models.
     """
 
     def __init__(self, model_obj, loss_fn):
-        """
-        Constructor
+        """Constructor
+
         Args:
             model_obj: model object
             loss_fn: loss function
@@ -186,33 +194,36 @@ class TensorflowModel(Model):
         ))
 
     def get_outputs(self, batch_samples):
-        """
-        Function to get the model output from a given input.
+        """Function to get the model output from a given input.
+
         Args:
             batch_samples: Model input
+
         Returns:
             Model output
         """
         return self.model_obj(batch_samples).numpy()
 
     def get_loss(self, batch_samples, batch_labels):
-        """
-        Function to get the model loss on a given input and an expected output.
+        """Function to get the model loss on a given input and an expected output.
+
         Args:
             batch_samples: Model input
             batch_labels: Model expected output
+
         Returns:
             The loss value, as defined by the loss_fn attribute.
         """
         return self.loss_fn(self.get_outputs(batch_samples), batch_labels).numpy()
 
     def get_grad(self, batch_samples, batch_labels):
-        """
-        Function to get the gradient of the model loss with respect to the model parameters, on a given input and an
+        """Function to get the gradient of the model loss with respect to the model parameters, on a given input and an
         expected output.
+
         Args:
             batch_samples: Model input
             batch_labels: Model expected output
+
         Returns:
             A list of gradients of the model loss (one item per layer) with respect to the model parameters.
         """
@@ -222,13 +233,14 @@ class TensorflowModel(Model):
         return self.__tf_list_to_np_list(grad)
 
     def get_intermediate_outputs(self, layers, batch_samples, forward_pass=True):
-        """
-        Function to get the intermediate output of layers (a.k.a. features), on a given input.
+        """Function to get the intermediate output of layers (a.k.a. features), on a given input.
+
         Args:
             layers: List of integers and/or strings, indicating which layers values should be returned
             batch_samples: Model input
             forward_pass: Boolean indicating if a new forward pass should be executed. If True, then a forward pass is
             executed on batch_samples. Else, the result is the one of the last forward pass.
+
         Returns:
             A list of intermediate outputs of layers.
         """
@@ -249,10 +261,11 @@ class TensorflowModel(Model):
         return self.__tf_list_to_np_list(features)
 
     def __tf_list_to_np_list(self, x):
-        """
-        Private helper function to recursively convert lists of tf tensors to lists of numpy arrays.
+        """Private helper function to recursively convert lists of tf tensors to lists of numpy arrays.
+
         Args:
             x: List of tf tensors
+
         Returns:
             A list of numpy arrays
         """
