@@ -1,4 +1,5 @@
 from itertools import product
+
 import numpy as np
 import tensorflow_datasets as tfds
 
