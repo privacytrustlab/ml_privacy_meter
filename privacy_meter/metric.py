@@ -5,9 +5,8 @@ import numpy as np
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score, confusion_matrix, roc_auc_score
 
-from privacy_meter.dataset import Dataset
 from privacy_meter.information_source import InformationSource
-from privacy_meter.model import Model
+from privacy_meter.metric_result import MetricResult
 from privacy_meter.information_source_signal import Signal
 
 
@@ -164,6 +163,7 @@ class PopulationMetric(Metric):
             that may be used by the threshold function to compute the attack
             threshold for the metric.
         """
+        metric_result_list = []
         for fpr_tolerance_rate in fpr_tolerance_rate_list:
             threshold = self.hypothesis_test_func(self.reference_signals, fpr_tolerance_rate)
 
@@ -181,23 +181,17 @@ class PopulationMetric(Metric):
                 else:
                     non_member_preds.append(0)
 
-            preds = np.concatenate([member_preds, non_member_preds])
+            predictions = np.concatenate([member_preds, non_member_preds])
 
-            y_eval = [1] * len(self.member_signals)
-            y_eval.extend([0] * len(self.non_member_signals))
+            true_labels = [1] * len(self.member_signals)
+            true_labels.extend([0] * len(self.non_member_signals))
 
-            acc = accuracy_score(y_eval, preds)
-            roc_auc = roc_auc_score(y_eval, preds)
-            tn, fp, fn, tp = confusion_matrix(y_eval, preds).ravel()
+            metric_result = MetricResult(predictions=predictions, true_labels=true_labels)
+            print(metric_result)
 
-            print(
-                f"Metric performance:\n"
-                f"FPR Tolerance Rate = {fpr_tolerance_rate}\n"
-                f"Accuracy = {acc}\n"
-                f"ROC AUC Score = {roc_auc}\n"
-                f"FPR: {fp / (fp + tn)}\n"
-                f"TN, FP, FN, TP = {tn, fp, fn, tp}"
-            )
+            metric_result_list.append(metric_result)
+
+        return metric_result_list
 
 
 class ShadowMetric(Metric):
@@ -328,17 +322,10 @@ class ShadowMetric(Metric):
         non_member_predictions = clf.predict(self.non_member_signals.reshape(-1, 1))
         predictions = np.concatenate([member_predictions, non_member_predictions])
 
-        y_eval = [1] * len(self.member_signals) + [0] * len(self.non_member_signals)
+        true_labels = [1] * len(self.member_signals) + [0] * len(self.non_member_signals)
 
         # Evaluate the power of this inference and display the result
-        acc = accuracy_score(y_eval, predictions)
-        roc_auc = roc_auc_score(y_eval, predictions)
-        tn, fp, fn, tp = confusion_matrix(y_eval, predictions).ravel()
+        metric_result = MetricResult(predictions=predictions, true_labels=true_labels)
+        print(metric_result)
 
-        print(
-            f"Metric performance:\n"
-            f"Accuracy = {acc}\n"
-            f"ROC AUC Score = {roc_auc}\n"
-            f"FPR: {fp / (fp + tn)}\n"
-            f"TN, FP, FN, TP = {tn, fp, fn, tp}"
-        )
+        return metric_result
