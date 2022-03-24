@@ -251,7 +251,7 @@ class ShadowMetric(Metric):
             else:
                 self.reference_model_to_train_split_mapping = [
                     (0, f'train{k:03d}', '<default_input>', '<default_output>')
-                    for k in range(len(target_info_source.models))
+                    for k in range(len(self.reference_info_source.models))
                 ]
         if self.reference_model_to_test_split_mapping is None:
             if len(self.reference_info_source.models) == 1:
@@ -259,7 +259,7 @@ class ShadowMetric(Metric):
             else:
                 self.reference_model_to_test_split_mapping = [
                     (0, f'test{k:03d}', '<default_input>', '<default_output>')
-                    for k in range(len(target_info_source.models))
+                    for k in range(len(self.reference_info_source.models))
                 ]
 
         # Variables used in prepare_metric and run_metric
