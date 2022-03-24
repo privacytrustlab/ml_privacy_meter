@@ -2,7 +2,7 @@ from typing import List, Tuple
 
 from privacy_meter.dataset import Dataset
 from privacy_meter.model import Model
-from privacy_meter.signal import Signal
+from privacy_meter.information_source_signal import Signal
 
 
 class InformationSource:
