@@ -68,28 +68,63 @@ class PopulationMetric(Metric):
     which will be used as a metric for measuring privacy leakage of a target model.
     """
 
-    def __init__(self, target_model: Model, target_dataset: Dataset,
-                 auxiliary_model_list: List[Model], auxiliary_dataset: Dataset,
-                 signal_func_list: List[Callable], threshold_func: Callable):
+    def __init__(
+            self,
+            target_info_source: InformationSource,
+            reference_info_source: InformationSource,
+            signals: List[Signal],
+            hypothesis_test_func: Callable,
+            target_model_to_train_split_mapping: List[Tuple[int, str, str, str]] = None,
+            target_model_to_test_split_mapping: List[Tuple[int, str, str, str]] = None,
+            reference_model_to_train_split_mapping: List[Tuple[int, str, str, str]] = None,
+    ):
         """
         Constructor
+
         Args:
-            target_model: Model that the metric will be performed on
-            target_dataset: Dataset corresponding to the target model
-            auxiliary_model_list: Model(s) that the metric will compute signals on
-            auxiliary_dataset: Dataset corresponding to the auxiliary model(s)
-            signal_func_list: Function(s) that will be used for computing signals
-            threshold_func: Function that will be used for computing attack threshold(s)
+            target_info_source: InformationSource, containing the Model that the metric will be performed on, and the
+                corresponding Dataset.
+            reference_info_source: List of InformationSource(s), containing the Model(s) that the metric will be
+                fitted on, and their corresponding Dataset.
+            signals: List of signals to be used.
+            hypothesis_test_func: Function that will be used for computing attack threshold(s)
+            target_model_to_train_split_mapping: Mapping from the target model to the train split of the target dataset.
+                By default, the code will look for a split named "train"
+            target_model_to_test_split_mapping: Mapping from the target model to the test split of the target dataset.
+                By default, the code will look for a split named "test"
+            reference_model_to_train_split_mapping: Mapping from the reference models to their train splits of the
+                corresponding reference dataset. By default, the code will look for a split named "train" if only one
+                reference model is provided, else for splits named "train000", "train001", "train002", etc.
         """
 
         # Initializes the parent metric
-        super().__init__(target_model, target_dataset,
-                         auxiliary_model_list, auxiliary_dataset,
-                         signal_func_list, threshold_func)
+        super().__init__(target_info_source=target_info_source,
+                         reference_info_source=reference_info_source,
+                         signals=signals,
+                         hypothesis_test_func=hypothesis_test_func)
 
-        self.member_signals = None
-        self.non_member_signals = None
-        self.auxiliary_signals = None
+        # Store the model to split mappings
+        self.target_model_to_train_split_mapping = target_model_to_train_split_mapping
+        self.target_model_to_test_split_mapping = target_model_to_test_split_mapping
+        self.reference_model_to_train_split_mapping = reference_model_to_train_split_mapping
+
+        # Default values for all the model to split mappings
+        if self.target_model_to_train_split_mapping is None:
+            self.target_model_to_train_split_mapping = [(0, 'train', '<default_input>', '<default_output>')]
+        if self.target_model_to_test_split_mapping is None:
+            self.target_model_to_test_split_mapping = [(0, 'test', '<default_input>', '<default_output>')]
+        if self.reference_model_to_train_split_mapping is None:
+            if len(self.reference_info_source.models) == 1:
+                self.reference_model_to_train_split_mapping = [(0, 'train', '<default_input>', '<default_output>')]
+            else:
+                self.reference_model_to_train_split_mapping = [
+                    (0, f'train{k:03d}', '<default_input>', '<default_output>')
+                    for k in range(len(self.reference_info_source.models))
+                ]
+
+        # Variables used in prepare_metric and run_metric
+        self.member_signals, self.non_member_signals = [], []
+        self.reference_signals = []
 
         self.prepare_metric()
 
@@ -103,48 +138,23 @@ class PopulationMetric(Metric):
         training data.
         """
 
-        member_signals = []
-        for signal_func in self.signal_func_list:
-            signals = signal_func(
-                model=self.target_model,
-                dataset=self.auxiliary_dataset,
-                split_name='train',
-                input_feature_name='<default_input>',
-                output_feature_name='<default_output>',
-                indices=None
+        # For each signal, compute the response of both the target model on both members and
+        # non-members
+        for signal in self.signals:
+            self.member_signals.append(
+                self.target_info_source.get_signal(signal, self.target_model_to_train_split_mapping)
             )
-            member_signals.append(signals)
-        # for population metric we have a list of loss values
-        self.member_signals = np.array(member_signals).flatten()
-
-        non_member_signals = []
-        for signal_func in self.signal_func_list:
-            signals = signal_func(
-                model=self.target_model,
-                dataset=self.auxiliary_dataset,
-                split_name='test',
-                input_feature_name='<default_input>',
-                output_feature_name='<default_output>',
-                indices=None
+            self.non_member_signals.append(
+                self.target_info_source.get_signal(signal, self.target_model_to_test_split_mapping)
             )
-            non_member_signals.append(signals)
-        # for population metric we have a list of loss values
-        self.non_member_signals = np.array(non_member_signals).flatten()
+            self.reference_signals.append(
+                self.reference_info_source.get_signal(signal, self.reference_model_to_train_split_mapping)
+            )
 
-        auxiliary_signals = []
-        for auxiliary_model in self.auxiliary_model_list:
-            for signal_func in self.signal_func_list:
-                signals = signal_func(
-                    model=auxiliary_model,
-                    dataset=self.auxiliary_dataset,
-                    split_name='population',
-                    input_feature_name='<default_input>',
-                    output_feature_name='<default_output>',
-                    indices=None
-                )
-                auxiliary_signals.append(signals)
-        # for population metric we have a list of loss values
-        self.auxiliary_signals = np.array(population_signals).flatten()
+        # For population metric we have a list of loss values
+        self.member_signals = np.array(self.member_signals).flatten()
+        self.non_member_signals = np.array(self.non_member_signals).flatten()
+        self.reference_signals = np.array(self.reference_signals).flatten()
 
     def run_metric(self, fpr_tolerance_rate_list=None):
         """
@@ -155,7 +165,7 @@ class PopulationMetric(Metric):
             threshold for the metric.
         """
         for fpr_tolerance_rate in fpr_tolerance_rate_list:
-            threshold = self.threshold_func(self.auxiliary_signals, fpr_tolerance_rate)
+            threshold = self.hypothesis_test_func(self.reference_signals, fpr_tolerance_rate)
 
             member_preds = []
             for signal in self.member_signals:
@@ -196,16 +206,17 @@ class ShadowMetric(Metric):
     which will be used as a metric for measuring privacy leakage of a target model.
     """
 
-    def __init__(self,
-                 target_info_source: InformationSource,
-                 reference_info_source: InformationSource,
-                 signals: List[Signal],
-                 hypothesis_test_func: Callable,
-                 target_model_to_train_split_mapping: List[Tuple[int, str, str, str]] = None,
-                 target_model_to_test_split_mapping: List[Tuple[int, str, str, str]] = None,
-                 reference_model_to_train_split_mapping: List[Tuple[int, str, str, str]] = None,
-                 reference_model_to_test_split_mapping: List[Tuple[int, str, str, str]] = None
-                 ):
+    def __init__(
+            self,
+            target_info_source: InformationSource,
+            reference_info_source: InformationSource,
+            signals: List[Signal],
+            hypothesis_test_func: Callable,
+            target_model_to_train_split_mapping: List[Tuple[int, str, str, str]] = None,
+            target_model_to_test_split_mapping: List[Tuple[int, str, str, str]] = None,
+            reference_model_to_train_split_mapping: List[Tuple[int, str, str, str]] = None,
+            reference_model_to_test_split_mapping: List[Tuple[int, str, str, str]] = None
+    ):
         """
         Constructor.
         
@@ -275,7 +286,7 @@ class ShadowMetric(Metric):
         models and the auxiliary dataset will contain the train-test splits of these models.
         """
 
-        # For each signal, computes the response of both the target model and the shadow models, on both members and
+        # For each signal, compute the response of both the target model and the shadow models, on both members and
         # non-members
         for signal in self.signals:
             self.member_signals.append(
