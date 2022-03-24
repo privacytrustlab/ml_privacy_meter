@@ -1,11 +1,14 @@
-from typing import Callable, List
+from abc import ABC, abstractmethod
+from typing import Callable, List, Tuple
 
 import numpy as np
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score, confusion_matrix, roc_auc_score
 
-from .dataset import Dataset
-from .model import Model
+from privacy_meter.dataset import Dataset
+from privacy_meter.information_source import InformationSource
+from privacy_meter.model import Model
+from privacy_meter.information_source_signal import Signal
 
 
 class Metric(ABC):
@@ -16,27 +19,27 @@ class Metric(ABC):
     to be used for measuring the privacy leakage of a target model.
     """
 
-    def __init__(self, target_model: Model, target_dataset: Dataset,
-                 auxiliary_model_list: List[Model], auxiliary_dataset: Dataset,
-                 signal_func_list: List[Callable],
-                 threshold_func: Callable):
+    def __init__(self,
+                 target_info_source: InformationSource,
+                 reference_info_source: InformationSource,
+                 signals: List[Signal],
+                 hypothesis_test_func: Callable,
+                 ):
         """
         Constructor
         Args:
-            target_model: Model that the metric will be performed on
-            target_dataset: Dataset corresponding to the target model
-            auxiliary_model_list: Model(s) that the metric will compute signals on
-            auxiliary_dataset: Dataset corresponding to the auxiliary model(s)
-            signal_func_list: Function(s) that will be used for computing signals
-            threshold_func: Function that will be used for computing attack threshold(s)
+            target_info_source: InformationSource, containing the Model that the metric will be performed on, and the
+                corresponding Dataset.
+            reference_info_source: List of InformationSource(s), containing the Model(s) that the metric will be
+                fitted on, and their corresponding Dataset.
+            signals: List of signals to be used.
+            hypothesis_test_func: Function that will be used for computing attack threshold(s)
         """
 
-        self.target_model = target_model
-        self.target_dataset = target_dataset
-        self.auxiliary_model_list = auxiliary_model_list
-        self.auxiliary_dataset = auxiliary_dataset
-        self.signal_func_list = signal_func_list
-        self.threshold_func = threshold_func
+        self.target_info_source = target_info_source
+        self.reference_info_source = reference_info_source
+        self.signals = signals
+        self.hypothesis_test_func = hypothesis_test_func
 
     @abstractmethod
     def prepare_metric(self):
@@ -193,126 +196,133 @@ class ShadowMetric(Metric):
     which will be used as a metric for measuring privacy leakage of a target model.
     """
 
-    def __init__(self, target_model: Model, target_dataset: Dataset,
-                 auxiliary_model_list: List[Model], auxiliary_dataset: Dataset,
-                 signal_func_list: List[Callable], threshold_func: Callable,
-                 shadow_split_names: List):
+    def __init__(self,
+                 target_info_source: InformationSource,
+                 reference_info_source: InformationSource,
+                 signals: List[Signal],
+                 hypothesis_test_func: Callable,
+                 target_model_to_train_split_mapping: List[Tuple[int, str, str, str]] = None,
+                 target_model_to_test_split_mapping: List[Tuple[int, str, str, str]] = None,
+                 reference_model_to_train_split_mapping: List[Tuple[int, str, str, str]] = None,
+                 reference_model_to_test_split_mapping: List[Tuple[int, str, str, str]] = None
+                 ):
         """
-        Constructor
+        Constructor.
+        
         Args:
-            target_model: Model that the metric will be performed on
-            target_dataset: Dataset corresponding to the target model
-            auxiliary_model_list: Model(s) that the metric will compute signals on
-            auxiliary_dataset: Dataset corresponding to the auxiliary model(s)
-            signal_func_list: Function(s) that will be used for computing signals
-            threshold_func: Function that will be used for computing attack threshold(s)
+            target_info_source: InformationSource, containing the Model that the metric will be performed on, and the
+                corresponding Dataset.
+            reference_info_source: List of InformationSource(s), containing the Model(s) that the metric will be
+                fitted on, and their corresponding Dataset.
+            signals: List of signals to be used.
+            hypothesis_test_func: Function that will be used for computing attack threshold(s)
+            target_model_to_train_split_mapping: Mapping from the target model to the train split of the target dataset.
+                By default, the code will look for a split named "train"
+            target_model_to_test_split_mapping: Mapping from the target model to the test split of the target dataset.
+                By default, the code will look for a split named "test"
+            reference_model_to_train_split_mapping: Mapping from the reference models to their train splits of the
+                corresponding reference dataset. By default, the code will look for a split named "train" if only one
+                reference model is provided, else for splits named "train000", "train001", "train002", etc.
+            reference_model_to_test_split_mapping: Mapping from the reference models to their test splits of the
+                corresponding reference dataset. By default, the code will look for a split named "test" if only one
+                reference model is provided, else for splits named "test000", "test001", "test002", etc.
         """
 
         # Initializes the parent metric
-        super().__init__(target_model, target_dataset,
-                         auxiliary_model_list, auxiliary_dataset,
-                         signal_func_list, threshold_func)
+        super().__init__(target_info_source=target_info_source,
+                         reference_info_source=reference_info_source,
+                         signals=signals,
+                         hypothesis_test_func=hypothesis_test_func)
 
-        self.shadow_split_names = shadow_split_names
+        # Store the model to split mappings
+        self.target_model_to_train_split_mapping = target_model_to_train_split_mapping
+        self.target_model_to_test_split_mapping = target_model_to_test_split_mapping
+        self.reference_model_to_train_split_mapping = reference_model_to_train_split_mapping
+        self.reference_model_to_test_split_mapping = reference_model_to_test_split_mapping
 
-        self.target_member_signals = None
-        self.target_non_member_signals = None
-        self.auxiliary_member_signals = None
-        self.auxiliary_non_member_signals = None
+        # Default values for all the model to split mappings
+        if self.target_model_to_train_split_mapping is None:
+            self.target_model_to_train_split_mapping = [(0, 'train', '<default_input>', '<default_output>')]
+        if self.target_model_to_test_split_mapping is None:
+            self.target_model_to_test_split_mapping = [(0, 'test', '<default_input>', '<default_output>')]
+        if self.reference_model_to_train_split_mapping is None:
+            if len(self.reference_info_source.models) == 1:
+                self.reference_model_to_train_split_mapping = [(0, 'train', '<default_input>', '<default_output>')]
+            else:
+                self.reference_model_to_train_split_mapping = [
+                    (0, f'train{k:03d}', '<default_input>', '<default_output>')
+                    for k in range(len(target_info_source.models))
+                ]
+        if self.reference_model_to_test_split_mapping is None:
+            if len(self.reference_info_source.models) == 1:
+                self.reference_model_to_test_split_mapping = [(0, 'test', '<default_input>', '<default_output>')]
+            else:
+                self.reference_model_to_test_split_mapping = [
+                    (0, f'test{k:03d}', '<default_input>', '<default_output>')
+                    for k in range(len(target_info_source.models))
+                ]
+
+        # Variables used in prepare_metric and run_metric
+        self.member_signals, self.non_member_signals = [], []
+        self.reference_member_signals, self.reference_non_member_signals = [], []
 
         self.prepare_metric()
 
     def prepare_metric(self):
         """
-        Function to prepare data needed for running the metric on
-        the target model and dataset, using signals computed on the
-        auxiliary model(s) and dataset. For the shadow attack, the
-        auxiliary models will be a list of shadow models and the
-        auxiliary dataset will contain the train-test splits of these
-        models.
+        Function to prepare data needed for running the metric on the target model and dataset, using signals computed
+        on the reference model(s) and dataset. For the shadow attack, the reference models will be a list of shadow
+        models and the auxiliary dataset will contain the train-test splits of these models.
         """
-        member_signals = []
-        for signal_func in self.signal_func_list:
-            signals = signal_func(
-                model=self.target_model,
-                dataset=self.target_dataset,
-                split_name='train',
-                input_feature_name='<default_input>',
-                output_feature_name='<default_output>',
-                indices=None
+
+        # For each signal, computes the response of both the target model and the shadow models, on both members and
+        # non-members
+        for signal in self.signals:
+            self.member_signals.append(
+                self.target_info_source.get_signal(signal, self.target_model_to_train_split_mapping)
             )
-            member_signals.append(signals)
-        # for shadow metric we have a list of loss values
-        self.member_signals = np.array(member_signals).flatten()
-
-        non_member_signals = []
-        for signal_func in self.signal_func_list:
-            signals = signal_func(
-                model=self.target_model,
-                dataset=self.target_dataset,
-                split_name='test',
-                input_feature_name='<default_input>',
-                output_feature_name='<default_output>',
-                indices=None
+            self.non_member_signals.append(
+                self.target_info_source.get_signal(signal, self.target_model_to_test_split_mapping)
             )
-            non_member_signals.append(signals)
-        # for shadow metric we have a list of loss values
-        self.non_member_signals = np.array(non_member_signals).flatten()
+            self.reference_member_signals.append(
+                self.reference_info_source.get_signal(signal, self.reference_model_to_train_split_mapping)
+            )
+            self.reference_non_member_signals.append(
+                self.reference_info_source.get_signal(signal, self.reference_model_to_test_split_mapping)
+            )
 
-        auxiliary_member_signals, auxiliary_non_member_signals = [], []
-        for idx, auxiliary_model in enumerate(self.auxiliary_model_list):
-            train_split_name, test_split_name = self.shadow_split_names[idx]
-            print(train_split_name)
-            print(test_split_name)
-
-            for signal_func in self.signal_func_list:
-                m_signals = signal_func(
-                    model=auxiliary_model,
-                    dataset=self.auxiliary_dataset,
-                    split_name=train_split_name,
-                    input_feature_name='<default_input>',
-                    output_feature_name='<default_output>'
-                )
-                auxiliary_member_signals.append(m_signals)
-
-                nm_signals = signal_func(
-                    model=auxiliary_model,
-                    dataset=self.auxiliary_dataset,
-                    split_name=test_split_name,
-                    input_feature_name='<default_input>',
-                    output_feature_name='<default_output>'
-                )
-                auxiliary_non_member_signals.append(nm_signals)
-        self.auxiliary_member_signals = np.array(auxiliary_member_signals).flatten()
-        self.auxiliary_non_member_signals = np.array(auxiliary_non_member_signals).flatten()
+        # For shadow metric we have a list of loss values
+        self.member_signals = np.array(self.member_signals).flatten()
+        self.non_member_signals = np.array(self.non_member_signals).flatten()
+        self.reference_member_signals = np.array(self.member_signals).flatten()
+        self.reference_non_member_signals = np.array(self.non_member_signals).flatten()
 
     def run_metric(self, fpr_tolerance_rate_list=None):
         """
         Function to run the metric on the target model and dataset.
         Args:
-            fpr_tolerance_rate_list (optional): List of FPR tolerance values
-            that may be used by the threshold function to compute the attack
-            threshold for the metric.
+            fpr_tolerance_rate_list (optional): List of FPR tolerance values that may be used by the threshold function
+            to compute the attack threshold for the metric.
         """
-        clf = LogisticRegression()
 
-        x = np.concatenate([self.auxiliary_member_signals, self.auxiliary_non_member_signals]).reshape(-1, 1)
-        member_labels = [1] * len(self.auxiliary_member_signals)
-        non_member_labels = [0] * len(self.auxiliary_non_member_signals)
-        y = np.concatenate([member_labels, non_member_labels])
+        # Create and fit a LogisticRegression object, from the members and non-members of the reference
+        # InformationSource
+        clf = LogisticRegression()
+        x = np.concatenate([self.reference_member_signals, self.reference_non_member_signals]).reshape(-1, 1)
+        y = np.array([1] * len(self.reference_member_signals) + [0] * len(self.reference_non_member_signals))
         clf.fit(x, y)
 
-        member_preds = clf.predict(self.member_signals.reshape(-1, 1))
-        non_member_preds = clf.predict(self.non_member_signals.reshape(-1, 1))
+        # Predict the membership status of samples in the target InformationSource
+        member_predictions = clf.predict(self.member_signals.reshape(-1, 1))
+        non_member_predictions = clf.predict(self.non_member_signals.reshape(-1, 1))
+        predictions = np.concatenate([member_predictions, non_member_predictions])
 
-        preds = np.concatenate([member_preds, non_member_preds])
+        y_eval = [1] * len(self.member_signals) + [0] * len(self.non_member_signals)
 
-        y_eval = [1] * len(self.member_signals)
-        y_eval.extend([0] * len(self.non_member_signals))
-
-        acc = accuracy_score(y_eval, preds)
-        roc_auc = roc_auc_score(y_eval, preds)
-        tn, fp, fn, tp = confusion_matrix(y_eval, preds).ravel()
+        # Evaluate the power of this inference and display the result
+        acc = accuracy_score(y_eval, predictions)
+        roc_auc = roc_auc_score(y_eval, predictions)
+        tn, fp, fn, tp = confusion_matrix(y_eval, predictions).ravel()
 
         print(
             f"Metric performance:\n"
