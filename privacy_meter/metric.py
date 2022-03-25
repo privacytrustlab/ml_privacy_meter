@@ -1,9 +1,8 @@
 from abc import ABC, abstractmethod
-from typing import Callable, List, Tuple
+from typing import Any, Callable, Optional, List, Tuple, Union
 
 import numpy as np
 from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import accuracy_score, confusion_matrix, roc_auc_score
 
 from privacy_meter.information_source import InformationSource
 from privacy_meter.metric_result import MetricResult
@@ -21,8 +20,8 @@ class Metric(ABC):
     def __init__(self,
                  target_info_source: InformationSource,
                  reference_info_source: InformationSource,
-                 signals: List[Signal],
-                 hypothesis_test_func: Callable,
+                 signals: List[Any],
+                 hypothesis_test_func: Optional[Callable],
                  ):
         """
         Constructor
@@ -71,8 +70,8 @@ class PopulationMetric(Metric):
             self,
             target_info_source: InformationSource,
             reference_info_source: InformationSource,
-            signals: List[Signal],
-            hypothesis_test_func: Callable,
+            signals: List[Any],
+            hypothesis_test_func: Optional[Callable],
             target_model_to_train_split_mapping: List[Tuple[int, str, str, str]] = None,
             target_model_to_test_split_mapping: List[Tuple[int, str, str, str]] = None,
             reference_model_to_train_split_mapping: List[Tuple[int, str, str, str]] = None,
@@ -204,8 +203,8 @@ class ShadowMetric(Metric):
             self,
             target_info_source: InformationSource,
             reference_info_source: InformationSource,
-            signals: List[Signal],
-            hypothesis_test_func: Callable,
+            signals: List[Any],
+            hypothesis_test_func: Optional[Callable],
             target_model_to_train_split_mapping: List[Tuple[int, str, str, str]] = None,
             target_model_to_test_split_mapping: List[Tuple[int, str, str, str]] = None,
             reference_model_to_train_split_mapping: List[Tuple[int, str, str, str]] = None,

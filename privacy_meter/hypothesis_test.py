@@ -1,5 +1,6 @@
 import numpy as np
 
+
 def threshold_func(distribution, alpha):
     """
     Function that returns the threshold as the alpha quantile of
