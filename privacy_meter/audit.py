@@ -27,20 +27,19 @@ class Audit:
                 self.metric_object = PopulationMetric(
                     target_info_source=target_info_source,
                     reference_info_source=reference_info_source,
-                    signals=[ModelLoss],
+                    signals=[ModelLoss()],
                     hypothesis_test_func=threshold_func
                 )
             elif metric == MetricEnum.SHADOW:
                 self.metric_object = ShadowMetric(
                     target_info_source=target_info_source,
                     reference_info_source=reference_info_source,
-                    signals=[ModelLoss],
+                    signals=[ModelLoss()],
                     hypothesis_test_func=None
                 )
         else:
             # if the user wants to pass in their custom metric object
             self.metric_object = metric
-        self.metric_object.prepare_metric()
 
         self.fpr_tolerance_list = fpr_tolerance_list
 

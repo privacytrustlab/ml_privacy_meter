@@ -19,9 +19,8 @@ class MetricResult:
         self.true_labels = true_labels
 
         self.accuracy = accuracy_score(y_true=true_labels, y_pred=predictions)
-        self.roc_auc = roc_auc_score(y_true=true_labels, y_pred=predictions)
-        self.tn, self.fp, self.fn, self.tp = confusion_matrix(y_true=true_labels,
-                                                              y_pred=predictions)
+        self.roc_auc = roc_auc_score(y_true=true_labels, y_score=predictions)
+        [[self.tn, self.fp], [self.fn, self.tp]] = confusion_matrix(y_true=true_labels, y_pred=predictions)
 
     def __str__(self):
         """
