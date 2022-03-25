@@ -44,7 +44,7 @@ class Audit:
         self.fpr_tolerance_list = fpr_tolerance_list
 
     def run(self):
-        self.metric_object.run_metric()
+        self.metric_object.run_metric(self.fpr_tolerance_list)
 
     def report(self):
         pass
