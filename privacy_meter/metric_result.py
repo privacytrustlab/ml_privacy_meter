@@ -20,7 +20,7 @@ class MetricResult:
 
         self.accuracy = accuracy_score(y_true=true_labels, y_pred=predictions)
         self.roc_auc = roc_auc_score(y_true=true_labels, y_score=predictions)
-        [[self.tn, self.fp], [self.fn, self.tp]] = confusion_matrix(y_true=true_labels, y_pred=predictions)
+        self.tn, self.fp, self.fn, self.tp = confusion_matrix(y_true=true_labels, y_pred=predictions).ravel()
 
     def __str__(self):
         """
@@ -32,6 +32,5 @@ class MetricResult:
             f'ROC AUC Score     = {self.roc_auc}',
             f'FPR               = {self.fp / (self.fp + self.tn)}',
             f'TN, FP, FN, TP    = {self.tn, self.fp, self.fn, self.tp}'
-            '=' * 48
         ]
         return '\n'.join(txt)

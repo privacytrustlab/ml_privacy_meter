@@ -20,7 +20,7 @@ class Metric(ABC):
     def __init__(self,
                  target_info_source: InformationSource,
                  reference_info_source: InformationSource,
-                 signals: List[Any],
+                 signals: List[Signal],
                  hypothesis_test_func: Optional[Callable],
                  ):
         """
@@ -70,7 +70,7 @@ class PopulationMetric(Metric):
             self,
             target_info_source: InformationSource,
             reference_info_source: InformationSource,
-            signals: List[Any],
+            signals: List[Signal],
             hypothesis_test_func: Optional[Callable],
             target_model_to_train_split_mapping: List[Tuple[int, str, str, str]] = None,
             target_model_to_test_split_mapping: List[Tuple[int, str, str, str]] = None,
@@ -203,7 +203,7 @@ class ShadowMetric(Metric):
             self,
             target_info_source: InformationSource,
             reference_info_source: InformationSource,
-            signals: List[Any],
+            signals: List[Signal],
             hypothesis_test_func: Optional[Callable],
             target_model_to_train_split_mapping: List[Tuple[int, str, str, str]] = None,
             target_model_to_test_split_mapping: List[Tuple[int, str, str, str]] = None,
