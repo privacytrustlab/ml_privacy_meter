@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 
 import tensorflow as tf
+from torch import Tensor
 
 
 class Model(ABC):
@@ -104,7 +105,7 @@ class PytorchModel(Model):
         Returns:
             Model output
         """
-        return self.model_obj(batch_samples).detach().numpy()
+        return self.model_obj(Tensor(batch_samples)).detach().numpy()
 
     def get_loss(self, batch_samples, batch_labels):
         """Function to get the model loss on a given input and an expected output.
@@ -116,7 +117,7 @@ class PytorchModel(Model):
         Returns:
             The loss value, as defined by the loss_fn attribute.
         """
-        return self.loss_fn(self.model_obj(batch_samples), batch_labels).item()
+        return self.loss_fn(self.model_obj(Tensor(batch_samples)), Tensor(batch_labels)).item()
 
     def get_grad(self, batch_samples, batch_labels):
         """Function to get the gradient of the model loss with respect to the model parameters, on a given input and an
@@ -129,7 +130,7 @@ class PytorchModel(Model):
         Returns:
             A list of gradients of the model loss (one item per layer) with respect to the model parameters.
         """
-        loss = self.loss_fn(self.model_obj(batch_samples), batch_labels)
+        loss = self.loss_fn(self.model_obj(Tensor(batch_samples)), Tensor(batch_labels))
         loss.backward()
         return [p.grad.numpy() for p in self.model_obj.parameters()]
 
@@ -146,7 +147,7 @@ class PytorchModel(Model):
             A list of intermediate outputs of layers.
         """
         if forward_pass:
-            _ = self.get_outputs(batch_samples)
+            _ = self.get_outputs(Tensor(batch_samples))
         layer_names = []
         for layer in layers:
             if isinstance(layer, str):
