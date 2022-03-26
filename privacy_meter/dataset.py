@@ -101,32 +101,26 @@ class Dataset:
             split_names = self.splits
 
         for split in split_names:
-            for feature in self.features:
 
-                # If method is random, then each sub-split is a random subset of the original split.
-                if method == 'random':
-                    assert split_size is not None
-                    indices = np.random.randint(self.data_dict[split][feature].shape[0], size=(num_splits, split_size))
-                    for split_n in range(num_splits):
-                        # Initialize the dictionary if necessary.
-                        if f'{split}{split_n:03d}' not in list(self.data_dict):
-                            self.data_dict[f'{split}{split_n:03d}'] = {}
-                        # Fill the dictionary.
-                        self.data_dict[f'{split}{split_n:03d}'][feature] = self.data_dict[split][feature][indices[split_n]]
+            # If method is random, then each sub-split is a random subset of the original split.
+            if method == 'random':
+                assert split_size is not None
+                indices = np.random.randint(self.data_dict[split][self.features[0]].shape[0], size=(num_splits, split_size))
 
-                # If method is independent, then the sub-splits are a partition of the original split.
-                elif method == 'independent':
-                    # TODO: add randomness
-                    arr = np.array_split(self.data_dict[split][feature], num_splits)
-                    for split_n in range(num_splits):
-                        # Initialize the dictionary if necessary.
-                        if f'{split}{split_n:03d}' not in list(self.data_dict):
-                            self.data_dict[f'{split}{split_n:03d}'] = {}
-                        # Fill the dictionary.
-                        self.data_dict[f'{split}{split_n:03d}'][feature] = arr[split_n]
+            # If method is independent, then the sub-splits are a partition of the original split.
+            elif method == 'independent':
+                indices = np.arange(self.data_dict[split][self.features[0]].shape[0])
+                np.random.shuffle(indices)
+                indices = np.array_split(indices, num_splits)
 
-                else:
-                    raise ValueError(f'Split method "{method}" does not exist.')
+            else:
+                raise ValueError(f'Split method "{method}" does not exist.')
+
+            for split_n in range(num_splits):
+                self.data_dict[f'{split}{split_n:03d}'] = {}
+                for feature in self.features:
+                    # Fill the dictionary.
+                    self.data_dict[f'{split}{split_n:03d}'][feature] = self.data_dict[split][feature][indices[split_n]]
 
             # delete_original indicates if the original split should be deleted.
             if delete_original:
