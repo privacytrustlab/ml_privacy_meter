@@ -208,7 +208,8 @@ class ShadowMetric(Metric):
             target_model_to_train_split_mapping: List[Tuple[int, str, str, str]] = None,
             target_model_to_test_split_mapping: List[Tuple[int, str, str, str]] = None,
             reference_model_to_train_split_mapping: List[Tuple[int, str, str, str]] = None,
-            reference_model_to_test_split_mapping: List[Tuple[int, str, str, str]] = None
+            reference_model_to_test_split_mapping: List[Tuple[int, str, str, str]] = None,
+            unique_dataset: bool = False
     ):
         """
         Constructor.
@@ -230,6 +231,7 @@ class ShadowMetric(Metric):
             reference_model_to_test_split_mapping: Mapping from the reference models to their test splits of the
                 corresponding reference dataset. By default, the code will look for a split named "test" if only one
                 reference model is provided, else for splits named "test000", "test001", "test002", etc.
+            unique_dataset: Boolean indicating if target_info_source and target_info_source use one same dataset object.
         """
 
         # Initializes the parent metric
@@ -245,26 +247,43 @@ class ShadowMetric(Metric):
         self.reference_model_to_test_split_mapping = reference_model_to_test_split_mapping
 
         # Default values for all the model to split mappings
-        if self.target_model_to_train_split_mapping is None:
-            self.target_model_to_train_split_mapping = [(0, 'train', '<default_input>', '<default_output>')]
-        if self.target_model_to_test_split_mapping is None:
-            self.target_model_to_test_split_mapping = [(0, 'test', '<default_input>', '<default_output>')]
-        if self.reference_model_to_train_split_mapping is None:
-            if len(self.reference_info_source.models) == 1:
-                self.reference_model_to_train_split_mapping = [(0, 'train', '<default_input>', '<default_output>')]
-            else:
+
+        if unique_dataset:
+            if self.target_model_to_train_split_mapping is None:
+                self.target_model_to_train_split_mapping = [(0, 'train000', '<default_input>', '<default_output>')]
+            if self.target_model_to_test_split_mapping is None:
+                self.target_model_to_test_split_mapping = [(0, 'test000', '<default_input>', '<default_output>')]
+            if self.reference_model_to_train_split_mapping is None:
                 self.reference_model_to_train_split_mapping = [
-                    (0, f'train{k:03d}', '<default_input>', '<default_output>')
+                    (0, f'train{k+1:03d}', '<default_input>', '<default_output>')
                     for k in range(len(self.reference_info_source.models))
                 ]
-        if self.reference_model_to_test_split_mapping is None:
-            if len(self.reference_info_source.models) == 1:
-                self.reference_model_to_test_split_mapping = [(0, 'test', '<default_input>', '<default_output>')]
-            else:
+            if self.reference_model_to_test_split_mapping is None:
                 self.reference_model_to_test_split_mapping = [
-                    (0, f'test{k:03d}', '<default_input>', '<default_output>')
+                    (0, f'test{k+1:03d}', '<default_input>', '<default_output>')
                     for k in range(len(self.reference_info_source.models))
                 ]
+        else:
+            if self.target_model_to_train_split_mapping is None:
+                self.target_model_to_train_split_mapping = [(0, 'train', '<default_input>', '<default_output>')]
+            if self.target_model_to_test_split_mapping is None:
+                self.target_model_to_test_split_mapping = [(0, 'test', '<default_input>', '<default_output>')]
+            if self.reference_model_to_train_split_mapping is None:
+                if len(self.reference_info_source.models) == 1 and unique_dataset:
+                    self.reference_model_to_train_split_mapping = [(0, 'train', '<default_input>', '<default_output>')]
+                else:
+                    self.reference_model_to_train_split_mapping = [
+                        (0, f'train{k:03d}', '<default_input>', '<default_output>')
+                        for k in range(len(self.reference_info_source.models))
+                    ]
+            if self.reference_model_to_test_split_mapping is None:
+                if len(self.reference_info_source.models) == 1:
+                    self.reference_model_to_test_split_mapping = [(0, 'test', '<default_input>', '<default_output>')]
+                else:
+                    self.reference_model_to_test_split_mapping = [
+                        (0, f'test{k:03d}', '<default_input>', '<default_output>')
+                        for k in range(len(self.reference_info_source.models))
+                    ]
 
         # Variables used in prepare_metric and run_metric
         self.member_signals, self.non_member_signals = [], []
