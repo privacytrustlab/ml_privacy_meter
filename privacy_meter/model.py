@@ -1,7 +1,15 @@
 from abc import ABC, abstractmethod
+import warnings
 
-import tensorflow as tf
-from torch import Tensor
+try:
+    import tensorflow as tf
+except ImportError:
+    warnings.warn("tensorflow package not found: TensorflowModel might not work.", category=ImportWarning)
+
+try:
+    from torch import Tensor
+except ImportError:
+    warnings.warn("torch package not found: PytorchModel might not work.", category=ImportWarning)
 
 
 class Model(ABC):
