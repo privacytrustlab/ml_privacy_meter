@@ -344,6 +344,5 @@ class ShadowMetric(Metric):
 
         # Evaluate the power of this inference and display the result
         metric_result = MetricResult(predictions=predictions, true_labels=true_labels)
-        print(metric_result)
 
         return metric_result
