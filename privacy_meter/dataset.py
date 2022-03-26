@@ -116,6 +116,7 @@ class Dataset:
 
                 # If method is independent, then the sub-splits are a partition of the original split.
                 elif method == 'independent':
+                    # TODO: add randomness
                     arr = np.array_split(self.data_dict[split][feature], num_splits)
                     for split_n in range(num_splits):
                         # Initialize the dictionary if necessary.
