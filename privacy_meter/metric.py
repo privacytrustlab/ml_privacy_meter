@@ -209,6 +209,7 @@ class ShadowMetric(Metric):
             target_model_to_test_split_mapping: List[Tuple[int, str, str, str]] = None,
             reference_model_to_train_split_mapping: List[Tuple[int, str, str, str]] = None,
             reference_model_to_test_split_mapping: List[Tuple[int, str, str, str]] = None,
+            reweight_samples: bool = True,
             unique_dataset: bool = False
     ):
         """
@@ -231,6 +232,8 @@ class ShadowMetric(Metric):
             reference_model_to_test_split_mapping: Mapping from the reference models to their test splits of the
                 corresponding reference dataset. By default, the code will look for a split named "test" if only one
                 reference model is provided, else for splits named "test000", "test001", "test002", etc.
+            reweight_samples: Boolean specifying if the metric should account for an unbalance between the number of
+                members vs non-members.
             unique_dataset: Boolean indicating if target_info_source and target_info_source use one same dataset object.
         """
 
@@ -239,6 +242,8 @@ class ShadowMetric(Metric):
                          reference_info_source=reference_info_source,
                          signals=signals,
                          hypothesis_test_func=hypothesis_test_func)
+
+        self.reweight_samples = reweight_samples
 
         # Store the model to split mappings
         self.target_model_to_train_split_mapping = target_model_to_train_split_mapping
@@ -330,7 +335,10 @@ class ShadowMetric(Metric):
 
         # Create and fit a LogisticRegression object, from the members and non-members of the reference
         # InformationSource
-        clf = LogisticRegression()
+        clf = LogisticRegression(class_weight={
+            0: self.reference_member_signals.shape[0],
+            1: self.reference_non_member_signals.shape[0],
+        } if self.reweight_samples else None)
         x = np.concatenate([self.reference_member_signals, self.reference_non_member_signals]).reshape(-1, 1)
         y = np.array([1] * len(self.reference_member_signals) + [0] * len(self.reference_non_member_signals))
         clf.fit(x, y)
