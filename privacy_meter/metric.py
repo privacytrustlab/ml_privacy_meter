@@ -186,7 +186,6 @@ class PopulationMetric(Metric):
             true_labels.extend([0] * len(self.non_member_signals))
 
             metric_result = MetricResult(predictions=predictions, true_labels=true_labels)
-            print(metric_result)
 
             metric_result_list.append(metric_result)
 
