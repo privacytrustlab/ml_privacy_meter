@@ -2,7 +2,20 @@
 
 ## Installation
 
+Privacy Meter supports Python `>=3.6` and works with `tensorflow>=2.4.0` and `torch>=1.10.0`. 
+
+You can clone this repository and install the local version of tool with its dependencies by running the following:
+
+```bash
+pip install -r requirements.txt
+pip install -e .
+```
+
+We will be publishing the tool to `PyPi` shortly so you can install the tool directly using `pip`.
+
 ## Usage
+
+Examples of using the tool can be found in the `docs/` directory. The tutorials are provided as Jupyter notebooks.
 
 ## References
 
