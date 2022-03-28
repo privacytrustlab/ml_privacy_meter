@@ -2,6 +2,62 @@
 
 ## Auto-generating Documentation
 
+The tool we use to maintain the documentation is called Sphinx. Install it via pip:
+
+```bash
+pip install -U Sphinx
+```
+
+We are also using a custom theme, called `sphinx_rtd_theme`. Install it via pip:
+
+```bash
+pip install sphinx-rtd-theme
+```
+
+### One time configuration
+
+If this is the first time building the documentation on the current machine, run the following command in the root directory of the project:
+
+```bash
+sphinx-quickstart
+```
+
+Do fill out the basic configuration properties required.
+
+Then, update the `conf.py` file generated inside the `source` folder:
+* Update the `html_theme` variable to "sphinx_rtd_theme".
+* Update the system path to point to the project’s modules directory (line 13-15)
+
+```python
+sys.path.insert(0, os.path.abspath('../privacy_meter/'))
+```
+
+* Add "sphinx.ext.autodoc" and "sphinx.ext.napoleon" to the `extensions` list.
+
+Now proceed to the next section.
+
+### Updating the documentation
+
+Start by updating the version number in `/source/conf.py`.
+
+We want to automatically generate rst files with autodoc directives from the code:
+
+```bash
+sphinx-apidoc -f -o source privacy_meter
+```
+
+And now we can generate the html pages from the rst files:
+
+```bash
+make html
+```
+
+The html files are all contained in the `/build/html/` directory.
+
+Note 1: The test version is then deployed to firebase.
+
+Note 2: This is based on a detailed tutorial for auto-documenting a python project using Sphinx, available at https://betterprogramming.pub/auto-documenting-a-python-project-using-sphinx-8878f9ddc6e9
+
 ## Building and Publishing Privacy Meter
 
 We will need a library called `twine` to publish the tool to PyPi. Install this library using `pip install twine` before proceeding with the instructions below.
