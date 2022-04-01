@@ -27,11 +27,12 @@ Examples of using the tool can be found in the `docs/` directory. The tutorials 
 
 ## Contributors
 
-The tool is designed and developed at NUS Data Privacy and Trustworthy Machine Learning Lab. Current contributers are: Aadyaa Maddi, Jiayuan Ye, Sasi Kumar Murakonda, and Reza Shokri. Earlier contributors were Milad Nasr, Shadab Shaikh, and Mihir Harshavardhan Khandekar.
+The tool is designed and developed at NUS Data Privacy and Trustworthy Machine Learning Lab. Current contributers are: Aadyaa Maddi, Jiayuan Ye, Sasi Kumar Murakonda, Victor Masiak, and Reza Shokri. Earlier contributors were Milad Nasr, Shadab Shaikh, and Mihir Harshavardhan Khandekar.
 
 <p float="left">
 <img src="https://www.comp.nus.edu.sg/~reza/img/aadyaa.jpg" width="100"/>
 <img src="https://www.comp.nus.edu.sg/~reza/img/jiayuan.jpg" width="100"/>
 <img src="https://www.comp.nus.edu.sg/~reza/img/sasi.jpg" width="100"/>
+<img src="https://www.comp.nus.edu.sg/~reza/img/victor.jpg" width="100"/>
 <img src="https://www.comp.nus.edu.sg/~reza/img/reza.jpg" width="100"/>
 </p>
