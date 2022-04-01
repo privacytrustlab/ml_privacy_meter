@@ -211,6 +211,8 @@ class ModelGradient(Signal):
             dataset_index, split_name, input_feature, output_feature = model_to_split_mapping[k]
             x = datasets[dataset_index].get_feature(split_name, input_feature)
             y = datasets[dataset_index].get_feature(split_name, output_feature)
-            # Compute the signal
-            results.append(model.get_grad(x, y))
+            # Compute the signal for each sample
+            for (sample_x, sample_y) in zip(x, y):
+                xx, yy = np.expand_dims(sample_x, axis=0), np.expand_dims(sample_y, axis=0)
+                results.append(model.get_grad(xx, yy))
         return results
