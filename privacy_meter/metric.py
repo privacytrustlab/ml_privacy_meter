@@ -343,13 +343,22 @@ class ShadowMetric(Metric):
         clf.fit(x, y)
 
         # Predict the membership status of samples in the target InformationSource
-        member_predictions = clf.predict(self.member_signals.reshape(-1, 1))
-        non_member_predictions = clf.predict(self.non_member_signals.reshape(-1, 1))
-        predictions = np.concatenate([member_predictions, non_member_predictions])
+        predictions_proba = clf.predict_proba(np.concatenate([
+            self.member_signals.reshape(-1, 1),
+            self.non_member_signals.reshape(-1, 1)
+        ]))
+        predictions_label = np.argmax(predictions_proba, axis=1)
+        predictions_proba = predictions_proba[:, 1]
 
         true_labels = [1] * len(self.member_signals) + [0] * len(self.non_member_signals)
 
         # Evaluate the power of this inference and display the result
-        metric_result = MetricResult(predictions=predictions, true_labels=true_labels)
+        metric_result = MetricResult(
+            metric_name="Shadow metric",
+            predictions_proba=predictions_proba,
+            predictions_label=predictions_label,
+            true_labels=true_labels,
+            signal_values=x
+        )
 
         return metric_result
