@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from copy import deepcopy
 import warnings
 
 try:
@@ -40,12 +41,13 @@ class Model(ABC):
         pass
 
     @abstractmethod
-    def get_loss(self, batch_samples, batch_labels):
+    def get_loss(self, batch_samples, batch_labels, per_point=True):
         """Function to get the model loss on a given input and an expected output.
 
         Args:
             batch_samples: Model input
             batch_labels: Model expected output
+            per_point: Boolean indicating if loss should be returned per point or reduced
 
         Returns:
             The loss value, as defined by the loss_fn attribute.
@@ -104,6 +106,10 @@ class PytorchModel(Model):
         for (i, l) in enumerate(list(self.model_obj._modules.keys())):
             getattr(self.model_obj, l).register_forward_hook(self.__forward_hook(l))
 
+        # Create a second loss function, per point
+        self.loss_fn_no_reduction = deepcopy(loss_fn)
+        self.loss_fn_no_reduction.reduction = 'none'
+
     def get_outputs(self, batch_samples):
         """Function to get the model output from a given input.
 
@@ -115,17 +121,24 @@ class PytorchModel(Model):
         """
         return self.model_obj(Tensor(batch_samples)).detach().numpy()
 
-    def get_loss(self, batch_samples, batch_labels):
+    def get_loss(self, batch_samples, batch_labels, per_point=True):
         """Function to get the model loss on a given input and an expected output.
 
         Args:
             batch_samples: Model input
             batch_labels: Model expected output
+            per_point: Boolean indicating if loss should be returned per point or reduced
 
         Returns:
             The loss value, as defined by the loss_fn attribute.
         """
-        return self.loss_fn(self.model_obj(Tensor(batch_samples)), Tensor(batch_labels)).item()
+        if per_point:
+            return self.loss_fn_no_reduction(
+                self.model_obj(Tensor(batch_samples)),
+                Tensor(batch_labels)
+            ).detach().numpy()
+        else:
+            return self.loss_fn(self.model_obj(Tensor(batch_samples)), Tensor(batch_labels)).item()
 
     def get_grad(self, batch_samples, batch_labels):
         """Function to get the gradient of the model loss with respect to the model parameters, on a given input and an
@@ -202,6 +215,10 @@ class TensorflowModel(Model):
             [i for i in range(len(self.model_obj.layers))]
         ))
 
+        # Create a second loss function, per point
+        self.loss_fn_no_reduction = deepcopy(loss_fn)
+        self.loss_fn_no_reduction.reduction = 'none'
+
     def get_outputs(self, batch_samples):
         """Function to get the model output from a given input.
 
@@ -213,17 +230,21 @@ class TensorflowModel(Model):
         """
         return self.model_obj(batch_samples).numpy()
 
-    def get_loss(self, batch_samples, batch_labels):
+    def get_loss(self, batch_samples, batch_labels, per_point=True):
         """Function to get the model loss on a given input and an expected output.
 
         Args:
             batch_samples: Model input
             batch_labels: Model expected output
+            per_point: Boolean indicating if loss should be returned per point or reduced
 
         Returns:
             The loss value, as defined by the loss_fn attribute.
         """
-        return self.loss_fn(self.get_outputs(batch_samples), batch_labels).numpy()
+        if per_point:
+            return self.loss_fn_no_reduction(self.get_outputs(batch_samples), batch_labels).numpy()
+        else:
+            return self.loss_fn(self.get_outputs(batch_samples), batch_labels).numpy()
 
     def get_grad(self, batch_samples, batch_labels):
         """Function to get the gradient of the model loss with respect to the model parameters, on a given input and an
