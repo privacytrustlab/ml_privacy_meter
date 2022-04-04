@@ -9,14 +9,27 @@ from privacy_meter.metric_result import MetricResult
 
 
 class AuditReport(ABC):
+    """
+    An abstract class to display and/or save some elements of a metric result object.
+    """
 
     @staticmethod
     @abstractmethod
     def generate_report(metric_result: MetricResult):
+        """
+        Core function of the AuditReport class, that actually generates the report.
+
+        Args:
+            metric_result: MetricResult object, containing data for the report.
+        """
         pass
 
 
 class ROCCurveReport(AuditReport):
+    """
+    Inherits of the AuditReport class, an interface class to display and/or save some elements of a metric result
+    object. This particular class is used to generate a ROC (Receiver Operating Characteristic) curve.
+    """
 
     @staticmethod
     def generate_report(metric_result: MetricResult,
@@ -24,6 +37,15 @@ class ROCCurveReport(AuditReport):
                         save: bool = True,
                         filename: str = 'roc_curve.jpg'
                         ):
+        """
+        Core function of the AuditReport class, that actually generates the report.
+
+        Args:
+            metric_result: MetricResult object, containing data for the report.
+            show: Boolean specifying if the plot should be displayed on screen.
+            save: Boolean specifying if the plot should be saved as a file.
+            filename: File name to be used if the plot is saved as a file.
+        """
         range01 = np.linspace(0, 1)
         fpr, tpr, thresholds = metric_result.roc
         plt.fill_between(fpr, tpr, alpha=0.15)
@@ -51,6 +73,10 @@ class ROCCurveReport(AuditReport):
 
 
 class ConfusionMatrixReport(AuditReport):
+    """
+    Inherits of the AuditReport class, an interface class to display and/or save some elements of a metric result
+    object. This particular class is used to generate a confusion matrix.
+    """
 
     @staticmethod
     def generate_report(metric_result: MetricResult,
@@ -58,6 +84,15 @@ class ConfusionMatrixReport(AuditReport):
                         save: bool = True,
                         filename: str = 'confusion_matrix.jpg'
                         ):
+        """
+        Core function of the AuditReport class, that actually generates the report.
+
+        Args:
+            metric_result: MetricResult object, containing data for the report.
+            show: Boolean specifying if the plot should be displayed on screen.
+            save: Boolean specifying if the plot should be saved as a file.
+            filename: File name to be used if the plot is saved as a file.
+        """
         cm = np.array([[metric_result.tn, metric_result.fp], [metric_result.fn, metric_result.tp]])
         cm = 100 * cm / np.sum(cm)
         index = ["Non-member", "Member"]
@@ -75,6 +110,10 @@ class ConfusionMatrixReport(AuditReport):
 
 
 class SignalHistogramReport(AuditReport):
+    """
+    Inherits of the AuditReport class, an interface class to display and/or save some elements of a metric result
+    object. This particular class is used to generate a histogram of the signal values.
+    """
 
     @staticmethod
     def generate_report(metric_result: MetricResult,
@@ -82,6 +121,15 @@ class SignalHistogramReport(AuditReport):
                         save: bool = True,
                         filename: str = 'signal_histogram.jpg'
                         ):
+        """
+        Core function of the AuditReport class, that actually generates the report.
+
+        Args:
+            metric_result: MetricResult object, containing data for the report.
+            show: Boolean specifying if the plot should be displayed on screen.
+            save: Boolean specifying if the plot should be saved as a file.
+            filename: File name to be used if the plot is saved as a file.
+        """
         member_signals = metric_result.signal_values[np.array(metric_result.true_labels)]
         non_member_signals = metric_result.signal_values[1 - np.array(metric_result.true_labels)]
         plt.hist(member_signals, label='Members', alpha=0.5)
