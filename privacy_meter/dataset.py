@@ -88,7 +88,9 @@ class Dataset:
             split_names: The splits to subdivide (e.g. train and test). By default, includes all splits.
             method: Either independent or random. If method is independent, then the sub-splits are a partition of the
                 original split (i.e. they contain the entire split without repetition). If method is random, then each
-                sub-split is a random subset of the original split (i.e. some samples might be missing or repeated).
+                sub-split is a random subset of the original split (i.e. some samples might be missing or repeated). If
+                method is hybrid, then each sub-split is a random subset of the original split, with the guarantee that
+                the 1st one is not overlapping with the others.
             split_size: If method is random, this is the size of one split (ignored if method is independent).
             delete_original: Indicates if the original split should be deleted.
 
@@ -104,7 +106,7 @@ class Dataset:
 
             # If method is random, then each sub-split is a random subset of the original split.
             if method == 'random':
-                assert split_size is not None
+                assert split_size is not None, 'Argument split_size is required when method is "random" or "hybrid"'
                 indices = np.random.randint(self.data_dict[split][self.features[0]].shape[0], size=(num_splits, split_size))
 
             # If method is independent, then the sub-splits are a partition of the original split.
@@ -112,6 +114,16 @@ class Dataset:
                 indices = np.arange(self.data_dict[split][self.features[0]].shape[0])
                 np.random.shuffle(indices)
                 indices = np.array_split(indices, num_splits)
+
+            # If method is hybrid, then each sub-split is a random subset of the original split, with the guarantee that
+            # the 1st one is not overlapping with the others
+            elif method == 'hybrid':
+                assert split_size is not None, 'Argument split_size is required when method is "random" or "hybrid"'
+                available_indices = np.arange(self.data_dict[split][self.features[0]].shape[0])
+                indices_a = np.random.choice(available_indices, size=(1, split_size), replace=False)
+                available_indices = np.setdiff1d(available_indices, indices_a.flatten())
+                indices_b = np.random.choice(available_indices, size=(num_splits-1, split_size), replace=True)
+                indices = np.concatenate((indices_a, indices_b))
 
             else:
                 raise ValueError(f'Split method "{method}" does not exist.')
