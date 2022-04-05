@@ -1,6 +1,6 @@
+import warnings
 from abc import ABC, abstractmethod
 from copy import deepcopy
-import warnings
 
 try:
     import tensorflow as tf
@@ -8,7 +8,7 @@ except ImportError:
     warnings.warn("tensorflow package not found: TensorflowModel might not work.", category=ImportWarning)
 
 try:
-    from torch import Tensor
+    import torch
 except ImportError:
     warnings.warn("torch package not found: PytorchModel might not work.", category=ImportWarning)
 
@@ -86,7 +86,7 @@ class Model(ABC):
 
 class PytorchModel(Model):
     """
-    Inherits of the Model class, an interface to query a model without any assumption on how it is implemented.
+    Inherits from the Model class, an interface to query a model without any assumption on how it is implemented.
     This particular class is to be used with pytorch models.
     """
 
@@ -119,7 +119,7 @@ class PytorchModel(Model):
         Returns:
             Model output
         """
-        return self.model_obj(Tensor(batch_samples)).detach().numpy()
+        return self.model_obj(torch.Tensor(batch_samples)).detach().numpy()
 
     def get_loss(self, batch_samples, batch_labels, per_point=True):
         """Function to get the model loss on a given input and an expected output.
@@ -134,11 +134,11 @@ class PytorchModel(Model):
         """
         if per_point:
             return self.loss_fn_no_reduction(
-                self.model_obj(Tensor(batch_samples)),
-                Tensor(batch_labels)
+                self.model_obj(torch.Tensor(batch_samples)),
+                torch.Tensor(batch_labels)
             ).detach().numpy()
         else:
-            return self.loss_fn(self.model_obj(Tensor(batch_samples)), Tensor(batch_labels)).item()
+            return self.loss_fn(self.model_obj(torch.Tensor(batch_samples)), torch.Tensor(batch_labels)).item()
 
     def get_grad(self, batch_samples, batch_labels):
         """Function to get the gradient of the model loss with respect to the model parameters, on a given input and an
@@ -151,7 +151,7 @@ class PytorchModel(Model):
         Returns:
             A list of gradients of the model loss (one item per layer) with respect to the model parameters.
         """
-        loss = self.loss_fn(self.model_obj(Tensor(batch_samples)), Tensor(batch_labels))
+        loss = self.loss_fn(self.model_obj(torch.Tensor(batch_samples)), torch.Tensor(batch_labels))
         loss.backward()
         return [p.grad.numpy() for p in self.model_obj.parameters()]
 
@@ -168,7 +168,7 @@ class PytorchModel(Model):
             A list of intermediate outputs of layers.
         """
         if forward_pass:
-            _ = self.get_outputs(Tensor(batch_samples))
+            _ = self.get_outputs(torch.Tensor(batch_samples))
         layer_names = []
         for layer in layers:
             if isinstance(layer, str):
@@ -194,7 +194,7 @@ class PytorchModel(Model):
 
 
 class TensorflowModel(Model):
-    """Inherits of the Model class, an interface to query a model without any assumption on how it is implemented.
+    """Inherits from the Model class, an interface to query a model without any assumption on how it is implemented.
     This particular class is to be used with tensorflow models.
     """
 
@@ -303,3 +303,131 @@ class TensorflowModel(Model):
             return [self.__tf_list_to_np_list(y) for y in x]
         else:
             return x.numpy()
+
+
+class LanguageModel(Model):
+    """
+    Inherits from the Model class, an interface to query a model without any assumption on how it is implemented.
+    This particular abstract class is to be used with language models.
+    """
+
+    @abstractmethod
+    def get_perplexity(self, batch_samples):
+        """Function to get the perplexity of the model loss, on a given input sequence.
+        Args:
+            batch_samples: Model input
+        Returns:
+            A list of perplexity values.
+        """
+        pass
+
+
+class HuggingFaceCausalLanguageModel(LanguageModel):
+    """
+    Inherits from the LanguageModel class, an interface to query a language model
+    without any assumption on how it is implemented.
+    This particular class is to be used with HuggingFace causal language models.
+    """
+
+    def __init__(self, model_obj, loss_fn, stride=64):
+        """Constructor
+        Args:
+            model_obj: model object
+            loss_fn: loss function
+            stride: window size that will be used by the fixed length
+            causal model for processing an input sequence
+        """
+
+        # Initializes the parent model
+        super().__init__(model_obj, loss_fn)
+
+        self.stride = stride
+
+        # Create a second loss function, per point
+        self.loss_fn_no_reduction = deepcopy(loss_fn)
+        self.loss_fn_no_reduction.reduction = 'none'
+
+    def get_outputs(self, batch_samples):
+        """Function to get the model output from a given input.
+        Args:
+            batch_samples: Model input
+        Returns:
+            Model output
+        """
+        batch_samples = torch.tensor(batch_samples, dtype=torch.long)
+        batch_labels = batch_samples.clone()
+        with torch.no_grad():
+            outputs = self.model_obj(batch_samples, labels=batch_labels)
+        return outputs.get("logits")
+
+    def get_loss(self, batch_samples, batch_labels=None, per_point=True):
+        """Function to get the model loss on a given input and an expected output.
+        Args:
+            batch_samples: Model input
+            batch_labels: Model expected output
+            per_point: Boolean indicating if loss should be returned per point or reduced
+        Returns:
+            The loss value, as defined by the loss_fn attribute.
+        """
+        pass
+
+    def get_grad(self, batch_samples, batch_labels):
+        """Function to get the gradient of the model loss with respect to the model parameters, on a given input and an
+        expected output.
+        Args:
+            batch_samples: Model input
+            batch_labels: Model expected output
+        Returns:
+            A list of gradients of the model loss (one item per layer) with respect to the model parameters.
+        """
+        pass
+
+    def get_intermediate_outputs(self, layers, batch_samples, forward_pass=True):
+        """Function to get the intermediate output of layers (a.k.a. features), on a given input.
+        Args:
+            layers: List of integers and/or strings, indicating which layers values should be returned
+            batch_samples: Model input
+            forward_pass: Boolean indicating if a new forward pass should be executed. If True, then a forward pass is
+                executed on batch_samples. Else, the result is the one of the last forward pass.
+        Returns:
+            A list of intermediate outputs of layers.
+        """
+        pass
+
+    def get_perplexity(self, batch_samples):
+        """Function to get the perplexity of the model loss, on a given input sequence.
+        Args:
+            batch_samples: Model input
+        Returns:
+            A list of perplexity values.
+        """
+        max_length = self.model_obj.config.n_positions
+
+        ppl_values = []
+        for sample in batch_samples:
+            sample_length = len(sample)
+
+            sample = np.expand_dims(sample, axis=0)  # the model takes in a batch of sequences
+            sample = torch.tensor(sample, dtype=torch.long)
+
+            nlls = []
+            for i in range(0, sample_length, self.stride):
+                begin_loc = max(i + self.stride - max_length, 0)
+                end_loc = min(i + self.stride, sample_length)
+
+                trg_len = end_loc - i  # may be different from stride on last loop
+
+                input_ids = sample[:, begin_loc:end_loc]
+                target_ids = input_ids.clone()
+                target_ids[:, :-trg_len] = -100
+
+                with torch.no_grad():
+                    outputs = self.model_obj(input_ids, labels=target_ids)
+                    neg_log_likelihood = outputs[0] * trg_len
+
+                nlls.append(neg_log_likelihood)
+            ppl = torch.exp(torch.stack(nlls).sum() / end_loc)
+
+            ppl_values.append(ppl)
+
+        return ppl_values

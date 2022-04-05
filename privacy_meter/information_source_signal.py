@@ -165,7 +165,13 @@ class ModelLoss(Signal):
             # Extract the features to be used
             dataset_index, split_name, input_feature, output_feature = model_to_split_mapping[k]
             x = datasets[dataset_index].get_feature(split_name, input_feature)
-            y = datasets[dataset_index].get_feature(split_name, output_feature)
+
+            # Check if output feature has been provided, else pass None
+            if output_feature is not None:
+                y = datasets[dataset_index].get_feature(split_name, output_feature)
+            else:
+                y = None
+
             # Compute the signal for each sample
             results.append(model.get_loss(x, y))
         return results
