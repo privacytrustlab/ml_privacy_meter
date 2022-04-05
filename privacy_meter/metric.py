@@ -162,15 +162,18 @@ class PopulationMetric(Metric):
         signals = []
         if os.path.isfile(f'{signal_filepath}{NPZ_EXTENSION}'):
             with np.load(f'{signal_filepath}{NPZ_EXTENSION}', allow_pickle=True) as data:
-                signals = data['arr_0'][()]
+                signals = np.array(data['arr_0'][()])
         else:
             # For each signal compute the response of both the model on the dataset according to the mapping
             for signal in self.signals:
                 signals.append(
                     info_source_obj.get_signal(signal, mapping_obj)
                 )
-            # For the shadow metric we have a list of loss values
-            signals = np.array(signals).flatten()
+            # For the population metric we have a list of loss values
+            flattened_signals = []
+            for arr in signals:
+                flattened_signals.extend(arr)
+            signals = flattened_signals
             np.savez(signal_filepath, signals)
 
         return signals
@@ -372,7 +375,7 @@ class ShadowMetric(Metric):
         signals = []
         if os.path.isfile(f'{signal_filepath}{NPZ_EXTENSION}'):
             with np.load(f'{signal_filepath}{NPZ_EXTENSION}', allow_pickle=True) as data:
-                signals = data['arr_0'][()]
+                signals = np.array(data['arr_0'][()])
         else:
             # For each signal compute the response of both the model on the dataset according to the mapping
             for signal in self.signals:
@@ -380,7 +383,10 @@ class ShadowMetric(Metric):
                     info_source_obj.get_signal(signal, mapping_obj)
                 )
             # For the shadow metric we have a list of loss values
-            signals = np.array(signals).flatten()
+            flattened_signals = []
+            for arr in signals:
+                flattened_signals.extend(arr)
+            signals = flattened_signals
             np.savez(signal_filepath, signals)
 
         return signals

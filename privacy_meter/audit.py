@@ -24,9 +24,9 @@ class Audit:
                 os.getcwd(),
                 datetime.now().strftime('log_%Y-%m-%d_%H-%M-%S')
             )
+            os.mkdir(self.logs_dirname)
         else:
             self.logs_dirname = logs_dirname
-        os.mkdir(self.logs_dirname)
 
         self.metric_object = None
         if type(metric) == MetricEnum:
@@ -45,10 +45,11 @@ class Audit:
                     reference_info_source=reference_info_source,
                     signals=[ModelLoss()],
                     hypothesis_test_func=None,
-                    logs_dirname=logs_dirname
+                    logs_dirname=self.logs_dirname
                 )
         else:
             # if the user wants to pass in their custom metric object
+            metric.logs_dirname = self.logs_dirname
             self.metric_object = metric
         self.fpr_tolerance_list = fpr_tolerance_list
 
@@ -56,6 +57,7 @@ class Audit:
         self.metric_object.prepare_metric()
 
     def run(self):
+        print(f"Results are stored in: {self.logs_dirname}")
         return self.metric_object.run_metric(self.fpr_tolerance_list)
 
     def report(self):
