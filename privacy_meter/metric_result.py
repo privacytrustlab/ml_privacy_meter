@@ -5,26 +5,35 @@ class MetricResult:
     """
     Contains results related to the performance of the metric.
     """
-    def __init__(self, metric_name, predictions_label, true_labels, predictions_proba, signal_values):
+    def __init__(self, metric_name, predicted_labels, true_labels, predictions_proba, signal_values):
         """
         Constructor.
 
         Computes and stores the accuracy, ROC AUC score, and the confusion matrix for a metric.
 
         Args:
-            predictions_label: Membership predictions of the metric
+            predicted_labels: Membership predictions of the metric
             true_labels: True membership labels used to evaluate the metric
         """
         self.metric_name = metric_name
-        self.predictions_label = predictions_label
+        self.predicted_labels = predicted_labels
         self.true_labels = true_labels
         self.predictions_proba = predictions_proba
         self.signal_values = signal_values
 
-        self.accuracy = accuracy_score(y_true=true_labels, y_pred=predictions_label)
-        self.roc = roc_curve(y_true=true_labels, y_score=predictions_proba)
-        self.roc_auc = roc_auc_score(y_true=true_labels, y_score=predictions_proba)
-        self.tn, self.fp, self.fn, self.tp = confusion_matrix(y_true=true_labels, y_pred=predictions_label).ravel()
+        self.accuracy = accuracy_score(y_true=true_labels, y_pred=predicted_labels)
+
+        if self.predictions_proba is None:
+            self.roc = roc_curve(y_true=true_labels, y_score=predicted_labels)
+        else:
+            self.roc = roc_curve(y_true=true_labels, y_score=predictions_proba)
+
+        if self.predictions_proba is None:
+            self.roc_auc = roc_auc_score(y_true=true_labels, y_score=predicted_labels)
+        else:
+            self.roc_auc = roc_auc_score(y_true=true_labels, y_score=predictions_proba)
+
+        self.tn, self.fp, self.fn, self.tp = confusion_matrix(y_true=true_labels, y_pred=predicted_labels).ravel()
 
     def __str__(self):
         """

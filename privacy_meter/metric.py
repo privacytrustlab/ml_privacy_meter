@@ -147,15 +147,15 @@ class PopulationMetric(Metric):
         """
         signal_filepath, info_source_obj, mapping_obj = None, None, None
         if signal_source == SignalSourceEnum.TARGET_MEMBER:
-            signal_filepath = f'{self.logs_dirname}/{MetricEnum.POPULATION}_{TARGET_MEMBER_SIGNALS_FILENAME}'
+            signal_filepath = f'{self.logs_dirname}/{MetricEnum.POPULATION.value}_{TARGET_MEMBER_SIGNALS_FILENAME}'
             info_source_obj = self.target_info_source
             mapping_obj = self.target_model_to_train_split_mapping
         elif signal_source == SignalSourceEnum.TARGET_NON_MEMBER:
-            signal_filepath = f'{self.logs_dirname}/{MetricEnum.POPULATION}_{TARGET_NON_MEMBER_SIGNALS_FILENAME}'
+            signal_filepath = f'{self.logs_dirname}/{MetricEnum.POPULATION.value}_{TARGET_NON_MEMBER_SIGNALS_FILENAME}'
             info_source_obj = self.target_info_source
             mapping_obj = self.target_model_to_test_split_mapping
         elif signal_source == SignalSourceEnum.REFERENCE:
-            signal_filepath = f'{self.logs_dirname}/{MetricEnum.POPULATION}_{REFERENCE_SIGNALS_FILENAME}'
+            signal_filepath = f'{self.logs_dirname}/{MetricEnum.POPULATION.value}_{REFERENCE_SIGNALS_FILENAME}'
             info_source_obj = self.reference_info_source
             mapping_obj = self.reference_model_to_train_split_mapping
 
@@ -224,7 +224,7 @@ class PopulationMetric(Metric):
             signal_values = np.concatenate([self.member_signals, self.non_member_signals])
 
             metric_result = MetricResult(metric_name="Population metric",
-                                         predictions_label=predictions,
+                                         predicted_labels=predictions,
                                          true_labels=true_labels,
                                          predictions_proba=None,
                                          signal_values=signal_values)
@@ -353,19 +353,19 @@ class ShadowMetric(Metric):
         """
         signal_filepath, info_source_obj, mapping_obj = None, None, None
         if signal_source == SignalSourceEnum.TARGET_MEMBER:
-            signal_filepath = f'{self.logs_dirname}/{MetricEnum.SHADOW}_{TARGET_MEMBER_SIGNALS_FILENAME}'
+            signal_filepath = f'{self.logs_dirname}/{MetricEnum.SHADOW.value}_{TARGET_MEMBER_SIGNALS_FILENAME}'
             info_source_obj = self.target_info_source
             mapping_obj = self.target_model_to_train_split_mapping
         elif signal_source == SignalSourceEnum.TARGET_NON_MEMBER:
-            signal_filepath = f'{self.logs_dirname}/{MetricEnum.SHADOW}_{TARGET_NON_MEMBER_SIGNALS_FILENAME}'
+            signal_filepath = f'{self.logs_dirname}/{MetricEnum.SHADOW.value}_{TARGET_NON_MEMBER_SIGNALS_FILENAME}'
             info_source_obj = self.target_info_source
             mapping_obj = self.target_model_to_test_split_mapping
         elif signal_source == SignalSourceEnum.REFERENCE_MEMBER:
-            signal_filepath = f'{self.logs_dirname}/{MetricEnum.SHADOW}_{REFERENCE_MEMBER_SIGNALS_FILENAME}'
+            signal_filepath = f'{self.logs_dirname}/{MetricEnum.SHADOW.value}_{REFERENCE_MEMBER_SIGNALS_FILENAME}'
             info_source_obj = self.reference_info_source
             mapping_obj = self.reference_model_to_train_split_mapping
         elif signal_source == SignalSourceEnum.REFERENCE_NON_MEMBER:
-            signal_filepath = f'{self.logs_dirname}/{MetricEnum.SHADOW}_{REFERENCE_NON_MEMBER_SIGNALS_FILENAME}'
+            signal_filepath = f'{self.logs_dirname}/{MetricEnum.SHADOW.value}_{REFERENCE_NON_MEMBER_SIGNALS_FILENAME}'
             info_source_obj = self.reference_info_source
             mapping_obj = self.reference_model_to_test_split_mapping
 
@@ -432,7 +432,7 @@ class ShadowMetric(Metric):
         metric_result = MetricResult(
             metric_name="Shadow metric",
             predictions_proba=predictions_proba,
-            predictions_label=predictions_label,
+            predicted_labels=predictions_label,
             true_labels=true_labels,
             signal_values=x
         )

@@ -22,10 +22,11 @@ class Audit:
         if logs_dirname is None:
             self.logs_dirname = os.path.join(
                 os.getcwd(),
-                datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
+                datetime.now().strftime('log_%Y-%m-%d_%H-%M-%S')
             )
         else:
             self.logs_dirname = logs_dirname
+        os.mkdir(self.logs_dirname)
 
         self.metric_object = None
         if type(metric) == MetricEnum:
@@ -36,7 +37,7 @@ class Audit:
                     reference_info_source=reference_info_source,
                     signals=[ModelLoss()],
                     hypothesis_test_func=threshold_func,
-                    logs_dirname=logs_dirname
+                    logs_dirname=self.logs_dirname
                 )
             elif metric == MetricEnum.SHADOW:
                 self.metric_object = ShadowMetric(
