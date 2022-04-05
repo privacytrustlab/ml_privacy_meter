@@ -1,12 +1,15 @@
+import os
+
 from abc import ABC, abstractmethod
-from typing import Any, Callable, Optional, List, Tuple, Union
+from typing import Callable, Optional, List, Tuple
 
 import numpy as np
 from sklearn.linear_model import LogisticRegression
 
+from privacy_meter.constants import *
 from privacy_meter.information_source import InformationSource
-from privacy_meter.metric_result import MetricResult
 from privacy_meter.information_source_signal import Signal
+from privacy_meter.metric_result import MetricResult
 
 
 class Metric(ABC):
@@ -22,6 +25,7 @@ class Metric(ABC):
                  reference_info_source: InformationSource,
                  signals: List[Signal],
                  hypothesis_test_func: Optional[Callable],
+                 logs_dirname: str
                  ):
         """
         Constructor
@@ -38,6 +42,7 @@ class Metric(ABC):
         self.reference_info_source = reference_info_source
         self.signals = signals
         self.hypothesis_test_func = hypothesis_test_func
+        self.logs_dirname = logs_dirname
 
     @abstractmethod
     def prepare_metric(self):
@@ -75,6 +80,7 @@ class PopulationMetric(Metric):
             target_model_to_train_split_mapping: List[Tuple[int, str, str, str]] = None,
             target_model_to_test_split_mapping: List[Tuple[int, str, str, str]] = None,
             reference_model_to_train_split_mapping: List[Tuple[int, str, str, str]] = None,
+            logs_dirname: str = None
     ):
         """
         Constructor
@@ -99,7 +105,11 @@ class PopulationMetric(Metric):
         super().__init__(target_info_source=target_info_source,
                          reference_info_source=reference_info_source,
                          signals=signals,
-                         hypothesis_test_func=hypothesis_test_func)
+                         hypothesis_test_func=hypothesis_test_func,
+                         logs_dirname=logs_dirname)
+
+        # Logs directory
+        self.logs_dirname = logs_dirname
 
         # Store the model to split mappings
         self.target_model_to_train_split_mapping = target_model_to_train_split_mapping
@@ -124,7 +134,46 @@ class PopulationMetric(Metric):
         self.member_signals, self.non_member_signals = [], []
         self.reference_signals = []
 
-        self.prepare_metric()
+    def __load_or_compute_signals(self, signal_source):
+        """
+        Private helper function to load signals if they have been computed already, or compute and save signals
+        if they haven't.
+
+        Args:
+            signal_source: Signal source to determine which information source and mapping objects need to be used
+
+        Returns:
+            Signals computed using the specified information source and mapping object.
+        """
+        signal_filepath, info_source_obj, mapping_obj = None, None, None
+        if signal_source == SignalSourceEnum.TARGET_MEMBER:
+            signal_filepath = f'{self.logs_dirname}/{MetricEnum.POPULATION}_{TARGET_MEMBER_SIGNALS_FILENAME}'
+            info_source_obj = self.target_info_source
+            mapping_obj = self.target_model_to_train_split_mapping
+        elif signal_source == SignalSourceEnum.TARGET_NON_MEMBER:
+            signal_filepath = f'{self.logs_dirname}/{MetricEnum.POPULATION}_{TARGET_NON_MEMBER_SIGNALS_FILENAME}'
+            info_source_obj = self.target_info_source
+            mapping_obj = self.target_model_to_test_split_mapping
+        elif signal_source == SignalSourceEnum.REFERENCE:
+            signal_filepath = f'{self.logs_dirname}/{MetricEnum.POPULATION}_{REFERENCE_SIGNALS_FILENAME}'
+            info_source_obj = self.reference_info_source
+            mapping_obj = self.reference_model_to_train_split_mapping
+
+        signals = []
+        if os.path.isfile(f'{signal_filepath}{NPZ_EXTENSION}'):
+            with np.load(f'{signal_filepath}{NPZ_EXTENSION}', allow_pickle=True) as data:
+                signals = data['arr_0'][()]
+        else:
+            # For each signal compute the response of both the model on the dataset according to the mapping
+            for signal in self.signals:
+                signals.append(
+                    info_source_obj.get_signal(signal, mapping_obj)
+                )
+            # For the shadow metric we have a list of loss values
+            signals = np.array(signals).flatten()
+            np.savez(signal_filepath, signals)
+
+        return signals
 
     def prepare_metric(self):
         """
@@ -135,24 +184,11 @@ class PopulationMetric(Metric):
         auxiliary dataset is a random split from the target model's
         training data.
         """
-
-        # For each signal, compute the response of both the target model on both members and
-        # non-members
-        for signal in self.signals:
-            self.member_signals.append(
-                self.target_info_source.get_signal(signal, self.target_model_to_train_split_mapping)
-            )
-            self.non_member_signals.append(
-                self.target_info_source.get_signal(signal, self.target_model_to_test_split_mapping)
-            )
-            self.reference_signals.append(
-                self.reference_info_source.get_signal(signal, self.reference_model_to_train_split_mapping)
-            )
-
-        # For population metric we have a list of loss values
-        self.member_signals = np.array(self.member_signals).flatten()
-        self.non_member_signals = np.array(self.non_member_signals).flatten()
-        self.reference_signals = np.array(self.reference_signals).flatten()
+        # Load signals if they have been computed already
+        # Otherwise, compute and save them
+        self.member_signals = self.__load_or_compute_signals(signal_source=SignalSourceEnum.TARGET_MEMBER)
+        self.non_member_signals = self.__load_or_compute_signals(signal_source=SignalSourceEnum.TARGET_NON_MEMBER)
+        self.reference_signals = self.__load_or_compute_signals(signal_source=SignalSourceEnum.REFERENCE)
 
     def run_metric(self, fpr_tolerance_rate_list=None):
         """
@@ -185,7 +221,13 @@ class PopulationMetric(Metric):
             true_labels = [1] * len(self.member_signals)
             true_labels.extend([0] * len(self.non_member_signals))
 
-            metric_result = MetricResult(predictions=predictions, true_labels=true_labels)
+            signal_values = np.concatenate([self.member_signals, self.non_member_signals])
+
+            metric_result = MetricResult(metric_name="Population metric",
+                                         predictions_label=predictions,
+                                         true_labels=true_labels,
+                                         predictions_proba=None,
+                                         signal_values=signal_values)
 
             metric_result_list.append(metric_result)
 
@@ -209,7 +251,8 @@ class ShadowMetric(Metric):
             reference_model_to_train_split_mapping: List[Tuple[int, str, str, str]] = None,
             reference_model_to_test_split_mapping: List[Tuple[int, str, str, str]] = None,
             reweight_samples: bool = True,
-            unique_dataset: bool = False
+            unique_dataset: bool = False,
+            logs_dirname: str = None
     ):
         """
         Constructor.
@@ -240,7 +283,11 @@ class ShadowMetric(Metric):
         super().__init__(target_info_source=target_info_source,
                          reference_info_source=reference_info_source,
                          signals=signals,
-                         hypothesis_test_func=hypothesis_test_func)
+                         hypothesis_test_func=hypothesis_test_func,
+                         logs_dirname=logs_dirname)
+
+        # Logs directory
+        self.logs_dirname = logs_dirname
 
         self.reweight_samples = reweight_samples
 
@@ -259,12 +306,12 @@ class ShadowMetric(Metric):
                 self.target_model_to_test_split_mapping = [(0, 'test000', '<default_input>', '<default_output>')]
             if self.reference_model_to_train_split_mapping is None:
                 self.reference_model_to_train_split_mapping = [
-                    (0, f'train{k+1:03d}', '<default_input>', '<default_output>')
+                    (0, f'train{k + 1:03d}', '<default_input>', '<default_output>')
                     for k in range(len(self.reference_info_source.models))
                 ]
             if self.reference_model_to_test_split_mapping is None:
                 self.reference_model_to_test_split_mapping = [
-                    (0, f'test{k+1:03d}', '<default_input>', '<default_output>')
+                    (0, f'test{k + 1:03d}', '<default_input>', '<default_output>')
                     for k in range(len(self.reference_info_source.models))
                 ]
         else:
@@ -293,7 +340,50 @@ class ShadowMetric(Metric):
         self.member_signals, self.non_member_signals = [], []
         self.reference_member_signals, self.reference_non_member_signals = [], []
 
-        self.prepare_metric()
+    def __load_or_compute_signals(self, signal_source):
+        """
+        Private helper function to load signals if they have been computed already, or compute and save signals
+        if they haven't.
+
+        Args:
+            signal_source: Signal source to determine which information source and mapping objects need to be used
+
+        Returns:
+            Signals computed using the specified information source and mapping object.
+        """
+        signal_filepath, info_source_obj, mapping_obj = None, None, None
+        if signal_source == SignalSourceEnum.TARGET_MEMBER:
+            signal_filepath = f'{self.logs_dirname}/{MetricEnum.SHADOW}_{TARGET_MEMBER_SIGNALS_FILENAME}'
+            info_source_obj = self.target_info_source
+            mapping_obj = self.target_model_to_train_split_mapping
+        elif signal_source == SignalSourceEnum.TARGET_NON_MEMBER:
+            signal_filepath = f'{self.logs_dirname}/{MetricEnum.SHADOW}_{TARGET_NON_MEMBER_SIGNALS_FILENAME}'
+            info_source_obj = self.target_info_source
+            mapping_obj = self.target_model_to_test_split_mapping
+        elif signal_source == SignalSourceEnum.REFERENCE_MEMBER:
+            signal_filepath = f'{self.logs_dirname}/{MetricEnum.SHADOW}_{REFERENCE_MEMBER_SIGNALS_FILENAME}'
+            info_source_obj = self.reference_info_source
+            mapping_obj = self.reference_model_to_train_split_mapping
+        elif signal_source == SignalSourceEnum.REFERENCE_NON_MEMBER:
+            signal_filepath = f'{self.logs_dirname}/{MetricEnum.SHADOW}_{REFERENCE_NON_MEMBER_SIGNALS_FILENAME}'
+            info_source_obj = self.reference_info_source
+            mapping_obj = self.reference_model_to_test_split_mapping
+
+        signals = []
+        if os.path.isfile(f'{signal_filepath}{NPZ_EXTENSION}'):
+            with np.load(f'{signal_filepath}{NPZ_EXTENSION}', allow_pickle=True) as data:
+                signals = data['arr_0'][()]
+        else:
+            # For each signal compute the response of both the model on the dataset according to the mapping
+            for signal in self.signals:
+                signals.append(
+                    info_source_obj.get_signal(signal, mapping_obj)
+                )
+            # For the shadow metric we have a list of loss values
+            signals = np.array(signals).flatten()
+            np.savez(signal_filepath, signals)
+
+        return signals
 
     def prepare_metric(self):
         """
@@ -301,28 +391,14 @@ class ShadowMetric(Metric):
         on the reference model(s) and dataset. For the shadow attack, the reference models will be a list of shadow
         models and the auxiliary dataset will contain the train-test splits of these models.
         """
-
-        # For each signal, compute the response of both the target model and the shadow models, on both members and
-        # non-members
-        for signal in self.signals:
-            self.member_signals.append(
-                self.target_info_source.get_signal(signal, self.target_model_to_train_split_mapping)
-            )
-            self.non_member_signals.append(
-                self.target_info_source.get_signal(signal, self.target_model_to_test_split_mapping)
-            )
-            self.reference_member_signals.append(
-                self.reference_info_source.get_signal(signal, self.reference_model_to_train_split_mapping)
-            )
-            self.reference_non_member_signals.append(
-                self.reference_info_source.get_signal(signal, self.reference_model_to_test_split_mapping)
-            )
-
-        # For shadow metric we have a list of loss values
-        self.member_signals = np.array(self.member_signals).flatten()
-        self.non_member_signals = np.array(self.non_member_signals).flatten()
-        self.reference_member_signals = np.array(self.member_signals).flatten()
-        self.reference_non_member_signals = np.array(self.non_member_signals).flatten()
+        # Load signals if they have been computed already
+        # Otherwise, compute and save them
+        self.member_signals = self.__load_or_compute_signals(signal_source=SignalSourceEnum.TARGET_MEMBER)
+        self.non_member_signals = self.__load_or_compute_signals(signal_source=SignalSourceEnum.TARGET_NON_MEMBER)
+        self.reference_member_signals = self.__load_or_compute_signals(signal_source=SignalSourceEnum.REFERENCE_MEMBER)
+        self.reference_non_member_signals = self.__load_or_compute_signals(
+            signal_source=SignalSourceEnum.REFERENCE_NON_MEMBER
+        )
 
     def run_metric(self, fpr_tolerance_rate_list=None):
         """

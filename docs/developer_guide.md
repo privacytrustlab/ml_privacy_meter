@@ -78,7 +78,7 @@ import privacy_meter
 from privacy_meter.dataset import Dataset
 from privacy_meter.model import TensorflowModel
 from privacy_meter.information_source import InformationSource
-from privacy_meter.audit import Audit, MetricEnum
+from privacy_meter.audit import Audit
 ```
 
 Before building the tool for publishing to PyPi, make the required changes in `./privacy_meter/setup.py`. For example, if you want to update the version number of the tool, you would need to edit the `version` argument passed to the `setup` object. 
