@@ -5,7 +5,7 @@ class MetricResult:
     """
     Contains results related to the performance of the metric.
     """
-    def __init__(self, metric_name, predicted_labels, true_labels, predictions_proba, signal_values):
+    def __init__(self, metric_id, predicted_labels, true_labels, predictions_proba, signal_values):
         """
         Constructor.
 
@@ -15,7 +15,7 @@ class MetricResult:
             predicted_labels: Membership predictions of the metric
             true_labels: True membership labels used to evaluate the metric
         """
-        self.metric_name = metric_name
+        self.metric_id = metric_id
         self.predicted_labels = predicted_labels
         self.true_labels = true_labels
         self.predictions_proba = predictions_proba

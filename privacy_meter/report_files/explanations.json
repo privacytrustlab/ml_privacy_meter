@@ -1,0 +1,22 @@
+{
+  "metric": {
+    "shadow_metric": {
+      "name": "Shadow metric",
+      "details": "The shadow metric is a membership inference metric, that uses the algorithm described in \\cite{https://doi.org/10.48550/arxiv.1610.05820}"
+    }
+  },
+  "figure": {
+    "roc_curve": {
+      "name": "ROC curve",
+      "details": "shows the ROC (Receiver Operating Characteristic) curve, a graph illustrating the performance of a classification model at various decision thresholds. The AUC (Area Under the Curve), represented in blue, is a threshold-independant measure of the classifier performance.\n\nA higher AUC is an indicator of a system vulnerable to the chosen metric. For reference, a random classifier yields an AUC of 0.5, while a perfect classifier yields an AUC of 1.0"
+    },
+    "confusion_matrix": {
+      "name": "Confusion matrix",
+      "details": "shows the confusion matrix, a graph illustrating the performance of a classification model for a specific decision threshold.\n\nHigher values on the top-left to bottom-right diagonal is an indicator of a system vulnerable to the chosen metric, while higher values on the top-right to bottom-left diagonal is an indicator of a system less vulnerable to the chosen metric."
+    },
+    "signal_histogram": {
+      "name": "Signal histogram",
+      "details": "shows the histogram of the signal used by the chosen metric, on both members and non-member samples.\n\nA clear separation between the two groups is an indicator of a system vulnerable to the chosen metric."
+    }
+  }
+}

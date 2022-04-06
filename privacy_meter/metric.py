@@ -224,7 +224,7 @@ class PopulationMetric(Metric):
 
             signal_values = np.concatenate([self.member_signals, self.non_member_signals])
 
-            metric_result = MetricResult(metric_name="Population metric",
+            metric_result = MetricResult(metric_id="population_metric",
                                          predicted_labels=predictions,
                                          true_labels=true_labels,
                                          predictions_proba=None,
@@ -431,7 +431,7 @@ class ShadowMetric(Metric):
 
         # Evaluate the power of this inference and display the result
         metric_result = MetricResult(
-            metric_name="Shadow metric",
+            metric_id="shadow_metric",
             predictions_proba=predictions_proba,
             predicted_labels=predictions_label,
             true_labels=true_labels,
