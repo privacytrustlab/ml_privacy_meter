@@ -10,6 +10,7 @@ from privacy_meter.constants import *
 from privacy_meter.information_source import InformationSource
 from privacy_meter.information_source_signal import Signal
 from privacy_meter.metric_result import MetricResult
+from privacy_meter.utils import flatten_array
 
 
 class Metric(ABC):
@@ -170,10 +171,7 @@ class PopulationMetric(Metric):
                     info_source_obj.get_signal(signal, mapping_obj)
                 )
             # For the population metric we have a list of loss values
-            flattened_signals = []
-            for arr in signals:
-                flattened_signals.extend(arr)
-            signals = flattened_signals
+            signals = flatten_array(signals)
             np.savez(signal_filepath, signals)
 
         return signals
@@ -383,10 +381,7 @@ class ShadowMetric(Metric):
                     info_source_obj.get_signal(signal, mapping_obj)
                 )
             # For the shadow metric we have a list of loss values
-            flattened_signals = []
-            for arr in signals:
-                flattened_signals.extend(arr)
-            signals = flattened_signals
+            signals = flatten_array(signals)
             np.savez(signal_filepath, signals)
 
         return signals
