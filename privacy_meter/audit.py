@@ -6,7 +6,7 @@ from typing import List, Union
 from privacy_meter.constants import MetricEnum
 from privacy_meter.information_source import InformationSource
 from privacy_meter.information_source_signal import ModelLoss
-from privacy_meter.metric import Metric, PopulationMetric, ShadowMetric
+from privacy_meter.metric import Metric, PopulationMetric, ShadowMetric, ReferenceMetric
 from privacy_meter.hypothesis_test import threshold_func
 
 
@@ -45,6 +45,14 @@ class Audit:
                     reference_info_source=reference_info_source,
                     signals=[ModelLoss()],
                     hypothesis_test_func=None,
+                    logs_dirname=self.logs_dirname
+                )
+            elif metric == MetricEnum.REFERENCE:
+                self.metric_object = ReferenceMetric(
+                    target_info_source=target_info_source,
+                    reference_info_source=reference_info_source,
+                    signals=[ModelLoss()],
+                    hypothesis_test_func=threshold_func,
                     logs_dirname=self.logs_dirname
                 )
         else:
