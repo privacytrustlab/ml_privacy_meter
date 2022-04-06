@@ -2,8 +2,9 @@ from enum import Enum
 
 
 class MetricEnum(Enum):
-    POPULATION = "population"
-    SHADOW = "shadow"
+    POPULATION = "population_metric"
+    SHADOW = "shadow_metric"
+    REFERENCE = "reference_metric"
 
 
 class SignalSourceEnum(Enum):

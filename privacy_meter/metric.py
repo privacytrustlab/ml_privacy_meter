@@ -123,19 +123,13 @@ class PopulationMetric(Metric):
         if self.target_model_to_test_split_mapping is None:
             self.target_model_to_test_split_mapping = [(0, 'test', '<default_input>', '<default_output>')]
         if self.reference_model_to_train_split_mapping is None:
-            if len(self.reference_info_source.models) == 1:
-                self.reference_model_to_train_split_mapping = [(0, 'train', '<default_input>', '<default_output>')]
-            else:
-                self.reference_model_to_train_split_mapping = [
-                    (0, f'train{k:03d}', '<default_input>', '<default_output>')
-                    for k in range(len(self.reference_info_source.models))
-                ]
+            self.reference_model_to_train_split_mapping = [(0, 'train', '<default_input>', '<default_output>')]
 
         # Variables used in prepare_metric and run_metric
         self.member_signals, self.non_member_signals = [], []
         self.reference_signals = []
 
-    def __load_or_compute_signals(self, signal_source):
+    def __load_or_compute_signals(self, signal_source: SignalSourceEnum):
         """
         Private helper function to load signals if they have been computed already, or compute and save signals
         if they haven't.
@@ -224,7 +218,7 @@ class PopulationMetric(Metric):
 
             signal_values = np.concatenate([self.member_signals, self.non_member_signals])
 
-            metric_result = MetricResult(metric_id="population_metric",
+            metric_result = MetricResult(metric_id=MetricEnum.POPULATION.value,
                                          predicted_labels=predictions,
                                          true_labels=true_labels,
                                          predictions_proba=None,
@@ -341,7 +335,7 @@ class ShadowMetric(Metric):
         self.member_signals, self.non_member_signals = [], []
         self.reference_member_signals, self.reference_non_member_signals = [], []
 
-    def __load_or_compute_signals(self, signal_source):
+    def __load_or_compute_signals(self, signal_source: SignalSourceEnum):
         """
         Private helper function to load signals if they have been computed already, or compute and save signals
         if they haven't.
@@ -431,7 +425,7 @@ class ShadowMetric(Metric):
 
         # Evaluate the power of this inference and display the result
         metric_result = MetricResult(
-            metric_id="shadow_metric",
+            metric_id=MetricEnum.SHADOW.value,
             predictions_proba=predictions_proba,
             predicted_labels=predictions_label,
             true_labels=true_labels,
@@ -439,3 +433,193 @@ class ShadowMetric(Metric):
         )
 
         return metric_result
+
+
+class ReferenceMetric(Metric):
+    """
+    Inherits the Metric class to perform the reference membership inference attack
+    which will be used as a metric for measuring privacy leakage of a target model.
+    """
+
+    def __init__(
+            self,
+            target_info_source: InformationSource,
+            reference_info_source: InformationSource,
+            signals: List[Signal],
+            hypothesis_test_func: Optional[Callable],
+            target_model_to_train_split_mapping: List[Tuple[int, str, str, str]] = None,
+            target_model_to_test_split_mapping: List[Tuple[int, str, str, str]] = None,
+            reference_model_to_train_split_mapping: List[Tuple[int, str, str, str]] = None,
+            reference_model_to_test_split_mapping: List[Tuple[int, str, str, str]] = None,
+            logs_dirname: str = None
+    ):
+        """
+        Constructor
+
+        Args:
+            target_info_source: InformationSource, containing the Model that the metric will be performed on, and the
+                corresponding Dataset.
+            reference_info_source: List of InformationSource(s), containing the Model(s) that the metric will be
+                fitted on, and their corresponding Dataset.
+            signals: List of signals to be used.
+            hypothesis_test_func: Function that will be used for computing attack threshold(s)
+            target_model_to_train_split_mapping: Mapping from the target model to the train split of the target dataset.
+                By default, the code will look for a split named "train"
+            target_model_to_test_split_mapping: Mapping from the target model to the test split of the target dataset.
+                By default, the code will look for a split named "test"
+            reference_model_to_train_split_mapping: Mapping from the reference models to their train splits of the
+                corresponding reference dataset. By default, the code will look for a split named "train"
+            reference_model_to_train_split_mapping: Mapping from the reference models to their test splits of the
+                corresponding reference dataset. By default, the code will look for a split named "test"
+        """
+
+        # Initializes the parent metric
+        super().__init__(target_info_source=target_info_source,
+                         reference_info_source=reference_info_source,
+                         signals=signals,
+                         hypothesis_test_func=hypothesis_test_func,
+                         logs_dirname=logs_dirname)
+
+        # Logs directory
+        self.logs_dirname = logs_dirname
+
+        # Store the model to split mappings
+        self.target_model_to_train_split_mapping = target_model_to_train_split_mapping
+        self.target_model_to_test_split_mapping = target_model_to_test_split_mapping
+        self.reference_model_to_train_split_mapping = reference_model_to_train_split_mapping
+        self.reference_model_to_test_split_mapping = reference_model_to_test_split_mapping
+
+        # Default values for all the model to split mappings
+        if self.target_model_to_train_split_mapping is None:
+            self.target_model_to_train_split_mapping = [(0, 'train', '<default_input>', '<default_output>')]
+        if self.target_model_to_test_split_mapping is None:
+            self.target_model_to_test_split_mapping = [(0, 'test', '<default_input>', '<default_output>')]
+        if self.reference_model_to_train_split_mapping is None:
+            self.reference_model_to_train_split_mapping = [
+                                                              (0, 'train', '<default_input>', '<default_output>')
+                                                          ] * len(self.reference_info_source.models)
+        if self.reference_model_to_test_split_mapping is None:
+            self.reference_model_to_test_split_mapping = [
+                                                             (0, 'test', '<default_input>', '<default_output>')
+                                                         ] * len(self.reference_info_source.models)
+
+        # Variables used in prepare_metric and run_metric
+        self.member_signals, self.non_member_signals = [], []
+        self.reference_member_signals, self.reference_non_member_signals = [], []
+        self.pointwise_member_thresholds, self.pointwise_non_member_thresholds = [], []
+
+    def __load_or_compute_signals(self, signal_source):
+        """
+        Private helper function to load signals if they have been computed already, or compute and save signals
+        if they haven't.
+
+        Args:
+            signal_source: Signal source to determine which information source and mapping objects need to be used
+
+        Returns:
+            Signals computed using the specified information source and mapping object.
+        """
+        signal_filepath, info_source_obj, mapping_obj = None, None, None
+        if signal_source == SignalSourceEnum.TARGET_MEMBER:
+            signal_filepath = f'{self.logs_dirname}/{MetricEnum.REFERENCE.value}_{TARGET_MEMBER_SIGNALS_FILENAME}'
+            info_source_obj = self.target_info_source
+            mapping_obj = self.target_model_to_train_split_mapping
+        elif signal_source == SignalSourceEnum.TARGET_NON_MEMBER:
+            signal_filepath = f'{self.logs_dirname}/{MetricEnum.REFERENCE.value}_{TARGET_NON_MEMBER_SIGNALS_FILENAME}'
+            info_source_obj = self.target_info_source
+            mapping_obj = self.target_model_to_test_split_mapping
+        elif signal_source == SignalSourceEnum.REFERENCE_MEMBER:
+            signal_filepath = f'{self.logs_dirname}/{MetricEnum.REFERENCE.value}_{REFERENCE_MEMBER_SIGNALS_FILENAME}'
+            info_source_obj = self.reference_info_source
+            mapping_obj = self.reference_model_to_train_split_mapping
+        elif signal_source == SignalSourceEnum.REFERENCE_NON_MEMBER:
+            signal_filepath = f'{self.logs_dirname}/{MetricEnum.REFERENCE.value}' \
+                              f'_{REFERENCE_NON_MEMBER_SIGNALS_FILENAME}'
+            info_source_obj = self.reference_info_source
+            mapping_obj = self.reference_model_to_test_split_mapping
+
+        signals = []
+        if os.path.isfile(f'{signal_filepath}{NPZ_EXTENSION}'):
+            with np.load(f'{signal_filepath}{NPZ_EXTENSION}', allow_pickle=True) as data:
+                signals = np.array(data['arr_0'][()])
+        else:
+            # For each signal compute the response of both the model on the dataset according to the mapping
+            for signal in self.signals:
+                signals.append(
+                    info_source_obj.get_signal(signal, mapping_obj)
+                )
+
+            # For the reference metric we need to modify the signal values depending on the information source
+            if signal_source == SignalSourceEnum.TARGET_MEMBER or \
+                    signal_source == SignalSourceEnum.TARGET_NON_MEMBER:
+                # Flattened list of loss values from the target information source
+                signals = flatten_array(signals)
+            elif signal_source == SignalSourceEnum.REFERENCE_MEMBER or \
+                    signal_source == SignalSourceEnum.REFERENCE_NON_MEMBER:
+                # Each point in the target dataset has a list of loss values on this point
+                # over all reference models, so we take the transpose of the model-loss value matrix
+                signals = np.array(signals[0]).transpose()
+
+            np.savez(signal_filepath, signals)
+
+        return signals
+
+    def prepare_metric(self):
+        """
+        Function to prepare data needed for running the metric on the target model and dataset, using signals computed
+        on the reference model(s) and dataset. For the reference attack, the reference models will be a list of models
+        trained on data from the same distribution, and the reference dataset will be the target model's train-test
+        split.
+        """
+        # Load signals if they have been computed already
+        # Otherwise, compute and save them
+        self.member_signals = self.__load_or_compute_signals(signal_source=SignalSourceEnum.TARGET_MEMBER)
+        self.non_member_signals = self.__load_or_compute_signals(signal_source=SignalSourceEnum.TARGET_NON_MEMBER)
+        self.reference_member_signals = self.__load_or_compute_signals(signal_source=SignalSourceEnum.REFERENCE_MEMBER)
+        self.reference_non_member_signals = self.__load_or_compute_signals(
+            signal_source=SignalSourceEnum.REFERENCE_NON_MEMBER
+        )
+
+    def run_metric(self, fpr_tolerance_rate_list=None):
+        """
+        Function to run the metric on the target model and dataset.
+        Args:
+            fpr_tolerance_rate_list (optional): List of FPR tolerance values that may be used by the threshold function
+            to compute the attack threshold for the metric.
+        """
+        metric_result_list = []
+        for fpr_tolerance_rate in fpr_tolerance_rate_list:
+            member_preds = []
+            for idx, signal in enumerate(self.member_signals):
+                # Use pointwise threshold
+                threshold = self.hypothesis_test_func(self.reference_member_signals[idx], fpr_tolerance_rate)
+                if signal <= threshold:
+                    member_preds.append(1)
+                else:
+                    member_preds.append(0)
+
+            non_member_preds = []
+            for idx, signal in enumerate(self.non_member_signals):
+                # Use pointwise threshold
+                threshold = self.hypothesis_test_func(self.reference_non_member_signals[idx], fpr_tolerance_rate)
+                if signal <= threshold:
+                    non_member_preds.append(1)
+                else:
+                    non_member_preds.append(0)
+
+            predictions = np.concatenate([member_preds, non_member_preds])
+
+            true_labels = [1] * len(self.member_signals)
+            true_labels.extend([0] * len(self.non_member_signals))
+
+            signal_values = np.concatenate([self.member_signals, self.non_member_signals])
+
+            metric_result = MetricResult(metric_id=MetricEnum.REFERENCE.value,
+                                         predicted_labels=predictions,
+                                         true_labels=true_labels,
+                                         predictions_proba=None,
+                                         signal_values=signal_values)
+
+            metric_result_list.append(metric_result)
+
+        return metric_result_list
