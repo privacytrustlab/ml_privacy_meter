@@ -242,9 +242,9 @@ class TensorflowModel(Model):
             The loss value, as defined by the loss_fn attribute.
         """
         if per_point:
-            return self.loss_fn_no_reduction(self.get_outputs(batch_samples), batch_labels).numpy()
+            return self.loss_fn_no_reduction(batch_labels, self.get_outputs(batch_samples)).numpy()
         else:
-            return self.loss_fn(self.get_outputs(batch_samples), batch_labels).numpy()
+            return self.loss_fn(batch_labels, self.get_outputs(batch_samples)).numpy()
 
     def get_grad(self, batch_samples, batch_labels):
         """Function to get the gradient of the model loss with respect to the model parameters, on a given input and an
