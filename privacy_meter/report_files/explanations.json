@@ -3,6 +3,10 @@
     "shadow_metric": {
       "name": "Shadow metric",
       "details": "The shadow metric is a membership inference metric, that uses the algorithm described in \\cite{https://doi.org/10.48550/arxiv.1610.05820}"
+    },
+    "population_metric": {
+      "name": "Population metric",
+      "details": "[TODO] Add details in explanations.json (you can also edit citations.bib)."
     }
   },
   "figure": {

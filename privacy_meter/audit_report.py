@@ -1,7 +1,7 @@
 import os
 import subprocess
 from abc import ABC, abstractmethod
-from typing import List
+from typing import List, Union
 import json
 
 import jinja2
@@ -21,7 +21,7 @@ class AuditReport(ABC):
 
     @staticmethod
     @abstractmethod
-    def generate_report(metric_result: MetricResult):
+    def generate_report(metric_result: Union[MetricResult, List[MetricResult], dict]):
         """
         Core function of the AuditReport class, that actually generates the report.
 
@@ -38,7 +38,7 @@ class ROCCurveReport(AuditReport):
     """
 
     @staticmethod
-    def generate_report(metric_result: MetricResult,
+    def generate_report(metric_results: List[MetricResult],
                         show: bool = False,
                         save: bool = True,
                         filename: str = 'roc_curve.jpg'
@@ -47,7 +47,7 @@ class ROCCurveReport(AuditReport):
         Core function of the AuditReport class, that actually generates the report.
 
         Args:
-            metric_result: MetricResult object, containing data for the report.
+            metric_results: A list of MetricResult objects, containing data for the report.
             show: Boolean specifying if the plot should be displayed on screen.
             save: Boolean specifying if the plot should be saved as a file.
             filename: File name to be used if the plot is saved as a file.
@@ -57,11 +57,19 @@ class ROCCurveReport(AuditReport):
         with open('report_files/explanations.json', 'r') as f:
             explanations = json.load(f)
 
+        # Computes fpr, tpr and auc in different ways, depending on the available information
+        if len(metric_results) == 1:
+            fpr, tpr, _ = metric_results[0].roc
+            roc_auc = metric_results[0].roc_auc
+        else:
+            fpr = [metric_result.fp / (metric_result.fp + metric_result.tn) for metric_result in metric_results]
+            tpr = [metric_result.tp / (metric_result.tp + metric_result.fn) for metric_result in metric_results]
+            roc_auc = np.trapz(x=fpr, y=tpr)
+
         # Generate plot
         range01 = np.linspace(0, 1)
-        fpr, tpr, thresholds = metric_result.roc
         plt.fill_between(fpr, tpr, alpha=0.15)
-        plt.plot(fpr, tpr, label=explanations["metric"][metric_result.metric_id]["name"])
+        plt.plot(fpr, tpr, label=explanations["metric"][metric_results[0].metric_id]["name"])
         plt.plot(range01, range01, '--', label='Random guess')
         plt.xlim([0, 1])
         plt.ylim([0, 1])
@@ -72,7 +80,7 @@ class ROCCurveReport(AuditReport):
         plt.title('ROC curve')
         plt.text(
             0.7, 0.3,
-            f'AUC = {metric_result.roc_auc:.03f}',
+            f'AUC = {roc_auc:.03f}',
             horizontalalignment='center',
             verticalalignment='center',
             bbox=dict(facecolor='white', alpha=0.5)
@@ -164,7 +172,7 @@ class PDFReport(AuditReport):
     """
 
     @staticmethod
-    def generate_report(metric_results: List[MetricResult],
+    def generate_report(metric_results: dict,
                         figures_dict: dict,
                         system_name: str,
                         call_pdflatex: bool = True,
@@ -176,7 +184,7 @@ class PDFReport(AuditReport):
         Core function of the AuditReport class, that actually generates the report.
 
         Args:
-            metric_results: A list of MetricResult objects, containing data for the report.
+            metric_results: A dict of lists of MetricResult objects, containing data for the report.
             figures_dict: A dictionary containing the figures to include, for each metric result.
                 E.g. {"shadow_metric": ["roc_curve", "confusion_matrix", "signal_histogram"]}
             system_name: Name of the system being audited. E.g. "Purchase100 classifier"
@@ -191,25 +199,27 @@ class PDFReport(AuditReport):
         with open('report_files/explanations.json', 'r') as f:
             explanations = json.load(f)
 
-        # Some objects...
-        metric_result_names = [m.metric_id for m in metric_results]
+        # Generate all plots, and save their filenames
         files_dict = {}
-
-        # Generate all plots and save their names
-        for metric in figures_dict:
+        for metric in metric_results:
             files_dict[metric] = {}
-            result = metric_results[metric_result_names.index(metric)]
-            for figure in figures_dict[metric]:
+            result = metric_results[metric]
+            best_index = np.argmax([r.accuracy for r in result])
+            if 'roc_curve' in figures_dict[metric]:
+                figure = 'roc_curve'
                 filename = f'{metric}_{figure}.jpg'
                 files_dict[metric][figure] = filename
-                if figure == 'roc_curve':
-                    ROCCurveReport.generate_report(result, filename=filename)
-                elif figure == 'confusion_matrix':
-                    ConfusionMatrixReport.generate_report(result, filename=filename)
-                elif figure == 'signal_histogram':
-                    SignalHistogramReport.generate_report(result, filename=filename)
-                else:
-                    raise ValueError(f'{figure} is not a valid figure id.')
+                ROCCurveReport.generate_report(result, filename=filename)
+            if 'confusion_matrix' in figures_dict[metric]:
+                figure = 'confusion_matrix'
+                filename = f'{metric}_{figure}.jpg'
+                files_dict[metric][figure] = filename
+                ConfusionMatrixReport.generate_report(result[best_index], filename=filename)
+            if 'signal_histogram' in figures_dict[metric]:
+                figure = 'signal_histogram'
+                filename = f'{metric}_{figure}.jpg'
+                files_dict[metric][figure] = filename
+                SignalHistogramReport.generate_report(result[best_index], filename=filename)
 
         # Configure jinja for LaTex and load template
         latex_jinja_env = jinja2.Environment(
@@ -231,7 +241,7 @@ class PDFReport(AuditReport):
         latex_content = template.render(
             bib_file=os.path.abspath('report_files/citations.bib'),
             image_folder=os.path.abspath('.'),
-            name='Purchase100 classifier',
+            name=system_name,
             tool_version='1.0',
             report_date=date.today().strftime("%b-%d-%Y"),
             explanations=explanations,
