@@ -150,16 +150,32 @@ class SignalHistogramReport(AuditReport):
             filename: File name to be used if the plot is saved as a file.
         """
 
-        sn.histplot(
+        histogram = sn.histplot(
             data=pd.DataFrame({
                 'Signal': np.array(metric_result.signal_values).ravel(),
-                'Label': ['Member' if y == 1 else 'Non-member' for y in np.array(metric_result.true_labels).ravel()]
+                'Membership': ['Member' if y == 1 else 'Non-member' for y in np.array(metric_result.true_labels).ravel()]
             }),
             x='Signal',
-            hue='Label',
+            hue='Membership',
             element='step',
             kde=True
         )
+
+        if metric_result.threshold is not None:
+            threshold = metric_result.threshold
+            histogram.axvline(
+                x=threshold,
+                linestyle='--',
+                color="C{}".format(2)
+            )
+            histogram.text(
+                x=threshold - (np.max(metric_result.signal_values) - np.min(metric_result.signal_values))/30,
+                y=.8,
+                s='Threshold',
+                rotation=90,
+                color="C{}".format(2),
+                transform=histogram.get_xaxis_transform()
+            )
 
         plt.grid()
         plt.xlabel('Signal value')

@@ -5,7 +5,7 @@ class MetricResult:
     """
     Contains results related to the performance of the metric.
     """
-    def __init__(self, metric_id, predicted_labels, true_labels, predictions_proba, signal_values):
+    def __init__(self, metric_id, predicted_labels, true_labels, predictions_proba, signal_values, threshold=None):
         """
         Constructor.
 
@@ -20,6 +20,7 @@ class MetricResult:
         self.true_labels = true_labels
         self.predictions_proba = predictions_proba
         self.signal_values = signal_values
+        self.threshold = threshold
 
         self.accuracy = accuracy_score(y_true=true_labels, y_pred=predicted_labels)
 

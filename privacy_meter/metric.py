@@ -218,11 +218,14 @@ class PopulationMetric(Metric):
 
             signal_values = np.concatenate([self.member_signals, self.non_member_signals])
 
-            metric_result = MetricResult(metric_id=MetricEnum.POPULATION.value,
-                                         predicted_labels=predictions,
-                                         true_labels=true_labels,
-                                         predictions_proba=None,
-                                         signal_values=signal_values)
+            metric_result = MetricResult(
+                metric_id=MetricEnum.POPULATION.value,
+                predicted_labels=predictions,
+                true_labels=true_labels,
+                predictions_proba=None,
+                signal_values=signal_values,
+                threshold=threshold
+            )
 
             metric_result_list.append(metric_result)
 
@@ -413,6 +416,10 @@ class ShadowMetric(Metric):
         y = np.array([1] * len(self.reference_member_signals) + [0] * len(self.reference_non_member_signals))
         clf.fit(x, y)
 
+        signal_space = np.linspace(np.array(x).ravel().min(), np.array(x).ravel().max(), 200).reshape((-1, 1))
+        i = np.max([i if v == 1 else -1 for i, v in enumerate(clf.predict(signal_space))])
+        threshold = signal_space[i:i+2].mean()
+
         # Predict the membership status of samples in the target InformationSource
         predictions_proba = clf.predict_proba(np.concatenate([
             self.member_signals.reshape(-1, 1),
@@ -430,7 +437,8 @@ class ShadowMetric(Metric):
             predictions_proba=predictions_proba,
             predicted_labels=predictions_label,
             true_labels=true_labels,
-            signal_values=signal_values
+            signal_values=signal_values,
+            threshold=threshold
         )
 
         return metric_result
