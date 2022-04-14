@@ -149,12 +149,19 @@ class SignalHistogramReport(AuditReport):
             save: Boolean specifying if the plot should be saved as a file.
             filename: File name to be used if the plot is saved as a file.
         """
-        member_signals = metric_result.signal_values[np.array(metric_result.true_labels) == 1]
-        non_member_signals = metric_result.signal_values[np.array(metric_result.true_labels) == 0]
-        plt.hist(member_signals, label='Members', alpha=0.5)
-        plt.hist(non_member_signals, label='Non-members', alpha=0.5)
+
+        sn.histplot(
+            data=pd.DataFrame({
+                'Signal': np.array(metric_result.signal_values).ravel(),
+                'Label': ['Member' if y == 1 else 'Non-member' for y in np.array(metric_result.true_labels).ravel()]
+            }),
+            x='Signal',
+            hue='Label',
+            element='step',
+            kde=True
+        )
+
         plt.grid()
-        plt.legend()
         plt.xlabel('Signal value')
         plt.ylabel('Number of samples')
         plt.title('Signal histogram')
