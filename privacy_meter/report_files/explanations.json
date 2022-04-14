@@ -7,6 +7,10 @@
     "population_metric": {
       "name": "Population metric",
       "details": "[TODO] Add details in explanations.json (you can also edit citations.bib)."
+    },
+    "reference_metric": {
+      "name": "Reference metric",
+      "details": "[TODO] Add details in explanations.json (you can also edit citations.bib)."
     }
   },
   "figure": {
