@@ -422,6 +422,7 @@ class ShadowMetric(Metric):
         predictions_proba = predictions_proba[:, 1]
 
         true_labels = [1] * len(self.member_signals) + [0] * len(self.non_member_signals)
+        signal_values = np.concatenate([self.member_signals, self.non_member_signals])
 
         # Evaluate the power of this inference and display the result
         metric_result = MetricResult(
@@ -429,7 +430,7 @@ class ShadowMetric(Metric):
             predictions_proba=predictions_proba,
             predicted_labels=predictions_label,
             true_labels=true_labels,
-            signal_values=x
+            signal_values=signal_values
         )
 
         return metric_result
