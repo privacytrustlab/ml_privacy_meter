@@ -9,7 +9,8 @@ class Dataset:
                  data_dict: dict,
                  default_input: str,
                  default_output: str,
-                 preproc_fn_dict: dict = None
+                 preproc_fn_dict: dict = None,
+                 preprocessed: bool = False
                  ):
         """Constructor
 
@@ -19,6 +20,7 @@ class Dataset:
             default_output: The key of the data_dict that should be used by default to get the expected output
                 of a model
             preproc_fn_dict: Contains optional preprocessing functions for each feature
+            preprocessed: Indicates if the preprocessing of preproc_fn_dict has already been applied
         """
 
         # Store parameters
@@ -32,7 +34,7 @@ class Dataset:
         self.features = list(self.data_dict[self.splits[0]])
 
         # If preprocessing functions were passed as parameters, execute them
-        if preproc_fn_dict is not None:
+        if not preprocessed and preproc_fn_dict is not None:
             self.preprocess()
 
     def preprocess(self):
@@ -79,7 +81,9 @@ class Dataset:
                   split_names: list = None,
                   method: str = 'independent',
                   split_size: int = None,
-                  delete_original: bool = False
+                  delete_original: bool = False,
+                  in_place: bool = True,
+                  return_results: bool = False
                   ):
         """Subdivides the splits contained in split_names into sub-splits, e.g. for shadow model training.
 
@@ -93,14 +97,20 @@ class Dataset:
                 the 1st one is not overlapping with the others.
             split_size: If method is random, this is the size of one split (ignored if method is independent).
             delete_original: Indicates if the original split should be deleted.
+            in_place: Indicates if the new splits should be included in the parent object or not
+            return_results: Indicates if the new splits should be returned or not
 
         Returns:
-            Nothing; results are stored in self.data_dict.
+            If in_place, a list of new Dataset objects, with the sub-splits. Otherwise, nothing, as the results are
+            stored in self.data_dict.
         """
 
         # By default, includes all splits.
         if split_names is None:
             split_names = self.splits
+
+        # List of results if in_place is False
+        new_datasets_dict = [{} for _ in range(num_splits)]
 
         for split in split_names:
 
@@ -129,10 +139,16 @@ class Dataset:
                 raise ValueError(f'Split method "{method}" does not exist.')
 
             for split_n in range(num_splits):
-                self.data_dict[f'{split}{split_n:03d}'] = {}
-                for feature in self.features:
-                    # Fill the dictionary.
-                    self.data_dict[f'{split}{split_n:03d}'][feature] = self.data_dict[split][feature][indices[split_n]]
+                # Fill the dictionary if in_place is True
+                if in_place:
+                    self.data_dict[f'{split}{split_n:03d}'] = {}
+                    for feature in self.features:
+                        self.data_dict[f'{split}{split_n:03d}'][feature] = self.data_dict[split][feature][indices[split_n]]
+                # Create new dictionaries if return_results is True
+                if return_results:
+                    new_datasets_dict[split_n][f'{split}'] = {}
+                    for feature in self.features:
+                        new_datasets_dict[split_n][f'{split}'][feature] = self.data_dict[split][feature][indices[split_n]]
 
             # delete_original indicates if the original split should be deleted.
             if delete_original:
@@ -140,6 +156,19 @@ class Dataset:
 
         # Update the list of splits
         self.splits = list(self.data_dict)
+
+        # Return new datasets if return_results is True
+        if return_results:
+            return [
+                Dataset(
+                    data_dict=new_datasets_dict[i],
+                    default_input=self.default_input,
+                    default_output=self.default_output,
+                    preproc_fn_dict=self.preproc_fn_dict,
+                    preprocessed=True
+                )
+                for i in range(num_splits)
+            ]
 
     def __str__(self):
         """

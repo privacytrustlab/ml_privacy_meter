@@ -318,21 +318,15 @@ class ShadowMetric(Metric):
             if self.target_model_to_test_split_mapping is None:
                 self.target_model_to_test_split_mapping = [(0, 'test', '<default_input>', '<default_output>')]
             if self.reference_model_to_train_split_mapping is None:
-                if len(self.reference_info_source.models) == 1 and unique_dataset:
-                    self.reference_model_to_train_split_mapping = [(0, 'train', '<default_input>', '<default_output>')]
-                else:
-                    self.reference_model_to_train_split_mapping = [
-                        (0, f'train{k:03d}', '<default_input>', '<default_output>')
-                        for k in range(len(self.reference_info_source.models))
-                    ]
+                self.reference_model_to_train_split_mapping = [
+                    (k, f'train', '<default_input>', '<default_output>')
+                    for k in range(len(self.reference_info_source.models))
+                ]
             if self.reference_model_to_test_split_mapping is None:
-                if len(self.reference_info_source.models) == 1:
-                    self.reference_model_to_test_split_mapping = [(0, 'test', '<default_input>', '<default_output>')]
-                else:
-                    self.reference_model_to_test_split_mapping = [
-                        (0, f'test{k:03d}', '<default_input>', '<default_output>')
-                        for k in range(len(self.reference_info_source.models))
-                    ]
+                self.reference_model_to_test_split_mapping = [
+                    (k, f'test', '<default_input>', '<default_output>')
+                    for k in range(len(self.reference_info_source.models))
+                ]
 
         # Variables used in prepare_metric and run_metric
         self.member_signals, self.non_member_signals = [], []
