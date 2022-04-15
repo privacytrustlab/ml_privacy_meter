@@ -14,6 +14,9 @@ from datetime import date
 from privacy_meter.metric_result import MetricResult
 
 
+REPORT_FILES_DIR = 'report_files'
+
+
 class AuditReport(ABC):
     """
     An abstract class to display and/or save some elements of a metric result object.
@@ -54,7 +57,7 @@ class ROCCurveReport(AuditReport):
         """
 
         # Read and store the explanation dict
-        with open('report_files/explanations.json', 'r') as f:
+        with open(f'{REPORT_FILES_DIR}/explanations.json', 'r') as f:
             explanations = json.load(f)
 
         # Computes fpr, tpr and auc in different ways, depending on the available information
@@ -201,7 +204,7 @@ class PDFReport(AuditReport):
                         call_pdflatex: bool = True,
                         show: bool = False,
                         save: bool = True,
-                        filename_no_extension: str = 'report',
+                        filename_no_extension: str = 'report'
                         ):
         """
         Core function of the AuditReport class, that actually generates the report.
@@ -219,7 +222,7 @@ class PDFReport(AuditReport):
         """
 
         # Read and store the explanation dict
-        with open('report_files/explanations.json', 'r') as f:
+        with open(f'{REPORT_FILES_DIR}/explanations.json', 'r') as f:
             explanations = json.load(f)
 
         # Generate all plots, and save their filenames
@@ -258,11 +261,11 @@ class PDFReport(AuditReport):
             autoescape=False,
             loader=jinja2.FileSystemLoader(os.path.abspath('.'))
         )
-        template = latex_jinja_env.get_template('./report_files/report_template.tex')
+        template = latex_jinja_env.get_template(f'{REPORT_FILES_DIR}/report_template.tex')
 
         # Render the template (i.e. generate the corresponding string)
         latex_content = template.render(
-            bib_file=os.path.abspath('report_files/citations.bib'),
+            bib_file=os.path.abspath(f'{REPORT_FILES_DIR}/citations.bib'),
             image_folder=os.path.abspath('.'),
             name=system_name,
             tool_version='1.0',
