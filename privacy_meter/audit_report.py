@@ -1,7 +1,7 @@
 import os
 import subprocess
 from abc import ABC, abstractmethod
-from typing import List, Union
+from typing import List, Union, Tuple
 import json
 
 import jinja2
@@ -10,11 +10,30 @@ import pandas as pd
 import seaborn as sn
 import matplotlib.pyplot as plt
 from datetime import date
+from PIL import Image
 
+from privacy_meter.information_source import InformationSource
+from privacy_meter.information_source_signal import DatasetSample
 from privacy_meter.metric_result import MetricResult
 
 
+# Temporary parameter pointing to the report_file directory (for jupyter notebooks compatibility)
 REPORT_FILES_DIR = 'report_files'
+
+# Configure jinja for LaTex
+latex_jinja_env = jinja2.Environment(
+    block_start_string='\BLOCK{',
+    block_end_string='}',
+    variable_start_string='\VAR{',
+    variable_end_string='}',
+    comment_start_string='\#{',
+    comment_end_string='}',
+    line_statement_prefix='%%',
+    line_comment_prefix='%#',
+    trim_blocks=True,
+    autoescape=False,
+    loader=jinja2.FileSystemLoader(os.path.abspath('.'))
+)
 
 
 class AuditReport(ABC):
@@ -191,6 +210,122 @@ class SignalHistogramReport(AuditReport):
         plt.clf()
 
 
+class VulnerablePointsReport(AuditReport):
+    """
+    Inherits of the AuditReport class, an interface class to display and/or save some elements of a metric result
+    object. This particular class is used to identify the most vulnerable points.
+    """
+
+    @staticmethod
+    def generate_report(
+            metric_results: List[MetricResult],
+            target_info_source: InformationSource,
+            target_model_to_train_split_mapping: List[Tuple[int, str, str, str]],
+            number_of_points: int = 10,
+            save_tex: bool = False,
+            filename: str = 'vulnerable_points.tex',
+            return_raw_values: bool = True,
+            point_type: str = 'any'
+    ):
+        """Core function of the AuditReport class, that actually generates the report.
+
+        Args:
+            metric_results: A dict of lists of MetricResult objects, containing data for the report.
+            target_info_source: The InformationSource associated with the audited model training
+            target_model_to_train_split_mapping: The mapping associated with target_info_source
+            number_of_points: Number of vulnerable to be selected
+            save_tex: Boolean specifying if a partial .tex file should be generated
+            filename: Filename of the partial .tex file
+            return_raw_values: Boolean specifying if the points indices and scores should be returned
+            point_type: Can be "any" or "image". If "image", then the images are displayed as such in the report.
+
+        Returns:
+            Indices of the vulnerable points and their scores
+
+        """
+
+        # Objects to be returned if return_raw_values is True
+        indices, scores = [], []
+
+        # If only one metric was used (i.e. we have access to the prediction probabilities)
+        if len(metric_results) == 1:
+            mr = metric_results[0]
+            # Sort the training points that were identified as such by their prediction probabilities
+            adjusted_values = np.where(
+                (np.array(mr.predicted_labels) == np.array(mr.true_labels))
+                &
+                (np.array(mr.true_labels) == 1)
+                ,
+                - mr.predictions_proba
+                ,
+                10
+            )
+            indices = np.argsort(adjusted_values)[:number_of_points]
+            # Get the associated scores
+            scores = mr.predictions_proba[indices]
+
+        # If multiple metrics were used (i.e. we don't have access to the prediction probabilities)
+        else:
+            # Use the various metric, from the one with lowest fpr to the one with highest fpr
+            fp_indices = np.argsort([mr.fp for mr in metric_results])
+            for k in range(len(metric_results)):
+                mr = metric_results[fp_indices[k]]
+                # Get the training points that were identified as such
+                new_indices = np.argwhere(
+                    (np.array(mr.predicted_labels) == np.array(mr.true_labels))
+                    &
+                    (np.array(mr.true_labels) == 1)
+                )
+                indices.extend(list(new_indices.ravel()))
+                # Get the associated scores
+                fpr = mr.fp / (mr.fp + mr.tn)
+                scores.extend([1-fpr] * new_indices.shape[0])
+            # Only keep number_of_points points
+            indices, scores = indices[:number_of_points], scores[:number_of_points]
+
+        # Map indices stored in the metric_result object to indices in the training set
+        indices_to_train_indices = []
+        counter = 0
+        for k, v in enumerate(metric_results[0].true_labels):
+            indices_to_train_indices.append(counter)
+            counter += v
+        indices = np.array(indices_to_train_indices)[np.array(indices)]
+
+        # If points are images and we are creating a LaTex file, then we read the information source to create image
+        # files from the vulnerable
+        if save_tex and point_type == "image":
+            for k, point in enumerate(indices):
+                x = target_info_source.get_signal(
+                    signal=DatasetSample(),
+                    model_to_split_mapping=target_model_to_train_split_mapping,
+                    extra={"model_num": 0, "point_num": point}
+                )
+                Image.fromarray((x*255).astype('uint8')).save(f'point{k:03d}.jpg')
+
+        # If we are creating a LaTex
+        if save_tex:
+
+            # Load template
+            template = latex_jinja_env.get_template(f'{REPORT_FILES_DIR}/vulnerable_points_template.tex')
+
+            # Render the template (i.e. generate the corresponding string)
+            latex_content = template.render(
+                points=[
+                    {"index": index, "score": f'{score:.3f}', "type": point_type, "path": f"point{k:03d}.jpg" if point_type == "image" else None}
+                    for (k, (index, score)) in enumerate(zip(indices, scores))
+                ]
+            )
+
+            # Write the result (the string) to a .tex file
+            with open(filename, 'w') as f:
+                f.write(latex_content)
+
+        # If we required the values to be returned
+        if return_raw_values:
+            return indices, scores
+
+
+
 class PDFReport(AuditReport):
     """
     Inherits of the AuditReport class, an interface class to display and/or save some elements of a metric result
@@ -204,7 +339,10 @@ class PDFReport(AuditReport):
                         call_pdflatex: bool = True,
                         show: bool = False,
                         save: bool = True,
-                        filename_no_extension: str = 'report'
+                        filename_no_extension: str = 'report',
+                        target_info_source: InformationSource = None,
+                        target_model_to_train_split_mapping: List[Tuple[int, str, str, str]] = None,
+                        point_type: str = 'any'
                         ):
         """
         Core function of the AuditReport class, that actually generates the report.
@@ -246,21 +384,22 @@ class PDFReport(AuditReport):
                 filename = f'{metric}_{figure}.jpg'
                 files_dict[metric][figure] = filename
                 SignalHistogramReport.generate_report(result[best_index], filename=filename)
+            if 'vulnerable_points' in figures_dict[metric]:
+                assert target_info_source is not None
+                assert target_model_to_train_split_mapping is not None
+                figure = 'vulnerable_points'
+                filename = f'{metric}_{figure}.tex'
+                files_dict[metric][figure] = filename
+                VulnerablePointsReport.generate_report(
+                    result,
+                    save_tex=True,
+                    filename=filename,
+                    target_info_source=target_info_source,
+                    target_model_to_train_split_mapping=target_model_to_train_split_mapping,
+                    point_type=point_type
+                )
 
-        # Configure jinja for LaTex and load template
-        latex_jinja_env = jinja2.Environment(
-            block_start_string='\BLOCK{',
-            block_end_string='}',
-            variable_start_string='\VAR{',
-            variable_end_string='}',
-            comment_start_string='\#{',
-            comment_end_string='}',
-            line_statement_prefix='%%',
-            line_comment_prefix='%#',
-            trim_blocks=True,
-            autoescape=False,
-            loader=jinja2.FileSystemLoader(os.path.abspath('.'))
-        )
+        #Load template
         template = latex_jinja_env.get_template(f'{REPORT_FILES_DIR}/report_template.tex')
 
         # Render the template (i.e. generate the corresponding string)

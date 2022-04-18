@@ -25,6 +25,10 @@
     "signal_histogram": {
       "name": "Signal histogram",
       "details": "shows the histogram of the signal used by the chosen metric, on both members and non-member samples.\n\nA clear separation between the two groups is an indicator of a system vulnerable to the chosen metric."
+    },
+    "vulnerable_points": {
+      "name": "Vulnerable points",
+      "details": "shows points that are most vulnerable to the chosen metric.\n\nThe score depends on the chosen metric, but is always between 0 and 1, with 0 meaning low vulnerability and 1 high vulnerability."
     }
   }
 }
