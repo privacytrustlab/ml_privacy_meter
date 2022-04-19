@@ -40,6 +40,8 @@ Now proceed to the next section.
 
 Start by updating the version number in `/source/conf.py`.
 
+The `/source/index.rst` can be edited manually. You can refer to [this useful cheatsheet](https://sphinx-tutorial.readthedocs.io/cheatsheet/).
+
 We want to automatically generate rst files with autodoc directives from the code:
 
 ```bash
