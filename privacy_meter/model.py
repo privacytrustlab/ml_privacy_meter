@@ -1,16 +1,7 @@
-import warnings
 from abc import ABC, abstractmethod
 from copy import deepcopy
 
-try:
-    import tensorflow as tf
-except ImportError:
-    warnings.warn("tensorflow package not found: TensorflowModel might not work.", category=ImportWarning)
-
-try:
-    import torch
-except ImportError:
-    warnings.warn("torch package not found: PytorchModel might not work.", category=ImportWarning)
+import numpy as np
 
 
 class Model(ABC):
@@ -97,6 +88,9 @@ class PytorchModel(Model):
             model_obj: model object
             loss_fn: loss function
         """
+
+        # Imports torch with global scope
+        globals()['torch'] = __import__('torch')
 
         # Initializes the parent model
         super().__init__(model_obj, loss_fn)
@@ -205,6 +199,9 @@ class TensorflowModel(Model):
             model_obj: model object
             loss_fn: loss function
         """
+
+        # Imports tensorflow with global scope
+        globals()['tf'] = __import__('tensorflow')
 
         # Initializes the parent model
         super().__init__(model_obj, loss_fn)
@@ -337,6 +334,9 @@ class HuggingFaceCausalLanguageModel(LanguageModel):
             stride: window size that will be used by the fixed length
             causal model for processing an input sequence
         """
+
+        # Imports torch with global scope
+        globals()['torch'] = __import__('torch')
 
         # Initializes the parent model
         super().__init__(model_obj, loss_fn)
