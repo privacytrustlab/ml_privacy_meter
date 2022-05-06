@@ -1,4 +1,5 @@
 from itertools import product
+from typing import Union, Dict
 
 import numpy as np
 
@@ -80,7 +81,7 @@ class Dataset:
                   num_splits: int,
                   split_names: list = None,
                   method: str = 'independent',
-                  split_size: int = None,
+                  split_size: Union[int, Dict[str, int]] = None,
                   delete_original: bool = False,
                   in_place: bool = True,
                   return_results: bool = False
@@ -95,7 +96,8 @@ class Dataset:
                 sub-split is a random subset of the original split (i.e. some samples might be missing or repeated). If
                 method is hybrid, then each sub-split is a random subset of the original split, with the guarantee that
                 the 1st one is not overlapping with the others.
-            split_size: If method is random, this is the size of one split (ignored if method is independent).
+            split_size: If method is random, this is the size of one split (ignored if method is independent). Can
+                either be an integer, or a dictionary of integer (one per split).
             delete_original: Indicates if the original split should be deleted.
             in_place: Indicates if the new splits should be included in the parent object or not
             return_results: Indicates if the new splits should be returned or not
@@ -114,10 +116,13 @@ class Dataset:
 
         for split in split_names:
 
+            if split_size is not None:
+                parsed_split_size = split_size if isinstance(split_size, int) else split_size[split]
+
             # If method is random, then each sub-split is a random subset of the original split.
             if method == 'random':
                 assert split_size is not None, 'Argument split_size is required when method is "random" or "hybrid"'
-                indices = np.random.randint(self.data_dict[split][self.features[0]].shape[0], size=(num_splits, split_size))
+                indices = np.random.randint(self.data_dict[split][self.features[0]].shape[0], size=(num_splits, parsed_split_size))
 
             # If method is independent, then the sub-splits are a partition of the original split.
             elif method == 'independent':
@@ -130,9 +135,9 @@ class Dataset:
             elif method == 'hybrid':
                 assert split_size is not None, 'Argument split_size is required when method is "random" or "hybrid"'
                 available_indices = np.arange(self.data_dict[split][self.features[0]].shape[0])
-                indices_a = np.random.choice(available_indices, size=(1, split_size), replace=False)
+                indices_a = np.random.choice(available_indices, size=(1, parsed_split_size), replace=False)
                 available_indices = np.setdiff1d(available_indices, indices_a.flatten())
-                indices_b = np.random.choice(available_indices, size=(num_splits-1, split_size), replace=True)
+                indices_b = np.random.choice(available_indices, size=(num_splits-1, parsed_split_size), replace=True)
                 indices = np.concatenate((indices_a, indices_b))
 
             else:
