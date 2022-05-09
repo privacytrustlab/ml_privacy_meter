@@ -1,7 +1,12 @@
+from typing import List
+
 import numpy as np
 
 
-def threshold_func(distribution, alpha):
+def threshold_func(
+        distribution: List[float],
+        alpha: float
+) -> float:
     """
     Function that returns the threshold as the alpha quantile of
     the provided distribution.

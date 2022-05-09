@@ -5,6 +5,10 @@ import numpy as np
 
 
 class Dataset:
+    """
+    Wrapper around a dictionary-like formatted dataset, with functions to run preprocessing, to define default
+    input/output features, and to split a dataset easily.
+    """
 
     def __init__(self,
                  data_dict: dict,

@@ -1,6 +1,6 @@
 import os
 from abc import ABC, abstractmethod
-from typing import Callable, Optional, List, Tuple
+from typing import Callable, Optional, List, Tuple, Union
 
 import numpy as np
 from sklearn.linear_model import LogisticRegression
@@ -141,13 +141,15 @@ class Metric(ABC):
         pass
 
     @abstractmethod
-    def run_metric(self, fpr_tolerance_rate_list=None):
+    def run_metric(self, fpr_tolerance_rate_list=None) -> Union[MetricResult, List[MetricResult]]:
         """
         Function to run the metric on the target model and dataset.
         Args:
             fpr_tolerance_rate_list (optional): List of FPR tolerance values
             that may be used by the threshold function to compute the attack
             threshold for the metric.
+        Returns:
+            Result(s) of the metric
         """
         pass
 
@@ -226,13 +228,15 @@ class PopulationMetric(Metric):
         self.non_member_signals = flatten_array(self._load_or_compute_signal(SignalSourceEnum.TARGET_NON_MEMBER))
         self.reference_signals = flatten_array(self._load_or_compute_signal(SignalSourceEnum.REFERENCE))
 
-    def run_metric(self, fpr_tolerance_rate_list=None):
+    def run_metric(self, fpr_tolerance_rate_list=None) -> List[MetricResult]:
         """
         Function to run the metric on the target model and dataset.
         Args:
             fpr_tolerance_rate_list (optional): List of FPR tolerance values
             that may be used by the threshold function to compute the attack
             threshold for the metric.
+        Returns:
+            A list of MetricResult objects, one per fpr value.
         """
         metric_result_list = []
         for fpr_tolerance_rate in fpr_tolerance_rate_list:
@@ -354,12 +358,14 @@ class ShadowMetric(Metric):
         self.reference_non_member_signals = flatten_array(
             self._load_or_compute_signal(SignalSourceEnum.REFERENCE_NON_MEMBER))
 
-    def run_metric(self, fpr_tolerance_rate_list=None):
+    def run_metric(self, fpr_tolerance_rate_list=None) -> MetricResult:
         """
         Function to run the metric on the target model and dataset.
         Args:
             fpr_tolerance_rate_list (optional): List of FPR tolerance values that may be used by the threshold function
             to compute the attack threshold for the metric.
+        Returns:
+            The result of the metric
         """
 
         # Create and fit a LogisticRegression object, from the members and non-members of the reference
@@ -477,12 +483,14 @@ class ReferenceMetric(Metric):
         self.reference_non_member_signals = np.array(
             self._load_or_compute_signal(SignalSourceEnum.REFERENCE_NON_MEMBER)[0]).transpose()
 
-    def run_metric(self, fpr_tolerance_rate_list=None):
+    def run_metric(self, fpr_tolerance_rate_list=None) -> List[MetricResult]:
         """
         Function to run the metric on the target model and dataset.
         Args:
             fpr_tolerance_rate_list (optional): List of FPR tolerance values that may be used by the threshold function
             to compute the attack threshold for the metric.
+        Returns:
+            A list of MetricResult objects, one per fpr value.
         """
         metric_result_list = []
         for fpr_tolerance_rate in fpr_tolerance_rate_list:

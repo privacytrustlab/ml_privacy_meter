@@ -87,7 +87,16 @@ class ROCCurveReport(AuditReport):
             fpr_2d_list: List[List[float]],
             tpr_2d_list: List[List[float]],
             n: int = 200
-    ):
+    ) -> Tuple[np.ndarray, np.ndarray]:
+        """
+        Private helper function, to average a ROC curve from non-aligned list.
+        Args:
+            fpr_2d_list: A 2D list of fpr values
+            tpr_2d_list: A 2D list of fpr values
+            n: Number of points in the resulting lists
+        Returns:
+            A tuple of aligned 1D numpy arrays, fpr and tpr.
+        """
         functions = [interpolate.interp1d(fpr, tpr) for (fpr, tpr) in zip(fpr_2d_list, tpr_2d_list)]
         fpr = np.linspace(0, 1, n)
         tpr = np.mean([f(fpr) for f in functions], axis=0)
@@ -355,7 +364,7 @@ class VulnerablePointsReport(AuditReport):
         """
 
         if inference_game_type != InferenceGame.PRIVACY_LOSS_MODEL:
-            raise NotImplementedError
+            raise NotImplementedError("For now, the only inference_game_type supported is InferenceGame.PRIVACY_LOSS_MODEL")
 
         # Objects to be returned if return_raw_values is True
         indices, scores = [], []
@@ -532,21 +541,21 @@ class PDFReport(AuditReport):
                     inference_game_type=inference_game_type,
                     filename=filename
                 )
-            # if 'vulnerable_points' in figures_dict[metric]:
-            #     assert target_info_source is not None
-            #     assert target_model_to_train_split_mapping is not None
-            #     figure = 'vulnerable_points'
-            #     filename = f'{metric}_{figure}.tex'
-            #     files_dict[metric][figure] = filename
-            #     VulnerablePointsReport.generate_report(
-            #         metric_result=result,
-            #         inference_game_type=inference_game_type,
-            #         save_tex=True,
-            #         filename=filename,
-            #         target_info_source=target_info_source,
-            #         target_model_to_train_split_mapping=target_model_to_train_split_mapping,
-            #         point_type=point_type
-            #     )
+            if 'vulnerable_points' in figures_dict[metric]:
+                assert target_info_source is not None
+                assert target_model_to_train_split_mapping is not None
+                figure = 'vulnerable_points'
+                filename = f'{metric}_{figure}.tex'
+                files_dict[metric][figure] = filename
+                VulnerablePointsReport.generate_report(
+                    metric_results=result,
+                    inference_game_type=inference_game_type,
+                    save_tex=True,
+                    filename=filename,
+                    target_info_source=target_info_source,
+                    target_model_to_train_split_mapping=target_model_to_train_split_mapping,
+                    point_type=point_type
+                )
 
         # Load template
         template = latex_jinja_env.get_template(f'{REPORT_FILES_DIR}/report_template.tex')

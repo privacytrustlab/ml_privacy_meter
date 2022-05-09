@@ -1,3 +1,5 @@
+from typing import List
+
 from sklearn.metrics import roc_auc_score, accuracy_score, confusion_matrix, roc_curve
 
 
@@ -5,15 +7,26 @@ class MetricResult:
     """
     Contains results related to the performance of the metric.
     """
-    def __init__(self, metric_id, predicted_labels, true_labels, predictions_proba, signal_values, threshold=None):
+
+    def __init__(
+            self,
+            metric_id: str,
+            predicted_labels: list,
+            true_labels: list,
+            predictions_proba: List[float] = None,
+            signal_values=None,
+            threshold: float = None
+    ):
         """
         Constructor.
-
         Computes and stores the accuracy, ROC AUC score, and the confusion matrix for a metric.
-
         Args:
+            metric_id: ID of the metric that was used (c.f. the report_files/explanations.json file)
             predicted_labels: Membership predictions of the metric
             true_labels: True membership labels used to evaluate the metric
+            predictions_proba: Continuous version of the predicted_labels
+            signal_values: Values of the signal used by the metric
+            threshold: Threshold computed by the metric
         """
         self.metric_id = metric_id
         self.predicted_labels = predicted_labels
