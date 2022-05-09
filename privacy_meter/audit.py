@@ -1,13 +1,12 @@
 import os
 from datetime import datetime
-
 from typing import List, Union
 
 from privacy_meter.constants import MetricEnum, InferenceGame
+from privacy_meter.hypothesis_test import threshold_func
 from privacy_meter.information_source import InformationSource
 from privacy_meter.information_source_signal import ModelLoss
 from privacy_meter.metric import Metric, PopulationMetric, ShadowMetric, ReferenceMetric
-from privacy_meter.hypothesis_test import threshold_func
 from privacy_meter.metric_result import MetricResult
 
 
@@ -28,6 +27,7 @@ class Audit:
     ):
         """
         Constructor
+
         Args:
             metrics: Metric object or list of Metric objects to be used for the audit
             inference_game_type: The type of inference game being played: average privacy loss of a training algorithm,
@@ -136,6 +136,7 @@ class Audit:
         """
         Core function that should be called after the audit.prepare() function. This actually runs the metrics'
         inference algorithms.
+
         Returns:
             A list of MetricResult objects (one per metric)
         """

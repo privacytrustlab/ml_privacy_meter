@@ -30,6 +30,7 @@ class Metric(ABC):
     ):
         """
         Constructor
+
         Args:
             target_info_source: InformationSource, containing the Model that the metric will be performed on, and the
                 corresponding Dataset.
@@ -52,8 +53,10 @@ class Metric(ABC):
         """
         Private helper function to load signals if they have been computed already, or compute and save signals
         if they haven't.
+
         Args:
             signal_source: Signal source to determine which information source and mapping objects need to be used
+
         Returns:
             Signals computed using the specified information source and mapping object.
         """
@@ -96,6 +99,7 @@ class Metric(ABC):
     ):
         """
         Private helper function, to set default values for mappings between models and dataset splits
+
         Args:
             unique_dataset: Boolean indicating if target_info_source and reference_info_source use one same dataset object
 
@@ -144,10 +148,12 @@ class Metric(ABC):
     def run_metric(self, fpr_tolerance_rate_list=None) -> Union[MetricResult, List[MetricResult]]:
         """
         Function to run the metric on the target model and dataset.
+
         Args:
             fpr_tolerance_rate_list (optional): List of FPR tolerance values
             that may be used by the threshold function to compute the attack
             threshold for the metric.
+
         Returns:
             Result(s) of the metric
         """
@@ -231,10 +237,12 @@ class PopulationMetric(Metric):
     def run_metric(self, fpr_tolerance_rate_list=None) -> List[MetricResult]:
         """
         Function to run the metric on the target model and dataset.
+
         Args:
             fpr_tolerance_rate_list (optional): List of FPR tolerance values
             that may be used by the threshold function to compute the attack
             threshold for the metric.
+
         Returns:
             A list of MetricResult objects, one per fpr value.
         """
@@ -361,9 +369,11 @@ class ShadowMetric(Metric):
     def run_metric(self, fpr_tolerance_rate_list=None) -> MetricResult:
         """
         Function to run the metric on the target model and dataset.
+
         Args:
             fpr_tolerance_rate_list (optional): List of FPR tolerance values that may be used by the threshold function
             to compute the attack threshold for the metric.
+
         Returns:
             The result of the metric
         """
@@ -486,9 +496,11 @@ class ReferenceMetric(Metric):
     def run_metric(self, fpr_tolerance_rate_list=None) -> List[MetricResult]:
         """
         Function to run the metric on the target model and dataset.
+
         Args:
             fpr_tolerance_rate_list (optional): List of FPR tolerance values that may be used by the threshold function
             to compute the attack threshold for the metric.
+
         Returns:
             A list of MetricResult objects, one per fpr value.
         """

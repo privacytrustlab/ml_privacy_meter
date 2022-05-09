@@ -311,8 +311,10 @@ class LanguageModel(Model):
     @abstractmethod
     def get_perplexity(self, batch_samples):
         """Function to get the perplexity of the model loss, on a given input sequence.
+
         Args:
             batch_samples: Model input
+
         Returns:
             A list of perplexity values.
         """
@@ -328,6 +330,7 @@ class HuggingFaceCausalLanguageModel(LanguageModel):
 
     def __init__(self, model_obj, loss_fn, stride=64):
         """Constructor
+
         Args:
             model_obj: model object
             loss_fn: loss function
@@ -349,8 +352,10 @@ class HuggingFaceCausalLanguageModel(LanguageModel):
 
     def get_outputs(self, batch_samples):
         """Function to get the model output from a given input.
+
         Args:
             batch_samples: Model input
+
         Returns:
             Model output
         """
@@ -362,10 +367,12 @@ class HuggingFaceCausalLanguageModel(LanguageModel):
 
     def get_loss(self, batch_samples, batch_labels=None, per_point=True):
         """Function to get the model loss on a given input and an expected output.
+
         Args:
             batch_samples: Model input
             batch_labels: Model expected output
             per_point: Boolean indicating if loss should be returned per point or reduced
+
         Returns:
             The loss value, as defined by the loss_fn attribute.
         """
@@ -374,9 +381,11 @@ class HuggingFaceCausalLanguageModel(LanguageModel):
     def get_grad(self, batch_samples, batch_labels):
         """Function to get the gradient of the model loss with respect to the model parameters, on a given input and an
         expected output.
+
         Args:
             batch_samples: Model input
             batch_labels: Model expected output
+
         Returns:
             A list of gradients of the model loss (one item per layer) with respect to the model parameters.
         """
@@ -384,11 +393,13 @@ class HuggingFaceCausalLanguageModel(LanguageModel):
 
     def get_intermediate_outputs(self, layers, batch_samples, forward_pass=True):
         """Function to get the intermediate output of layers (a.k.a. features), on a given input.
+
         Args:
             layers: List of integers and/or strings, indicating which layers values should be returned
             batch_samples: Model input
             forward_pass: Boolean indicating if a new forward pass should be executed. If True, then a forward pass is
                 executed on batch_samples. Else, the result is the one of the last forward pass.
+
         Returns:
             A list of intermediate outputs of layers.
         """
@@ -396,8 +407,10 @@ class HuggingFaceCausalLanguageModel(LanguageModel):
 
     def get_perplexity(self, batch_samples):
         """Function to get the perplexity of the model loss, on a given input sequence.
+
         Args:
             batch_samples: Model input
+
         Returns:
             A list of perplexity values.
         """

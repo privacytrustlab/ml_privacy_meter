@@ -20,6 +20,7 @@ class MetricResult:
         """
         Constructor.
         Computes and stores the accuracy, ROC AUC score, and the confusion matrix for a metric.
+
         Args:
             metric_id: ID of the metric that was used (c.f. the report_files/explanations.json file)
             predicted_labels: Membership predictions of the metric

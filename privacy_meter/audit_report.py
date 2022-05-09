@@ -90,10 +90,12 @@ class ROCCurveReport(AuditReport):
     ) -> Tuple[np.ndarray, np.ndarray]:
         """
         Private helper function, to average a ROC curve from non-aligned list.
+
         Args:
             fpr_2d_list: A 2D list of fpr values
             tpr_2d_list: A 2D list of fpr values
             n: Number of points in the resulting lists
+
         Returns:
             A tuple of aligned 1D numpy arrays, fpr and tpr.
         """
