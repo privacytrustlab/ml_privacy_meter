@@ -3,3 +3,4 @@ torch>=1.10.0
 matplotlib
 numpy
 scikit-learn
+seaborn
