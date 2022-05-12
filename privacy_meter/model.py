@@ -24,7 +24,7 @@ class Model(ABC):
         self.loss_fn = loss_fn
 
     @abstractmethod
-    def get_outputs(self, batch_samples):
+    def get_logits(self, batch_samples):
         """Function to get the model output from a given input.
 
         Args:
@@ -113,7 +113,7 @@ class PytorchModel(Model):
         self.loss_fn_no_reduction = deepcopy(loss_fn)
         self.loss_fn_no_reduction.reduction = 'none'
 
-    def get_outputs(self, batch_samples):
+    def get_logits(self, batch_samples):
         """Function to get the model output from a given input.
 
         Args:
@@ -171,7 +171,7 @@ class PytorchModel(Model):
             A list of intermediate outputs of layers.
         """
         if forward_pass:
-            _ = self.get_outputs(torch.Tensor(batch_samples))
+            _ = self.get_logits(torch.Tensor(batch_samples))
         layer_names = []
         for layer in layers:
             if isinstance(layer, str):
@@ -229,7 +229,7 @@ class TensorflowModel(Model):
         self.loss_fn_no_reduction = deepcopy(loss_fn)
         self.loss_fn_no_reduction.reduction = 'none'
 
-    def get_outputs(self, batch_samples):
+    def get_logits(self, batch_samples):
         """Function to get the model output from a given input.
 
         Args:
@@ -252,9 +252,9 @@ class TensorflowModel(Model):
             The loss value, as defined by the loss_fn attribute.
         """
         if per_point:
-            return self.loss_fn_no_reduction(batch_labels, self.get_outputs(batch_samples)).numpy()
+            return self.loss_fn_no_reduction(batch_labels, self.get_logits(batch_samples)).numpy()
         else:
-            return self.loss_fn(batch_labels, self.get_outputs(batch_samples)).numpy()
+            return self.loss_fn(batch_labels, self.get_logits(batch_samples)).numpy()
 
     def get_grad(self, batch_samples, batch_labels):
         """Function to get the gradient of the model loss with respect to the model parameters, on a given input and an
@@ -370,7 +370,7 @@ class HuggingFaceCausalLanguageModel(LanguageModel):
         self.loss_fn_no_reduction = deepcopy(loss_fn)
         self.loss_fn_no_reduction.reduction = 'none'
 
-    def get_outputs(self, batch_samples):
+    def get_logits(self, batch_samples):
         """Function to get the model output from a given input.
 
         Args:

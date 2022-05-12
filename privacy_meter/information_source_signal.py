@@ -88,11 +88,11 @@ class DatasetSample(Signal):
         return x
 
 ########################################################################################################################
-# MODEL_OUTPUT CLASS
+# MODEL_LOGIT CLASS
 ########################################################################################################################
 
 
-class ModelOutput(Signal):
+class ModelLogits(Signal):
     """
     Inherits from the Signal class, used to represent any type of signal that can be obtained from a Model and/or a Dataset.
     This particular class is used to get the output of a model.
@@ -130,7 +130,7 @@ class ModelOutput(Signal):
             dataset_index, split_name, input_feature, output_feature = model_to_split_mapping[k]
             x = datasets[dataset_index].get_feature(split_name, input_feature)
             # Compute the signal
-            results.append(model.get_outputs(x))
+            results.append(model.get_logits(x))
         return results
 
 ########################################################################################################################
@@ -190,7 +190,8 @@ class ModelIntermediateOutput(Signal):
 
 class ModelLoss(Signal):
     """
-    Inherits of the Signal class, used to represent any type of signal that can be obtained from a Model and/or a Dataset.
+    Inherits from the Signal class, used to represent any type of signal that can be obtained from a Model and/or a
+    Dataset.
     This particular class is used to get the loss of a model.
     """
 
