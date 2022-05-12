@@ -1,5 +1,9 @@
 # Developer Guide 
 
+# Table of Contents
+1. [Auto-generating Documentation](#auto-generating-documentation)
+2. [Building and Publishing Privacy Meter](#building-and-publishing-privacy-meter)
+
 ## Auto-generating Documentation
 
 The tool we use to maintain the documentation is called Sphinx. Install it via pip:
