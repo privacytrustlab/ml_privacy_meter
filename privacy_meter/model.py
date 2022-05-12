@@ -3,6 +3,10 @@ from copy import deepcopy
 
 import numpy as np
 
+########################################################################################################################
+# MODEL CLASS
+########################################################################################################################
+
 
 class Model(ABC):
     """
@@ -13,8 +17,8 @@ class Model(ABC):
         """Constructor
 
         Args:
-            model_obj: model object
-            loss_fn: loss function
+            model_obj: Model object.
+            loss_fn: Loss function.
         """
         self.model_obj = model_obj
         self.loss_fn = loss_fn
@@ -24,7 +28,7 @@ class Model(ABC):
         """Function to get the model output from a given input.
 
         Args:
-            batch_samples: Model input
+            batch_samples: Model input.
 
         Returns:
             Model output
@@ -36,9 +40,9 @@ class Model(ABC):
         """Function to get the model loss on a given input and an expected output.
 
         Args:
-            batch_samples: Model input
-            batch_labels: Model expected output
-            per_point: Boolean indicating if loss should be returned per point or reduced
+            batch_samples: Model input.
+            batch_labels: Model expected output.
+            per_point: Boolean indicating if loss should be returned per point or reduced.
 
         Returns:
             The loss value, as defined by the loss_fn attribute.
@@ -51,8 +55,8 @@ class Model(ABC):
         expected output.
 
         Args:
-            batch_samples: Model input
-            batch_labels: Model expected output
+            batch_samples: Model input.
+            batch_labels: Model expected output.
 
         Returns:
             A list of gradients of the model loss (one item per layer) with respect to the model parameters.
@@ -64,8 +68,8 @@ class Model(ABC):
         """Function to get the intermediate output of layers (a.k.a. features), on a given input.
 
         Args:
-            layers: List of integers and/or strings, indicating which layers values should be returned
-            batch_samples: Model input
+            layers: List of integers and/or strings, indicating which layers values should be returned.
+            batch_samples: Model input.
             forward_pass: Boolean indicating if a new forward pass should be executed. If True, then a forward pass is
                 executed on batch_samples. Else, the result is the one of the last forward pass.
 
@@ -73,6 +77,11 @@ class Model(ABC):
             A list of intermediate outputs of layers.
         """
         pass
+
+
+########################################################################################################################
+# PYTORCH_MODEL CLASS
+########################################################################################################################
 
 
 class PytorchModel(Model):
@@ -85,8 +94,8 @@ class PytorchModel(Model):
         """Constructor
 
         Args:
-            model_obj: model object
-            loss_fn: loss function
+            model_obj: Model object.
+            loss_fn: Loss function.
         """
 
         # Imports torch with global scope
@@ -108,10 +117,10 @@ class PytorchModel(Model):
         """Function to get the model output from a given input.
 
         Args:
-            batch_samples: Model input
+            batch_samples: Model input.
 
         Returns:
-            Model output
+            Model output.
         """
         return self.model_obj(torch.Tensor(batch_samples)).detach().numpy()
 
@@ -119,9 +128,9 @@ class PytorchModel(Model):
         """Function to get the model loss on a given input and an expected output.
 
         Args:
-            batch_samples: Model input
-            batch_labels: Model expected output
-            per_point: Boolean indicating if loss should be returned per point or reduced
+            batch_samples: Model input.
+            batch_labels: Model expected output.
+            per_point: Boolean indicating if loss should be returned per point or reduced.
 
         Returns:
             The loss value, as defined by the loss_fn attribute.
@@ -139,8 +148,8 @@ class PytorchModel(Model):
         expected output.
 
         Args:
-            batch_samples: Model input
-            batch_labels: Model expected output
+            batch_samples: Model input.
+            batch_labels: Model expected output.
 
         Returns:
             A list of gradients of the model loss (one item per layer) with respect to the model parameters.
@@ -153,8 +162,8 @@ class PytorchModel(Model):
         """Function to get the intermediate output of layers (a.k.a. features), on a given input.
 
         Args:
-            layers: List of integers and/or strings, indicating which layers values should be returned
-            batch_samples: Model input
+            layers: List of integers and/or strings, indicating which layers values should be returned.
+            batch_samples: Model input.
             forward_pass: Boolean indicating if a new forward pass should be executed. If True, then a forward pass is
                 executed on batch_samples. Else, the result is the one of the last forward pass.
 
@@ -175,7 +184,7 @@ class PytorchModel(Model):
         """Private helper function to access outputs of intermediate layers.
 
         Args:
-            layer_name: Name of the layer to access
+            layer_name: Name of the layer to access.
 
         Returns:
             A hook to be registered using register_forward_hook.
@@ -185,6 +194,10 @@ class PytorchModel(Model):
             self.intermediate_outputs[layer_name] = output
 
         return hook
+
+########################################################################################################################
+# TENSORFLOW_MODEL CLASS
+########################################################################################################################
 
 
 class TensorflowModel(Model):
@@ -196,8 +209,8 @@ class TensorflowModel(Model):
         """Constructor
 
         Args:
-            model_obj: model object
-            loss_fn: loss function
+            model_obj: Model object.
+            loss_fn: Loss function.
         """
 
         # Imports tensorflow with global scope
@@ -220,10 +233,10 @@ class TensorflowModel(Model):
         """Function to get the model output from a given input.
 
         Args:
-            batch_samples: Model input
+            batch_samples: Model input.
 
         Returns:
-            Model output
+            Model output.
         """
         return self.model_obj(batch_samples).numpy()
 
@@ -231,9 +244,9 @@ class TensorflowModel(Model):
         """Function to get the model loss on a given input and an expected output.
 
         Args:
-            batch_samples: Model input
-            batch_labels: Model expected output
-            per_point: Boolean indicating if loss should be returned per point or reduced
+            batch_samples: Model input.
+            batch_labels: Model expected output.
+            per_point: Boolean indicating if loss should be returned per point or reduced.
 
         Returns:
             The loss value, as defined by the loss_fn attribute.
@@ -248,8 +261,8 @@ class TensorflowModel(Model):
         expected output.
 
         Args:
-            batch_samples: Model input
-            batch_labels: Model expected output
+            batch_samples: Model input.
+            batch_labels: Model expected output.
 
         Returns:
             A list of gradients of the model loss (one item per layer) with respect to the model parameters.
@@ -263,10 +276,10 @@ class TensorflowModel(Model):
         """Function to get the intermediate output of layers (a.k.a. features), on a given input.
 
         Args:
-            layers: List of integers and/or strings, indicating which layers values should be returned
-            batch_samples: Model input
+            layers: List of integers and/or strings, indicating which layers values should be returned.
+            batch_samples: Model input.
             forward_pass: Boolean indicating if a new forward pass should be executed. If True, then a forward pass is
-            executed on batch_samples. Else, the result is the one of the last forward pass.
+                executed on batch_samples. Else, the result is the one of the last forward pass.
 
         Returns:
             A list of intermediate outputs of layers.
@@ -291,15 +304,19 @@ class TensorflowModel(Model):
         """Private helper function to recursively convert lists of tf tensors to lists of numpy arrays.
 
         Args:
-            x: List of tf tensors
+            x: List of tf tensors.
 
         Returns:
-            A list of numpy arrays
+            A list of numpy arrays.
         """
         if isinstance(x, list):
             return [self.__tf_list_to_np_list(y) for y in x]
         else:
             return x.numpy()
+
+########################################################################################################################
+# LANGUAGE_MODEL CLASS
+########################################################################################################################
 
 
 class LanguageModel(Model):
@@ -313,18 +330,22 @@ class LanguageModel(Model):
         """Function to get the perplexity of the model loss, on a given input sequence.
 
         Args:
-            batch_samples: Model input
+            batch_samples: Model input.
 
         Returns:
             A list of perplexity values.
         """
         pass
 
+########################################################################################################################
+# HUGGINGFACE_CAUSAL_LANGUAGE_MODEL_CLASS
+########################################################################################################################
+
 
 class HuggingFaceCausalLanguageModel(LanguageModel):
     """
-    Inherits from the LanguageModel class, an interface to query a language model
-    without any assumption on how it is implemented.
+    Inherits from the LanguageModel class, an interface to query a language model without any assumption on how it is
+    implemented.
     This particular class is to be used with HuggingFace causal language models.
     """
 
@@ -332,10 +353,9 @@ class HuggingFaceCausalLanguageModel(LanguageModel):
         """Constructor
 
         Args:
-            model_obj: model object
-            loss_fn: loss function
-            stride: window size that will be used by the fixed length
-            causal model for processing an input sequence
+            model_obj: Model object.
+            loss_fn: Loss function.
+            stride: Window size that will be used by the fixed length causal model for processing an input sequence.
         """
 
         # Imports torch with global scope
@@ -354,10 +374,10 @@ class HuggingFaceCausalLanguageModel(LanguageModel):
         """Function to get the model output from a given input.
 
         Args:
-            batch_samples: Model input
+            batch_samples: Model input.
 
         Returns:
-            Model output
+            Model output.
         """
         batch_samples = torch.tensor(batch_samples, dtype=torch.long)
         batch_labels = batch_samples.clone()
@@ -369,9 +389,9 @@ class HuggingFaceCausalLanguageModel(LanguageModel):
         """Function to get the model loss on a given input and an expected output.
 
         Args:
-            batch_samples: Model input
-            batch_labels: Model expected output
-            per_point: Boolean indicating if loss should be returned per point or reduced
+            batch_samples: Model input.
+            batch_labels: Model expected output.
+            per_point: Boolean indicating if loss should be returned per point or reduced.
 
         Returns:
             The loss value, as defined by the loss_fn attribute.
@@ -383,8 +403,8 @@ class HuggingFaceCausalLanguageModel(LanguageModel):
         expected output.
 
         Args:
-            batch_samples: Model input
-            batch_labels: Model expected output
+            batch_samples: Model input.
+            batch_labels: Model expected output.
 
         Returns:
             A list of gradients of the model loss (one item per layer) with respect to the model parameters.
@@ -395,8 +415,8 @@ class HuggingFaceCausalLanguageModel(LanguageModel):
         """Function to get the intermediate output of layers (a.k.a. features), on a given input.
 
         Args:
-            layers: List of integers and/or strings, indicating which layers values should be returned
-            batch_samples: Model input
+            layers: List of integers and/or strings, indicating which layers values should be returned.
+            batch_samples: Model input.
             forward_pass: Boolean indicating if a new forward pass should be executed. If True, then a forward pass is
                 executed on batch_samples. Else, the result is the one of the last forward pass.
 
@@ -409,7 +429,7 @@ class HuggingFaceCausalLanguageModel(LanguageModel):
         """Function to get the perplexity of the model loss, on a given input sequence.
 
         Args:
-            batch_samples: Model input
+            batch_samples: Model input.
 
         Returns:
             A list of perplexity values.

@@ -1,7 +1,3 @@
-########################################################################################################################
-# IMPORTS
-########################################################################################################################
-
 import os
 import subprocess
 from abc import ABC, abstractmethod
@@ -62,7 +58,7 @@ class AuditReport(ABC):
             inference_game_type: InferenceGame
     ):
         """
-        Core function of the AuditReport class, that actually generates the report.
+        Core function of the AuditReport class that actually generates the report.
 
         Args:
             metric_result: MetricResult object, containing data for the report.
@@ -78,7 +74,7 @@ class AuditReport(ABC):
 
 class ROCCurveReport(AuditReport):
     """
-    Inherits of the AuditReport class, an interface class to display and/or save some elements of a metric result
+    Inherits from the AuditReport class, an interface class to display and/or save some elements of a metric result
     object. This particular class is used to generate a ROC (Receiver Operating Characteristic) curve.
     """
 
@@ -92,9 +88,9 @@ class ROCCurveReport(AuditReport):
         Private helper function, to average a ROC curve from non-aligned list.
 
         Args:
-            fpr_2d_list: A 2D list of fpr values
-            tpr_2d_list: A 2D list of fpr values
-            n: Number of points in the resulting lists
+            fpr_2d_list: A 2D list of fpr values.
+            tpr_2d_list: A 2D list of fpr values.
+            n: Number of points in the resulting lists.
 
         Returns:
             A tuple of aligned 1D numpy arrays, fpr and tpr.
@@ -113,7 +109,7 @@ class ROCCurveReport(AuditReport):
             filename: str = 'roc_curve.jpg'
     ):
         """
-        Core function of the AuditReport class, that actually generates the report.
+        Core function of the AuditReport class that actually generates the report.
 
         Args:
             metric_result: A list of MetricResult objects, containing data for the report.
@@ -200,7 +196,7 @@ class ROCCurveReport(AuditReport):
 
 class ConfusionMatrixReport(AuditReport):
     """
-    Inherits of the AuditReport class, an interface class to display and/or save some elements of a metric result
+    Inherits from the AuditReport class, an interface class to display and/or save some elements of a metric result
     object. This particular class is used to generate a confusion matrix.
     """
 
@@ -213,7 +209,7 @@ class ConfusionMatrixReport(AuditReport):
             filename: str = 'confusion_matrix.jpg'
     ):
         """
-        Core function of the AuditReport class, that actually generates the report.
+        Core function of the AuditReport class that actually generates the report.
 
         Args:
             metric_result: MetricResult object, containing data for the report.
@@ -253,7 +249,7 @@ class ConfusionMatrixReport(AuditReport):
 
 class SignalHistogramReport(AuditReport):
     """
-    Inherits of the AuditReport class, an interface class to display and/or save some elements of a metric result
+    Inherits from the AuditReport class, an interface class to display and/or save some elements of a metric result
     object. This particular class is used to generate a histogram of the signal values.
     """
 
@@ -266,7 +262,7 @@ class SignalHistogramReport(AuditReport):
             filename: str = 'signal_histogram.jpg'
     ):
         """
-        Core function of the AuditReport class, that actually generates the report.
+        Core function of the AuditReport class that actually generates the report.
 
         Args:
             metric_result: MetricResult object, containing data for the report.
@@ -332,7 +328,7 @@ class SignalHistogramReport(AuditReport):
 
 class VulnerablePointsReport(AuditReport):
     """
-    Inherits of the AuditReport class, an interface class to display and/or save some elements of a metric result
+    Inherits from the AuditReport class, an interface class to display and/or save some elements of a metric result
     object. This particular class is used to identify the most vulnerable points.
     """
 
@@ -348,25 +344,27 @@ class VulnerablePointsReport(AuditReport):
             return_raw_values: bool = True,
             point_type: str = 'any'
     ):
-        """Core function of the AuditReport class, that actually generates the report.
+        """Core function of the AuditReport class that actually generates the report.
 
         Args:
             metric_results: A dict of lists of MetricResult objects, containing data for the report.
-            target_info_source: The InformationSource associated with the audited model training
-            target_model_to_train_split_mapping: The mapping associated with target_info_source
-            number_of_points: Number of vulnerable to be selected
-            save_tex: Boolean specifying if a partial .tex file should be generated
-            filename: Filename of the partial .tex file
-            return_raw_values: Boolean specifying if the points indices and scores should be returned
+            target_info_source: The InformationSource associated with the audited model training.
+            target_model_to_train_split_mapping: The mapping associated with target_info_source.
+            number_of_points: Number of vulnerable to be selected.
+            save_tex: Boolean specifying if a partial .tex file should be generated.
+            filename: Filename of the partial .tex file.
+            return_raw_values: Boolean specifying if the points indices and scores should be returned.
             point_type: Can be "any" or "image". If "image", then the images are displayed as such in the report.
 
         Returns:
-            Indices of the vulnerable points and their scores
+            Indices of the vulnerable points and their scores.
 
         """
 
         if inference_game_type != InferenceGame.PRIVACY_LOSS_MODEL:
-            raise NotImplementedError("For now, the only inference_game_type supported is InferenceGame.PRIVACY_LOSS_MODEL")
+            raise NotImplementedError(
+                "For now, the only inference_game_type supported is InferenceGame.PRIVACY_LOSS_MODEL"
+            )
 
         # Objects to be returned if return_raw_values is True
         indices, scores = [], []
@@ -434,10 +432,12 @@ class VulnerablePointsReport(AuditReport):
 
             # Render the template (i.e. generate the corresponding string)
             latex_content = template.render(
-                points=[
-                    {"index": index, "score": f'{score:.3f}', "type": point_type, "path": f"point{k:03d}.jpg" if point_type == "image" else None}
-                    for (k, (index, score)) in enumerate(zip(indices, scores))
-                ]
+                points=[{
+                    "index": index,
+                    "score": f'{score:.3f}',
+                    "type": point_type,
+                    "path": f"point{k:03d}.jpg" if point_type == "image" else None
+                } for (k, (index, score)) in enumerate(zip(indices, scores))]
             )
 
             # Write the result (the string) to a .tex file
@@ -456,7 +456,7 @@ class VulnerablePointsReport(AuditReport):
 
 class PDFReport(AuditReport):
     """
-    Inherits of the AuditReport class, an interface class to display and/or save some elements of a metric result
+    Inherits from the AuditReport class, an interface class to display and/or save some elements of a metric result
     object. This particular class is used to generate a user-friendly report, with multiple plots and some explanations.
     """
 
@@ -475,16 +475,16 @@ class PDFReport(AuditReport):
             point_type: str = 'any'
     ):
         """
-        Core function of the AuditReport class, that actually generates the report.
+        Core function of the AuditReport class that actually generates the report.
 
         Args:
             metric_results: A dict of lists of MetricResult objects, containing data for the report.
             inference_game_type: Value from the InferenceGame ENUM type, indicating which inference game was used.
             figures_dict: A dictionary containing the figures to include, for each metric result.
-                E.g. {"shadow_metric": ["roc_curve", "confusion_matrix", "signal_histogram"]}
-            system_name: Name of the system being audited. E.g. "Purchase100 classifier"
+                E.g. {"shadow_metric": ["roc_curve", "confusion_matrix", "signal_histogram"]}.
+            system_name: Name of the system being audited. E.g. "Purchase100 classifier".
             call_pdflatex: Boolean to specify if the pdflatex compiler should be called (to get a PDF file from the
-                TEX file)
+                TEX file).
             show: Boolean specifying if the plot should be displayed on screen.
             save: Boolean specifying if the plot should be saved as a file.
             filename_no_extension: File name to be used if the plot is saved as a file, without the file extension.

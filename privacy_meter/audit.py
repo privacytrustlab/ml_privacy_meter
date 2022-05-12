@@ -12,8 +12,8 @@ from privacy_meter.metric_result import MetricResult
 
 class Audit:
     """
-    This class is here to orchestrate how the Metric objects and the InformationSource objects interact with one
-    another. The three steps of using this class are 1) initialization 2) audit.prepare() 3) audit.run()
+    This class orchestrates how the Metric objects and the InformationSource objects interact with one
+    another. The three steps of using this class are 1) initialization 2) audit.prepare() 3) audit.run().
     """
 
     def __init__(
@@ -29,16 +29,16 @@ class Audit:
         Constructor
 
         Args:
-            metrics: Metric object or list of Metric objects to be used for the audit
+            metrics: Metric object or list of Metric objects to be used for the audit.
             inference_game_type: The type of inference game being played: average privacy loss of a training algorithm,
                 privacy loss of a model, privacy loss of a data record, or worst-case privacy loss of a training
-                algorithm
+                algorithm.
             target_info_sources: InformationSource object(s), containing the Model(s) that the metric will be performed
                 on, and the corresponding Dataset(s).
             reference_info_sources: InformationSource object(s), containing the Model(s) that the metric will be fitted
                 on, and the corresponding Dataset(s).
-            fpr_tolerances: FPR tolerance value(s) to be respected by the audit
-            logs_directory_names: Path(s) to logging directory(ies)
+            fpr_tolerances: FPR tolerance value(s) to be used by the audit.
+            logs_directory_names: Path(s) to logging directory(ies).
         """
 
         self.metrics = metrics
@@ -78,7 +78,7 @@ class Audit:
         self.metric_objects = []
         for k, metric in enumerate(self.metrics):
             if type(metric) == MetricEnum:
-                # Ff the user wants to use default versions of metrics
+                # If the user wants to use default versions of metrics
                 if metric == MetricEnum.POPULATION:
                     self.metric_objects.append(PopulationMetric(
                         target_info_source=self.target_info_sources[k],
@@ -126,8 +126,8 @@ class Audit:
     def prepare(self):
         """
         Core function that should be called after the initialization and before the audit.run() function. Runs the
-        prepare_metric function of all metric objects, which computes (or load from memory) the signals required for the
-        inference algorithms.
+        prepare_metric function of all metric objects, which computes (or loads from memory) the signals required for
+        the membership inference algorithms.
         """
         for i in range(len(self.metric_objects)):
             self.metric_objects[i].prepare_metric()
@@ -135,7 +135,7 @@ class Audit:
     def run(self) -> List[MetricResult]:
         """
         Core function that should be called after the audit.prepare() function. This actually runs the metrics'
-        inference algorithms.
+        membership inference algorithms.
 
         Returns:
             A list of MetricResult objects (one per metric)

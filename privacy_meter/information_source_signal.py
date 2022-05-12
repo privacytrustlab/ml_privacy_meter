@@ -8,6 +8,11 @@ from privacy_meter.dataset import Dataset
 from privacy_meter.model import Model
 
 
+########################################################################################################################
+# SIGNAL CLASS
+########################################################################################################################
+
+
 class Signal(ABC):
     """
     Abstract class, representing any type of signal that can be obtained from a Model and/or a Dataset.
@@ -41,9 +46,15 @@ class Signal(ABC):
         pass
 
 
+########################################################################################################################
+# DATASET_SAMPLE CLASS
+########################################################################################################################
+
+
 class DatasetSample(Signal):
     """
-    Inherits of the Signal class, used to represent any type of signal that can be obtained from a Model and/or a Dataset.
+    Inherits from the Signal class, used to represent any type of signal that can be obtained from a Model and/or a
+    Dataset.
     This particular class is used to get a given point from the Dataset.
     """
 
@@ -76,10 +87,14 @@ class DatasetSample(Signal):
         x = datasets[dataset_index].get_feature(split_name, input_feature)[extra["point_num"]]
         return x
 
+########################################################################################################################
+# MODEL_OUTPUT CLASS
+########################################################################################################################
+
 
 class ModelOutput(Signal):
     """
-    Inherits of the Signal class, used to represent any type of signal that can be obtained from a Model and/or a Dataset.
+    Inherits from the Signal class, used to represent any type of signal that can be obtained from a Model and/or a Dataset.
     This particular class is used to get the output of a model.
     """
 
@@ -118,10 +133,15 @@ class ModelOutput(Signal):
             results.append(model.get_outputs(x))
         return results
 
+########################################################################################################################
+# MODEL_INTERMEDIATE_OUTPUT CLASS
+########################################################################################################################
+
 
 class ModelIntermediateOutput(Signal):
     """
-    Inherits of the Signal class, used to represent any type of signal that can be obtained from a Model and/or a Dataset.
+    Inherits from the Signal class, used to represent any type of signal that can be obtained from a Model and/or a
+    Dataset.
     This particular class is used to get the value of an intermediate layer of model.
     """
 
@@ -162,6 +182,10 @@ class ModelIntermediateOutput(Signal):
             # Compute the signal
             results.append(model.get_intermediate_outputs(extra["layers"], x))
         return results
+
+########################################################################################################################
+# MODEL_LOSS CLASS
+########################################################################################################################
 
 
 class ModelLoss(Signal):
@@ -212,10 +236,15 @@ class ModelLoss(Signal):
             results.append(model.get_loss(x, y))
         return results
 
+########################################################################################################################
+# MODEL_GRADIENT CLASS
+########################################################################################################################
+
 
 class ModelGradient(Signal):
     """
-    Inherits of the Signal class, used to represent any type of signal that can be obtained from a Model and/or a Dataset.
+    Inherits from the Signal class, used to represent any type of signal that can be obtained from a Model and/or a
+    Dataset.
     This particular class is used to get the gradient of a model.
     """
 

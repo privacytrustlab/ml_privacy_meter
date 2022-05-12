@@ -11,13 +11,16 @@ from privacy_meter.information_source_signal import Signal
 from privacy_meter.metric_result import MetricResult
 from privacy_meter.utils import flatten_array
 
+########################################################################################################################
+# METRIC CLASS
+########################################################################################################################
+
 
 class Metric(ABC):
     """
-    Interface to construct and perform a membership inference attack
-    on a target model and dataset using auxiliary information specified
-    by the user. This serves as a guideline for implementing a metric
-    to be used for measuring the privacy leakage of a target model.
+    Interface to construct and perform a membership inference attack on a target model and dataset using auxiliary
+    information specified by the user. This serves as a guideline for implementing a metric to be used for measuring
+    the privacy leakage of a target model.
     """
 
     def __init__(
@@ -55,7 +58,7 @@ class Metric(ABC):
         if they haven't.
 
         Args:
-            signal_source: Signal source to determine which information source and mapping objects need to be used
+            signal_source: Signal source to determine which information source and mapping objects need to be used.
 
         Returns:
             Signals computed using the specified information source and mapping object.
@@ -97,10 +100,11 @@ class Metric(ABC):
             unique_dataset: bool
     ):
         """
-        Private helper function, to set default values for mappings between models and dataset splits
+        Private helper function, to set default values for mappings between models and dataset splits.
 
         Args:
-            unique_dataset: Boolean indicating if target_info_source and reference_info_source use one same dataset object
+            unique_dataset: Boolean indicating if target_info_source and reference_info_source use one same dataset
+                object.
 
         """
         if unique_dataset:
@@ -137,9 +141,8 @@ class Metric(ABC):
     @abstractmethod
     def prepare_metric(self):
         """
-        Function to prepare data needed for running the metric on
-        the target model and dataset, using signals computed on the
-        auxiliary model(s) and dataset.
+        Function to prepare data needed for running the metric on the target model and dataset, using signals computed
+        on the auxiliary model(s) and dataset.
         """
         pass
 
@@ -149,20 +152,23 @@ class Metric(ABC):
         Function to run the metric on the target model and dataset.
 
         Args:
-            fpr_tolerance_rate_list (optional): List of FPR tolerance values
-            that may be used by the threshold function to compute the attack
-            threshold for the metric.
+            fpr_tolerance_rate_list (optional): List of FPR tolerance values that may be used by the threshold function
+                to compute the attack threshold for the metric.
 
         Returns:
-            Result(s) of the metric
+            Result(s) of the metric.
         """
         pass
+
+########################################################################################################################
+# POPULATION_METRIC CLASS
+########################################################################################################################
 
 
 class PopulationMetric(Metric):
     """
-    Inherits the Metric class to perform the population membership inference attack
-    which will be used as a metric for measuring privacy leakage of a target model.
+    Inherits from the Metric class to perform the population membership inference attack which will be used as a metric
+    for measuring privacy leakage of a target model.
     """
 
     def __init__(
@@ -188,12 +194,13 @@ class PopulationMetric(Metric):
             signals: List of signals to be used.
             hypothesis_test_func: Function that will be used for computing attack threshold(s)
             target_model_to_train_split_mapping: Mapping from the target model to the train split of the target dataset.
-                By default, the code will look for a split named "train"
+                By default, the code will look for a split named "train".
             target_model_to_test_split_mapping: Mapping from the target model to the test split of the target dataset.
-                By default, the code will look for a split named "test"
+                By default, the code will look for a split named "test".
             reference_model_to_train_split_mapping: Mapping from the reference models to their train splits of the
                 corresponding reference dataset. By default, the code will look for a split named "train" if only one
-                reference model is provided, else for splits named "train000", "train001", "train002", etc.
+                reference model is provided, else for splits named "train000", "train001", "train002", etc. For the
+                population metric, at least one reference dataset should be passed.
         """
 
         # Initializes the parent metric
@@ -221,12 +228,9 @@ class PopulationMetric(Metric):
 
     def prepare_metric(self):
         """
-        Function to prepare data needed for running the metric on
-        the target model and dataset, using signals computed on the
-        auxiliary model(s) and dataset. For the population attack,
-        the auxiliary model is the target model itself, and the
-        auxiliary dataset is a random split from the target model's
-        training data.
+        Function to prepare data needed for running the metric on the target model and dataset, using signals computed
+        on the auxiliary model(s) and dataset. For the population attack, the auxiliary model is the target model
+        itself, and the auxiliary dataset is a random split from the target model's training data.
         """
         # Load signals if they have been computed already; otherwise, compute and save them
         self.member_signals = flatten_array(self._load_or_compute_signal(SignalSourceEnum.TARGET_MEMBER))
@@ -238,9 +242,8 @@ class PopulationMetric(Metric):
         Function to run the metric on the target model and dataset.
 
         Args:
-            fpr_tolerance_rate_list (optional): List of FPR tolerance values
-            that may be used by the threshold function to compute the attack
-            threshold for the metric.
+            fpr_tolerance_rate_list (optional): List of FPR tolerance values that may be used by the threshold function
+                to compute the attack threshold for the metric.
 
         Returns:
             A list of MetricResult objects, one per fpr value.
@@ -283,11 +286,15 @@ class PopulationMetric(Metric):
 
         return metric_result_list
 
+########################################################################################################################
+# SHADOW_METRIC CLASS
+########################################################################################################################
+
 
 class ShadowMetric(Metric):
     """
-    Inherits the Metric class to perform the shadow membership inference attack
-    which will be used as a metric for measuring privacy leakage of a target model.
+    Inherits from the Metric class to perform the shadow membership inference attack which will be used as a metric for
+    measuring privacy leakage of a target model.
     """
 
     def __init__(
@@ -305,7 +312,7 @@ class ShadowMetric(Metric):
             logs_dirname: str = None
     ):
         """
-        Constructor.
+        Constructor
         
         Args:
             target_info_source: InformationSource, containing the Model that the metric will be performed on, and the
@@ -326,7 +333,8 @@ class ShadowMetric(Metric):
                 reference model is provided, else for splits named "test000", "test001", "test002", etc.
             reweight_samples: Boolean specifying if the metric should account for an unbalance between the number of
                 members vs non-members.
-            unique_dataset: Boolean indicating if target_info_source and reference_info_source use one same dataset object.
+            unique_dataset: Boolean indicating if target_info_source and reference_info_source use one same dataset
+                object.
         """
 
         # Initializes the parent metric
@@ -371,7 +379,7 @@ class ShadowMetric(Metric):
 
         Args:
             fpr_tolerance_rate_list (optional): List of FPR tolerance values that may be used by the threshold function
-            to compute the attack threshold for the metric.
+                to compute the attack threshold for the metric.
 
         Returns:
             The result of the metric
@@ -414,11 +422,15 @@ class ShadowMetric(Metric):
 
         return metric_result
 
+########################################################################################################################
+# REFERENCE_METRIC CLASS
+########################################################################################################################
+
 
 class ReferenceMetric(Metric):
     """
-    Inherits the Metric class to perform the reference membership inference attack
-    which will be used as a metric for measuring privacy leakage of a target model.
+    Inherits from the Metric class to perform the reference membership inference attack which will be used as a metric
+    for measuring privacy leakage of a target model.
     """
 
     def __init__(
@@ -507,7 +519,7 @@ class ReferenceMetric(Metric):
 
         Args:
             fpr_tolerance_rate_list (optional): List of FPR tolerance values that may be used by the threshold function
-            to compute the attack threshold for the metric.
+                to compute the attack threshold for the metric.
 
         Returns:
             A list of MetricResult objects, one per fpr value.

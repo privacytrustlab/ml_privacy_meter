@@ -2,6 +2,10 @@ from typing import List
 
 from sklearn.metrics import roc_auc_score, accuracy_score, confusion_matrix, roc_curve
 
+########################################################################################################################
+# METRIC_RESULT CLASS
+########################################################################################################################
+
 
 class MetricResult:
     """
@@ -22,12 +26,12 @@ class MetricResult:
         Computes and stores the accuracy, ROC AUC score, and the confusion matrix for a metric.
 
         Args:
-            metric_id: ID of the metric that was used (c.f. the report_files/explanations.json file)
-            predicted_labels: Membership predictions of the metric
-            true_labels: True membership labels used to evaluate the metric
-            predictions_proba: Continuous version of the predicted_labels
-            signal_values: Values of the signal used by the metric
-            threshold: Threshold computed by the metric
+            metric_id: ID of the metric that was used (c.f. the report_files/explanations.json file).
+            predicted_labels: Membership predictions of the metric.
+            true_labels: True membership labels used to evaluate the metric.
+            predictions_proba: Continuous version of the predicted_labels.
+            signal_values: Values of the signal used by the metric.
+            threshold: Threshold computed by the metric.
         """
         self.metric_id = metric_id
         self.predicted_labels = predicted_labels
@@ -52,7 +56,7 @@ class MetricResult:
 
     def __str__(self):
         """
-        Return a string describing the metric result
+        Returns a string describing the metric result.
         """
         txt = [
             f'{" METRIC RESULT OBJECT ":=^48}',

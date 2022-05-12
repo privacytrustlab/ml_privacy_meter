@@ -3,6 +3,10 @@ from typing import Union, Dict
 
 import numpy as np
 
+########################################################################################################################
+# DATASET CLASS
+########################################################################################################################
+
 
 class Dataset:
     """
@@ -20,12 +24,12 @@ class Dataset:
         """Constructor
 
         Args:
-            data_dict: Contains the dataset as a dict
-            default_input: The key of the data_dict that should be used by default to get the input of a model
+            data_dict: Contains the dataset as a dict.
+            default_input: The key of the data_dict that should be used by default to get the input of a model.
             default_output: The key of the data_dict that should be used by default to get the expected output
-                of a model
-            preproc_fn_dict: Contains optional preprocessing functions for each feature
-            preprocessed: Indicates if the preprocessing of preproc_fn_dict has already been applied
+                of a model.
+            preproc_fn_dict: Contains optional preprocessing functions for each feature.
+            preprocessed: Indicates if the preprocessing of preproc_fn_dict has already been applied.
         """
 
         # Store parameters
@@ -60,8 +64,8 @@ class Dataset:
         """Returns a specific feature from samples of a specific split.
 
         Args:
-            split_name: Name of the split
-            feature_name: Name of the feature
+            split_name: Name of the split.
+            feature_name: Name of the feature.
             indices: Optional list of indices. If not specified, the entire subset is returned.
 
         Returns:
@@ -181,7 +185,7 @@ class Dataset:
 
     def __str__(self):
         """
-        Return a string describing the dataset
+        Returns a string describing the dataset.
         """
         txt = [
             f'{" DATASET OBJECT ":=^48}',

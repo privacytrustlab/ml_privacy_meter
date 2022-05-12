@@ -4,6 +4,10 @@ from privacy_meter.dataset import Dataset
 from privacy_meter.model import Model
 from privacy_meter.information_source_signal import Signal
 
+########################################################################################################################
+# INFORMATION_SOURCE CLASS
+########################################################################################################################
+
 
 class InformationSource:
     """
@@ -42,7 +46,7 @@ class InformationSource:
         object instantiation, plus and any additional object required.
 
         Args:
-            signal: The signal object to call
+            signal: The signal object to call.
             model_to_split_mapping: List of tuples, indicating how each model should query the dataset.
                 More specifically, for model #i:
                 model_to_split_mapping[i][0] contains the index of the dataset in the list,
