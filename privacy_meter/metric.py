@@ -60,7 +60,6 @@ class Metric(ABC):
         Returns:
             Signals computed using the specified information source and mapping object.
         """
-
         signal_filepath = f'{self.logs_dirname}/{type(self).__name__}_{signal_source.value}'
 
         if signal_source == SignalSourceEnum.TARGET_MEMBER:
@@ -451,7 +450,7 @@ class ReferenceMetric(Metric):
                 By default, the code will look for a split named "test"
             reference_model_to_train_split_mapping: Mapping from the reference models to their train splits of the
                 corresponding reference dataset. By default, the code will look for a split named "train"
-            reference_model_to_train_split_mapping: Mapping from the reference models to their test splits of the
+            reference_model_to_test_split_mapping: Mapping from the reference models to their test splits of the
                 corresponding reference dataset. By default, the code will look for a split named "test"
             unique_dataset: Boolean indicating if target_info_source and target_info_source use one same dataset object.
         """
@@ -469,8 +468,17 @@ class ReferenceMetric(Metric):
         # Store the model to split mappings
         self.target_model_to_train_split_mapping = target_model_to_train_split_mapping
         self.target_model_to_test_split_mapping = target_model_to_test_split_mapping
-        self.reference_model_to_train_split_mapping = reference_model_to_train_split_mapping
-        self.reference_model_to_test_split_mapping = reference_model_to_test_split_mapping
+
+        # Custom default mapping for the reference metric
+        if reference_model_to_train_split_mapping is None:
+            self.reference_model_to_train_split_mapping = [
+                                                              (0, 'train', '<default_input>', '<default_output>')
+                                                          ] * len(self.reference_info_source.models)
+        if reference_model_to_test_split_mapping is None:
+            self.reference_model_to_test_split_mapping = [
+                                                             (0, 'test', '<default_input>', '<default_output>')
+                                                         ] * len(self.reference_info_source.models)
+
         self._set_default_mappings(unique_dataset)
 
         # Variables used in prepare_metric and run_metric
