@@ -4,3 +4,8 @@ matplotlib
 numpy
 scikit-learn
 seaborn
+setuptools
+scipy
+pandas
+jinja2
+pillow
