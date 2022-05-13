@@ -4,4 +4,13 @@ venv/
 .vscode/
 datasets/*.txt*
 logs/
+.idea
+.DS_Store
 
+archive/venv/
+archive/*.egg-info/
+archive/.vscode/
+archive/datasets/*.txt*
+archive/tutorials/datasets/*.txt*
+archive/logs/
+archive/.DS_Store
