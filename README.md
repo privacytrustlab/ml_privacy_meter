@@ -139,13 +139,16 @@ The membership probability predictions for training set member data and populati
 
 3. Reza Shokri, Marco Stronati, Congzheng Song, and Vitaly Shmatikov. [Membership Inference Attacks against Machine Learning Models](https://www.comp.nus.edu.sg/~reza/files/Shokri-SP2017.pdf) in IEEE Symposium on Security and Privacy, 2017.
 
-## Contributors
+## Team
 
-The tool is designed and developed at NUS Data Privacy and Trustworthy Machine Learning Lab. Current contributers are: Aadyaa Maddi, Jiayuan Ye, Sasi Kumar Murakonda, and Reza Shokri. Earlier contributors were Milad Nasr, Shadab Shaikh, and Mihir Harshavardhan Khandekar.
+The tool is designed and developed at NUS Data Privacy and Trustworthy Machine Learning Lab. Current contributers are: Aadyaa Maddi, Jiayuan Ye, Victor Masiak, Fatemehsadat Mireshghallah, Hongyan Chang, Martin Strobel, and Reza Shokri. Earlier contributors were Sasi Kumar Murakonda, Milad Nasr, Shadab Shaikh, and Mihir Harshavardhan Khandekar.
 
 <p float="left">
 <img src="https://www.comp.nus.edu.sg/~reza/img/aadyaa.jpg" width="100"/>
 <img src="https://www.comp.nus.edu.sg/~reza/img/jiayuan.jpg" width="100"/>
-<img src="https://www.comp.nus.edu.sg/~reza/img/sasi.jpg" width="100"/>
+<img src="https://www.comp.nus.edu.sg/~reza/img/victor.jpg" width="100"/>
+<img src="https://cseweb.ucsd.edu//~fmireshg/pic.jpg" width="100"/>
+<img src="https://www.comp.nus.edu.sg/~reza/img/martin.jpg" width="100"/>
+<img src="https://www.comp.nus.edu.sg/~reza/img/hongyan.jpg" width="100"/>  
 <img src="https://www.comp.nus.edu.sg/~reza/img/reza.jpg" width="100"/>
 </p>
