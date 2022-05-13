@@ -2,15 +2,15 @@ import io
 import os
 from setuptools import setup
 
-DESCRIPTION = f'Machine Learning Privacy Meter: A tool to quantify the privacy risks of machine learning models ' \
-              f'with respect to inference attacks; Developers (in alphabetical order): Mihir Harshavardhan ' \
-              f'Khandekar, Milad Nasr, Shadab Shaikh, and Reza Shokri'
+DESCRIPTION = f'Privacy Meter: An open-source library to audit data privacy in statistical and machine learning ' \
+              f'algorithms.'
+
 here = os.path.abspath(os.path.dirname(__file__))
 
 # Import the README and use it as the long-description.
 # Note: this will only work if 'README.md' is present in your MANIFEST.in file!
 try:
-    with io.open(os.path.join(here, 'README.md'), encoding='utf-8') as f:
+    with io.open(os.path.join(here, 'project_description.md'), encoding='utf-8') as f:
         long_description = '\n' + f.read()
 except FileNotFoundError:
     long_description = DESCRIPTION

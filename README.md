@@ -1,17 +1,20 @@
 # Privacy Meter
 
+## Introduction
+
+Privacy Meter is an open-source library to audit data privacy in statistical and machine learning algorithms. The tool can help in data protection impact assessment process by providing a quantitative analysis of fundamental privacy risks of a (machine learning) model. It uses state-of-the-art inference techniques to audit a wide range of machine learning algorithms for classification, regression, computer vision, and natural language processing. Privacy Meter generates extensive reports about the aggregate and individual privacy risks for data records in the training set, at multiple levels of access to the model.
+
 ## Installation
 
-Privacy Meter supports Python `>=3.6` and works with `tensorflow>=2.4.0` and `torch>=1.10.0`. 
+Privacy Meter supports Python `>=3.6` and works with `tensorflow>=2.4.0` and `torch>=1.10.0`.
 
-You can clone this repository and install the local version of tool with its dependencies by running the following:
+You can install `privacy_meter` using `pip` for the latest stable version of the tool:
 
 ```bash
-pip install -r requirements.txt
-pip install -e .
+pip install privacy_meter
 ```
 
-We will be publishing the tool to `PyPi` shortly so you can install the tool directly using `pip`.
+Privacy Meter has been tested with other machine learning libraries like HuggingFace and Intel OpenVINO, and can even be extended to be used with a framework of your choice. 
 
 ## Usage
 
@@ -25,14 +28,16 @@ Examples of using the tool can be found in the `docs/` directory. The tutorials 
 
 3. Reza Shokri, Marco Stronati, Congzheng Song, and Vitaly Shmatikov. [Membership Inference Attacks against Machine Learning Models](https://www.comp.nus.edu.sg/~reza/files/Shokri-SP2017.pdf) in IEEE Symposium on Security and Privacy, 2017.
 
-## Contributors
+## Team
 
-The tool is designed and developed at NUS Data Privacy and Trustworthy Machine Learning Lab. Current contributers are: Aadyaa Maddi, Jiayuan Ye, Sasi Kumar Murakonda, Victor Masiak, and Reza Shokri. Earlier contributors were Milad Nasr, Shadab Shaikh, and Mihir Harshavardhan Khandekar.
+The tool is designed and developed at NUS Data Privacy and Trustworthy Machine Learning Lab. Current contributers are: Aadyaa Maddi, Jiayuan Ye, Victor Masiak, Fatemehsadat Mireshghallah, Hongyan Chang, Martin Strobel, and Reza Shokri. Earlier contributors were Sasi Kumar Murakonda, Milad Nasr, Shadab Shaikh, and Mihir Harshavardhan Khandekar.
 
 <p float="left">
-<img src="https://www.comp.nus.edu.sg/~reza/img/aadyaa.jpg" width="100"/>
-<img src="https://www.comp.nus.edu.sg/~reza/img/jiayuan.jpg" width="100"/>
-<img src="https://www.comp.nus.edu.sg/~reza/img/sasi.jpg" width="100"/>
-<img src="https://www.comp.nus.edu.sg/~reza/img/victor.jpg" width="100"/>
-<img src="https://www.comp.nus.edu.sg/~reza/img/reza.jpg" width="100"/>
+<img src="https://www.comp.nus.edu.sg/~reza/img/aadyaa.jpg" height="140"/>
+<img src="https://www.comp.nus.edu.sg/~reza/img/jiayuan.jpg" height="140"/>
+<img src="https://www.comp.nus.edu.sg/~reza/img/victor.jpg" height="140"/>
+<img src="https://cseweb.ucsd.edu//~fmireshg/pic.jpg" height="140"/>
+<img src="https://www.comp.nus.edu.sg/~reza/img/martin.jpg" height="140"/>
+<img src="https://www.comp.nus.edu.sg/~reza/img/hongyan.jpg" height="140"/>  
+<img src="https://www.comp.nus.edu.sg/~reza/img/reza.jpg" height="140"/>
 </p>

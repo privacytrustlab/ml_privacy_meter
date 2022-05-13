@@ -1,3 +1,4 @@
 include README.md
+include project_description.md
 include requirements.txt
 include LICENSE
