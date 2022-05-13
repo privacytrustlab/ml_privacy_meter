@@ -144,11 +144,11 @@ The membership probability predictions for training set member data and populati
 The tool is designed and developed at NUS Data Privacy and Trustworthy Machine Learning Lab. Current contributers are: Aadyaa Maddi, Jiayuan Ye, Victor Masiak, Fatemehsadat Mireshghallah, Hongyan Chang, Martin Strobel, and Reza Shokri. Earlier contributors were Sasi Kumar Murakonda, Milad Nasr, Shadab Shaikh, and Mihir Harshavardhan Khandekar.
 
 <p float="left">
-<img src="https://www.comp.nus.edu.sg/~reza/img/aadyaa.jpg" width="100"/>
-<img src="https://www.comp.nus.edu.sg/~reza/img/jiayuan.jpg" width="100"/>
-<img src="https://www.comp.nus.edu.sg/~reza/img/victor.jpg" width="100"/>
-<img src="https://cseweb.ucsd.edu//~fmireshg/pic.jpg" width="100"/>
-<img src="https://www.comp.nus.edu.sg/~reza/img/martin.jpg" width="100"/>
-<img src="https://www.comp.nus.edu.sg/~reza/img/hongyan.jpg" width="100"/>  
-<img src="https://www.comp.nus.edu.sg/~reza/img/reza.jpg" width="100"/>
+<img src="https://www.comp.nus.edu.sg/~reza/img/aadyaa.jpg" height="140"/>
+<img src="https://www.comp.nus.edu.sg/~reza/img/jiayuan.jpg" height="140"/>
+<img src="https://www.comp.nus.edu.sg/~reza/img/victor.jpg" height="140"/>
+<img src="https://cseweb.ucsd.edu//~fmireshg/pic.jpg" height="140"/>
+<img src="https://www.comp.nus.edu.sg/~reza/img/martin.jpg" height="140"/>
+<img src="https://www.comp.nus.edu.sg/~reza/img/hongyan.jpg" height="140"/>  
+<img src="https://www.comp.nus.edu.sg/~reza/img/reza.jpg" height="140"/>
 </p>
