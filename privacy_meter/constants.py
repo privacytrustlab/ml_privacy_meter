@@ -9,6 +9,7 @@ class MetricEnum(Enum):
     POPULATION = "population_metric"
     SHADOW = "shadow_metric"
     REFERENCE = "reference_metric"
+    LRT = "lrt_metric"
 
 ########################################################################################################################
 # ENUM: SOURCES FOR COMPUTING SIGNALS

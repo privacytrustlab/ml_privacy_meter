@@ -1,3 +1,4 @@
+import random
 from abc import ABC, abstractmethod
 from copy import deepcopy
 
@@ -6,6 +7,7 @@ import numpy as np
 ########################################################################################################################
 # MODEL CLASS
 ########################################################################################################################
+import torch.nn.functional
 
 
 class Model(ABC):
@@ -364,6 +366,7 @@ class HuggingFaceCausalLanguageModel(LanguageModel):
         # Initializes the parent model
         super().__init__(model_obj, loss_fn)
 
+        # Set language model parameters
         self.stride = stride
 
         # Create a second loss function, per point
@@ -464,3 +467,154 @@ class HuggingFaceCausalLanguageModel(LanguageModel):
             ppl_values.append(ppl)
 
         return ppl_values
+
+
+########################################################################################################################
+# HUGGINGFACE_MASKED_LANGUAGE_MODEL_CLASS
+########################################################################################################################
+
+
+class HuggingFaceMaskedLanguageModel(LanguageModel):
+    """
+    Inherits from the LanguageModel class, an interface to query a language model without any assumption on how it is
+    implemented.
+    This particular class is to be used with HuggingFace masked language models.
+    """
+
+    def __init__(self, model_obj, loss_fn, tokenizer, prob_mask=0.15, num_times_mask=10, stride=64):
+        """Constructor
+
+        Args:
+            model_obj: Model object.
+            loss_fn: Loss function.
+            tokenizer: Tokenizer object used by the model.
+            prob_mask: Percentage of random tokens to be masked in a sequence.
+            num_times_mask: Number of times masking is performed for computing masked loss.
+            stride: Window size that will be used by the fixed length causal model for processing an input sequence.
+        """
+
+        # Imports torch with global scope
+        globals()['torch'] = __import__('torch')
+
+        # Initializes the parent model
+        super().__init__(model_obj, loss_fn)
+
+        # Set masking hyperparameters
+        self.prob_mask = prob_mask
+        self.num_times_mask = num_times_mask
+
+        # Set language model parameters
+        self.stride = stride
+
+        # Set tokenizer
+        self.tokenizer = tokenizer
+
+        # Create a second loss function, per point
+        self.loss_fn_no_reduction = deepcopy(loss_fn)
+        self.loss_fn_no_reduction.reduction = 'none'
+
+    def get_logits(self, batch_samples):
+        """Function to get the model output from a given input.
+
+        Args:
+            batch_samples: Model input.
+
+        Returns:
+            Model output.
+        """
+        pass
+
+    def get_loss(self, batch_samples, batch_labels=None, per_point=True):
+        """Function to get the model loss on a given input and an expected output.
+
+        Args:
+            batch_samples: Model input.
+            batch_labels: Model expected output.
+            per_point: Boolean indicating if loss should be returned per point or reduced.
+
+        Returns:
+            The loss value, as defined by the loss_fn attribute.
+        """
+        pass
+
+    def get_grad(self, batch_samples, batch_labels):
+        """Function to get the gradient of the model loss with respect to the model parameters, on a given input and an
+        expected output.
+
+        Args:
+            batch_samples: Model input.
+            batch_labels: Model expected output.
+
+        Returns:
+            A list of gradients of the model loss (one item per layer) with respect to the model parameters.
+        """
+        pass
+
+    def get_intermediate_outputs(self, layers, batch_samples, forward_pass=True):
+        """Function to get the intermediate output of layers (a.k.a. features), on a given input.
+
+        Args:
+            layers: List of integers and/or strings, indicating which layers values should be returned.
+            batch_samples: Model input.
+            forward_pass: Boolean indicating if a new forward pass should be executed. If True, then a forward pass is
+                executed on batch_samples. Else, the result is the one of the last forward pass.
+
+        Returns:
+            A list of intermediate outputs of layers.
+        """
+        pass
+
+    def get_perplexity(self, batch_samples):
+        """Function to get the perplexity of the model loss, on a given input sequence.
+
+        Args:
+            batch_samples: Model input.
+
+        Returns:
+            A list of perplexity values.
+        """
+        pass
+
+    def get_masked_loss(self, batch_samples):
+        """Function to get the masked loss for a batch of input sequences.
+
+        Args:
+            batch_samples: Model input.
+
+        Returns:
+            A list of masked loss values.
+        """
+        max_length = self.model_obj.config.n_positions
+
+        CLS = "[CLS]"
+        SEP = "[SEP]"
+        MASK = "[MASK]"
+
+        mask_id = self.tokenizer.convert_tokens_to_ids([MASK])[0]
+        sep_id = self.tokenizer.convert_tokens_to_ids([SEP])[0]
+        cls_id = self.tokenizer.convert_tokens_to_ids([CLS])[0]
+
+        positions = []
+        for sample in batch_samples:
+            positions.append(
+                [pos for pos, token_id in enumerate(sample) if (token_id != sep_id and token_id != cls_id)]
+            )
+        num_mask_pos = int(self.prob_mask * (max_length - 1))  # -1 because of cls
+
+        masked_losses = []
+        for ctr in range(self.num_times_mask):
+            batch_samples_masked = torch.tensor(batch_samples, dtype=torch.long).clone()
+            batch_labels = batch_samples_masked.clone()
+
+            # mask sequences
+            for sample_idx, sample in enumerate(batch_samples_masked):
+                mask_pos = random.sample(positions[sample_idx], num_mask_pos)
+                sample[mask_pos] = mask_id
+                batch_labels[sample_idx][sample != mask_id] = -100
+
+            logits = self.model_obj(batch_samples_masked)
+            loss = torch.nn.functional.cross_entropy(logits.view(-1, len(self.tokenizer.vocab)),
+                                                     batch_labels.view(-1))
+            masked_losses.append(loss.item())
+
+        return sum(masked_losses)/len(masked_losses)

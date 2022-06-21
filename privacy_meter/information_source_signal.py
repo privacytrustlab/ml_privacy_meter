@@ -5,7 +5,7 @@ from typing import List, Tuple
 import numpy as np
 
 from privacy_meter.dataset import Dataset
-from privacy_meter.model import Model
+from privacy_meter.model import Model, LanguageModel, HuggingFaceMaskedLanguageModel
 
 
 ########################################################################################################################
@@ -285,4 +285,94 @@ class ModelGradient(Signal):
             for (sample_x, sample_y) in zip(x, y):
                 xx, yy = np.expand_dims(sample_x, axis=0), np.expand_dims(sample_y, axis=0)
                 results.append(model.get_grad(xx, yy))
+        return results
+
+
+########################################################################################################################
+# MODEL_PERPLEXITY CLASS
+########################################################################################################################
+
+
+class ModelPerplexity(Signal):
+    """
+    Inherits from the Signal class, used to represent any type of signal that can be obtained from a Model and/or a Dataset.
+    This particular class is used to get the perplexity of a language model.
+    """
+
+    def __call__(self,
+                 models: List[LanguageModel],
+                 datasets: List[Dataset],
+                 model_to_split_mapping: List[Tuple[int, str, str, str]],
+                 extra: dict
+                 ):
+        """Built-in call method.
+        Args:
+            models: List of models that can be queried.
+            datasets: List of datasets that can be queried.
+            model_to_split_mapping: List of tuples, indicating how each model should query the dataset.
+                More specifically, for model #i:
+                model_to_split_mapping[i][0] contains the index of the dataset in the list,
+                model_to_split_mapping[i][1] contains the name of the split,
+                model_to_split_mapping[i][2] contains the name of the input feature,
+                model_to_split_mapping[i][3] contains the name of the output feature.
+                This can also be provided once and for all at the instantiation of InformationSource, through the
+                default_model_to_split_mapping argument.
+            extra: Dictionary containing any additional parameter that should be passed to the signal object.
+        Returns:
+            The signal value.
+        """
+
+        results = []
+        # Compute the signal for each model
+        for k, model in enumerate(models):
+            # Extract the features to be used
+            dataset_index, split_name, input_feature, output_feature = model_to_split_mapping[k]
+            x = datasets[dataset_index].get_feature(split_name, input_feature)
+            # Compute the signal
+            results.append(model.get_perplexity(x))
+        return results
+
+
+########################################################################################################################
+# MODEL_MASKED_LOSS CLASS
+########################################################################################################################
+
+
+class ModelMaskedLoss(Signal):
+    """
+    Inherits from the Signal class, used to represent any type of signal that can be obtained from a Model and/or a Dataset.
+    This particular class is used to get the loss of a masked language model.
+    """
+
+    def __call__(self,
+                 models: List[HuggingFaceMaskedLanguageModel],
+                 datasets: List[Dataset],
+                 model_to_split_mapping: List[Tuple[int, str, str, str]],
+                 extra: dict
+                 ):
+        """Built-in call method.
+        Args:
+            models: List of models that can be queried.
+            datasets: List of datasets that can be queried.
+            model_to_split_mapping: List of tuples, indicating how each model should query the dataset.
+                More specifically, for model #i:
+                model_to_split_mapping[i][0] contains the index of the dataset in the list,
+                model_to_split_mapping[i][1] contains the name of the split,
+                model_to_split_mapping[i][2] contains the name of the input feature,
+                model_to_split_mapping[i][3] contains the name of the output feature.
+                This can also be provided once and for all at the instantiation of InformationSource, through the
+                default_model_to_split_mapping argument.
+            extra: Dictionary containing any additional parameter that should be passed to the signal object.
+        Returns:
+            The signal value.
+        """
+
+        results = []
+        # Compute the signal for each model
+        for k, model in enumerate(models):
+            # Extract the features to be used
+            dataset_index, split_name, input_feature, output_feature = model_to_split_mapping[k]
+            x = datasets[dataset_index].get_feature(split_name, input_feature)
+            # Compute the signal
+            results.append(model.get_masked_loss(x))
         return results
