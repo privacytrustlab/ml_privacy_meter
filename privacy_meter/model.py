@@ -584,7 +584,8 @@ class HuggingFaceMaskedLanguageModel(LanguageModel):
         Returns:
             A list of masked loss values.
         """
-        max_length = self.model_obj.config.n_positions
+        batch_samples = torch.tensor(batch_samples, dtype=torch.long)
+        max_length = batch_samples.shape[1]
 
         CLS = "[CLS]"
         SEP = "[SEP]"
@@ -603,7 +604,7 @@ class HuggingFaceMaskedLanguageModel(LanguageModel):
 
         masked_losses = []
         for ctr in range(self.num_times_mask):
-            batch_samples_masked = torch.tensor(batch_samples, dtype=torch.long).clone()
+            batch_samples_masked = batch_samples.clone()
             batch_labels = batch_samples_masked.clone()
 
             # mask sequences
@@ -612,9 +613,11 @@ class HuggingFaceMaskedLanguageModel(LanguageModel):
                 sample[mask_pos] = mask_id
                 batch_labels[sample_idx][sample != mask_id] = -100
 
-            logits = self.model_obj(batch_samples_masked)
-            loss = torch.nn.functional.cross_entropy(logits.view(-1, len(self.tokenizer.vocab)),
-                                                     batch_labels.view(-1))
-            masked_losses.append(loss.item())
+            batch_logits = self.model_obj(batch_samples_masked)['logits']
+            losses = []
+            for sample_logits, sample_labels in zip(batch_logits, batch_labels):
+                losses.append(torch.nn.functional.cross_entropy(sample_logits, sample_labels).item())
+            masked_losses.append(losses)
 
-        return sum(masked_losses)/len(masked_losses)
+        masked_losses = np.array(masked_losses)
+        return np.mean(masked_losses, axis=0)
