@@ -560,3 +560,150 @@ class ReferenceMetric(Metric):
             metric_result_list.append(metric_result)
 
         return metric_result_list
+
+########################################################################################################################
+# LRT_METRIC CLASS
+########################################################################################################################
+
+
+from typing import Callable, Optional, List, Tuple
+
+
+class LrtMetric(Metric):
+    """
+    Inherits from the Metric class to perform the LRT membership inference attack which will be used as a metric
+    for measuring privacy leakage of a target model.
+    """
+
+    def __init__(
+            self,
+            target_info_source: InformationSource,
+            reference_info_source: InformationSource,
+            signals: List[Signal],
+            hypothesis_test_func: Optional[Callable],
+            target_model_to_train_split_mapping: List[Tuple[int, str, str, str]] = None,
+            target_model_to_test_split_mapping: List[Tuple[int, str, str, str]] = None,
+            reference_model_to_train_split_mapping: List[Tuple[int, str, str, str]] = None,
+            reference_model_to_test_split_mapping: List[Tuple[int, str, str, str]] = None,
+            unique_dataset: bool = False,
+            logs_dirname: str = None
+    ):
+        """
+        Constructor
+
+        Args:
+            target_info_source: InformationSource, containing the Model that the metric will be performed on, and the
+                corresponding Dataset.
+            reference_info_source: List of InformationSource(s), containing the Model(s) that the metric will be
+                fitted on, and their corresponding Dataset.
+            signals: List of signals to be used.
+            hypothesis_test_func: Function that will be used for computing attack threshold(s)
+            target_model_to_train_split_mapping: Mapping from the target model to the train split of the target dataset.
+                By default, the code will look for a split named "train"
+            target_model_to_test_split_mapping: Mapping from the target model to the test split of the target dataset.
+                By default, the code will look for a split named "test"
+            reference_model_to_train_split_mapping: Mapping from the reference models to their train splits of the
+                corresponding reference dataset. By default, the code will look for a split named "train"
+            reference_model_to_test_split_mapping: Mapping from the reference models to their test splits of the
+                corresponding reference dataset. By default, the code will look for a split named "test"
+            unique_dataset: Boolean indicating if target_info_source and target_info_source use one same dataset object.
+        """
+
+        # Initializes the parent metric
+        super().__init__(target_info_source=target_info_source,
+                         reference_info_source=reference_info_source,
+                         signals=signals,
+                         hypothesis_test_func=hypothesis_test_func,
+                         logs_dirname=logs_dirname)
+
+        # Logs directory
+        self.logs_dirname = logs_dirname
+
+        # Store the model to split mappings
+        self.target_model_to_train_split_mapping = target_model_to_train_split_mapping
+        self.target_model_to_test_split_mapping = target_model_to_test_split_mapping
+
+        # Custom default mapping for the reference metric
+        if reference_model_to_train_split_mapping is None:
+            self.reference_model_to_train_split_mapping = [
+                                                              (0, 'train', '<default_input>', '<default_output>')
+                                                          ] * len(self.reference_info_source.models)
+        if reference_model_to_test_split_mapping is None:
+            self.reference_model_to_test_split_mapping = [
+                                                             (0, 'test', '<default_input>', '<default_output>')
+                                                         ] * len(self.reference_info_source.models)
+
+        self._set_default_mappings(unique_dataset)
+
+        # Variables used in prepare_metric and run_metric
+        self.member_signals, self.non_member_signals = [], []
+        self.reference_member_signals, self.reference_non_member_signals = [], []
+        self.pointwise_member_thresholds, self.pointwise_non_member_thresholds = [], []
+
+    def prepare_metric(self):
+        """
+        Function to prepare data needed for running the metric on the target model and dataset, using signals computed
+        on the reference model(s) and dataset. For the LRT attack, the reference model(s) will be a list of models
+        trained on data from the same distribution, and the reference dataset will be the target model's train-test
+        split.
+        """
+        # Load signals if they have been computed already; otherwise, compute and save them
+        self.member_signals = flatten_array(self._load_or_compute_signal(SignalSourceEnum.TARGET_MEMBER))
+        self.non_member_signals = flatten_array(self._load_or_compute_signal(SignalSourceEnum.TARGET_NON_MEMBER))
+        self.reference_member_signals = np.array(
+            self._load_or_compute_signal(SignalSourceEnum.REFERENCE_MEMBER)[0]).transpose()
+        self.reference_non_member_signals = np.array(
+            self._load_or_compute_signal(SignalSourceEnum.REFERENCE_NON_MEMBER)[0]).transpose()
+
+    def run_metric(self, fpr_tolerance_rate_list=None) -> List[MetricResult]:
+        """
+        Function to run the metric on the target model and dataset.
+
+        Args:
+            fpr_tolerance_rate_list (optional): List of FPR tolerance values that may be used by the threshold function
+                to compute the attack threshold for the metric.
+
+        Returns:
+            A list of MetricResult objects, one per fpr value.
+        """
+        lrt_signals = self.non_member_signals - self.reference_non_member_signals
+
+        metric_result_list = []
+        for fpr_tolerance_rate in fpr_tolerance_rate_list:
+            # Use global threshold
+            threshold = self.hypothesis_test_func(lrt_signals, fpr_tolerance_rate)
+
+            member_lrt_values, member_preds = [], []
+            for idx, signal in enumerate(self.member_signals):
+                lrt_value = signal - self.reference_member_signals[idx]
+                if lrt_value <= threshold:
+                    member_preds.append(1)
+                else:
+                    member_preds.append(0)
+                member_lrt_values.append(lrt_value)
+
+            non_member_lrt_values, non_member_preds = [], []
+            for idx, signal in enumerate(self.non_member_signals):
+                lrt_value = signal - self.reference_non_member_signals[idx]
+                if lrt_value <= threshold:
+                    non_member_preds.append(1)
+                else:
+                    non_member_preds.append(0)
+                non_member_lrt_values.append(lrt_value)
+
+            predictions = np.concatenate([member_preds, non_member_preds])
+
+            true_labels = [1] * len(self.member_signals)
+            true_labels.extend([0] * len(self.non_member_signals))
+
+            signal_values = np.concatenate([member_lrt_values, non_member_lrt_values])
+
+            metric_result = MetricResult(metric_id=MetricEnum.LRT.value,
+                                         predicted_labels=predictions,
+                                         true_labels=true_labels,
+                                         predictions_proba=None,
+                                         signal_values=signal_values)
+
+            metric_result_list.append(metric_result)
+
+        return metric_result_list

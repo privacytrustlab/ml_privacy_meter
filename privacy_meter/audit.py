@@ -105,13 +105,13 @@ class Audit:
                     ))
                 elif metric == MetricEnum.LRT:
                     pass
-                    # self.metric_objects.append(LrtMetric(
-                    #     target_info_source=self.target_info_sources[k],
-                    #     reference_info_source=self.reference_info_sources[k],
-                    #     signals=[ModelLoss()],
-                    #     hypothesis_test_func=threshold_func,
-                    #     logs_dirname=self.logs_directory_names[k]
-                    # ))
+                    self.metric_objects.append(LrtMetric(
+                        target_info_source=self.target_info_sources[k],
+                        reference_info_source=self.reference_info_sources[k],
+                        signals=[ModelLoss()],
+                        hypothesis_test_func=threshold_func,
+                        logs_dirname=self.logs_directory_names[k]
+                    ))
             else:
                 # If the user wants to pass in their custom metric object
                 metric.logs_dirname = self.logs_directory_names[k]
