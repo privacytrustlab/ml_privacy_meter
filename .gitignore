@@ -14,3 +14,11 @@ archive/datasets/*.txt*
 archive/tutorials/datasets/*.txt*
 archive/logs/
 archive/.DS_Store
+
+__pycache__/
+log*/
+*.npz
+*.npy
+events.out*
+*.json
+*.csv
