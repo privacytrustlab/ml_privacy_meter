@@ -2,9 +2,10 @@
 
 This folder contains code to reproduce Attack S[hadow], P[opulation], R[eference] and D[istillation] in our paper
 
-Enhanced Membership Inference Attacks for Machine Learning Models
 Jiayuan Ye, Aadyaa Maddi, Sasi Kumar Murakonda, Vincent Bindschaedler and Reza Shokri
-[arXiv preprint arXiv:2111.09679](https://arxiv.org/abs/2111.09679)
+[Enhanced Membership Inference Attacks for Machine Learning Models](https://arxiv.org/abs/2111.09679)
+ACM Conference on Computer and Communications Security (CCS), 2022
+
 
 This directory focus on reproducing the performance of our Attack R and D, as well as reproducing our performance comparison with the LiRA attack [Carlini et. al] in Figure 8 of our paper. You can also see more examples for implementing our attack S[hadow], P[opulation], R[eference] in the privacy meter tool documents: https://github.com/privacytrustlab/ml_privacy_meter/tree/master/docs
 
