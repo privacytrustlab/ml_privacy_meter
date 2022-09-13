@@ -153,3 +153,8 @@ python plot_attack_via_reference_or_distill.py exp/cifar10_wrn28-2_16_distill_so
 ![Log-log ROC Curve for Attack D](exp/cifar10_wrn28-2_16_distill_softlabel/_tmp/fprtpr.png "Log-log ROC Curve")
 
 2. Alternatively if you want to evaluate the distillation attack in the privacy meter tool, you can replace the line `logdir = "exp/cifar10_wrn28-2_16_reference"` with  `logdir = "exp/cifar10_wrn28-2_16_distill_softlabel"` in the notebook `attack_via_reference_or_distill.ipynb` and run the notebook (takes around 40 minutes).
+
+
+## References
+
+[1] Carlini, N., Chien, S., Nasr, M., Song, S., Terzis, A., & Tramer, F. (2022, May). Membership inference attacks from first principles. In 2022 IEEE Symposium on Security and Privacy (SP) (pp. 1897-1914). IEEE.
