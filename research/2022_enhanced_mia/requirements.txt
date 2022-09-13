@@ -1,0 +1,11 @@
+tensorflow>=2.4.0
+matplotlib
+numpy
+scikit-learn
+seaborn
+setuptools
+scipy
+pandas
+jinja2
+pillow
+tensorflow_datasets
