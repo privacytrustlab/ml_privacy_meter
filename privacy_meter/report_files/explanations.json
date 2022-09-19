@@ -11,6 +11,10 @@
     "reference_metric": {
       "name": "Reference metric",
       "details": "[TODO] Add details in explanations.json (you can also edit citations.bib)."
+    },
+    "lrt_metric": {
+      "name": "LRT metric",
+      "details": "[TODO] Add details in explanations.json (you can also edit citations.bib)."
     }
   },
   "figure": {
