@@ -17,7 +17,7 @@ pip install privacy_meter
 Alternatively, one can install it via conda:
 
 ```bash
-conda install -c conda-forge privacy_meter
+conda install privacy-meter
 ```
 
 Privacy Meter has been tested with other machine learning libraries like HuggingFace and Intel OpenVINO, and can even be extended to be used with a framework of your choice. 
