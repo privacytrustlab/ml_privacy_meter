@@ -286,3 +286,49 @@ class ModelGradient(Signal):
                 xx, yy = np.expand_dims(sample_x, axis=0), np.expand_dims(sample_y, axis=0)
                 results.append(model.get_grad(xx, yy))
         return results
+
+
+
+########################################################################################################################
+# Group Information
+########################################################################################################################
+
+
+class GroupInfo(Signal):
+    """
+    Inherits from the Signal class, used to represent any type of signal that can be obtained from a Model and/or a
+    Dataset.
+    This particular class is used to get the group membership of data records.
+    """
+
+    def __call__(self,
+                 models: List[Model],
+                 datasets: List[Dataset],
+                 model_to_split_mapping: List[Tuple[int, str, str, str]],
+                 extra: dict
+                 ):
+        """Built-in call method.
+
+        Args:
+            models: List of models that can be queried.
+            datasets: List of datasets that can be queried.
+            model_to_split_mapping: List of tuples, indicating how each model should query the dataset.
+                More specifically, for model #i:
+                model_to_split_mapping[i][0] contains the index of the dataset in the list,
+                model_to_split_mapping[i][1] contains the name of the split,
+                model_to_split_mapping[i][2] contains the name of the group feature
+                This can also be provided once and for all at the instantiation of InformationSource, through the
+                default_model_to_split_mapping argument.
+            extra: Dictionary containing any additional parameter that should be passed to the signal object.
+
+        Returns:
+            The signal value.
+        """
+
+        results = []
+        # Given the group membership for each dataset used by each model
+        for k in range(len(models)):
+            dataset_index, split_name, group_feature = model_to_split_mapping[k]
+            g = datasets[dataset_index].get_feature(split_name, group_feature)
+            results.append(g)
+        return results

@@ -6,7 +6,7 @@ from privacy_meter.constants import MetricEnum, InferenceGame
 from privacy_meter.hypothesis_test import threshold_func
 from privacy_meter.information_source import InformationSource
 from privacy_meter.information_source_signal import ModelLoss
-from privacy_meter.metric import Metric, PopulationMetric, ShadowMetric, ReferenceMetric
+from privacy_meter.metric import Metric, PopulationMetric, ShadowMetric, ReferenceMetric,GroupPopulationMetric
 from privacy_meter.metric_result import MetricResult
 
 
@@ -103,6 +103,15 @@ class Audit:
                         hypothesis_test_func=threshold_func,
                         logs_dirname=self.logs_directory_names[k]
                     ))
+                elif metric == MetricEnum.GROUPPOPULATION:
+                    self.metric_objects.append(GroupPopulationMetric(
+                        target_info_source=self.target_info_sources[k],
+                        reference_info_source=self.reference_info_sources[k],
+                        signals=[ModelLoss()],
+                        hypothesis_test_func=threshold_func,
+                        logs_dirname=self.logs_directory_names[k]
+                    ))
+
             else:
                 # If the user wants to pass in their custom metric object
                 metric.logs_dirname = self.logs_directory_names[k]
