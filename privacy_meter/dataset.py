@@ -18,7 +18,7 @@ class Dataset:
                  data_dict: dict,
                  default_input: str,
                  default_output: str,
-                 default_group: str,
+                 default_group: str=None,
                  preproc_fn_dict: dict = None,
                  preprocessed: bool = False
                  ):

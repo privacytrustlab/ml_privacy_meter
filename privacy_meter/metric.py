@@ -1,16 +1,17 @@
+from bisect import bisect_left
 import os
 from abc import ABC, abstractmethod
 from typing import Callable, Optional, List, Tuple, Union
 
 import numpy as np
 from sklearn.linear_model import LogisticRegression
+from torch import quantile
 
 from privacy_meter.constants import *
 from privacy_meter.information_source import InformationSource
 from privacy_meter.information_source_signal import GroupInfo, Signal
 from privacy_meter.metric_result import MetricResult
 from privacy_meter.utils import flatten_array
-
 ########################################################################################################################
 # METRIC CLASS
 ########################################################################################################################
@@ -307,6 +308,15 @@ class PopulationMetric(Metric):
         self.non_member_signals = flatten_array(self._load_or_compute_signal(SignalSourceEnum.TARGET_NON_MEMBER))
         self.reference_signals = flatten_array(self._load_or_compute_signal(SignalSourceEnum.REFERENCE))
 
+        # map the threshold with the alpha 
+        self.reference_signals = np.concatenate([self.reference_signals,np.zeros(1),np.ones(1)],axis=0)
+
+        quantiles = np.logspace(-5,0,100)
+        self.reference_quantile = np.quantile(self.reference_signals,quantiles,interpolation='linear')
+
+        
+
+
     def run_metric(self, fpr_tolerance_rate_list=None) -> List[MetricResult]:
         """
         Function to run the metric on the target model and dataset.
@@ -319,27 +329,30 @@ class PopulationMetric(Metric):
             A list of MetricResult objects, one per fpr value.
         """
         metric_result_list = []
-        for fpr_tolerance_rate in fpr_tolerance_rate_list:
-            threshold = self.hypothesis_test_func(self.reference_signals, fpr_tolerance_rate)
 
-            member_preds = []
-            for signal in self.member_signals:
-                if signal <= threshold:
-                    member_preds.append(1)
-                else:
-                    member_preds.append(0)
+        
+        for idx in range(100):
+            # threshold = self.hypothesis_test_func(self.reference_signals, fpr_tolerance_rate)
 
-            non_member_preds = []
-            for signal in self.non_member_signals:
-                if signal <= threshold:
-                    non_member_preds.append(1)
-                else:
-                    non_member_preds.append(0)
+            # member_preds = []
+            # for signal in self.member_signals:
+            #     if signal <= threshold:
+            #         member_preds.append(1)
+            #     else:
+            #         member_preds.append(0)
+            
+            threshold = self.reference_quantile[idx]
+            member_preds = (self.member_signals <= threshold).astype(int)
+            non_member_preds = (self.non_member_signals <= threshold).astype(int)
+            # for signal in self.non_member_signals:
+            #     if signal <= threshold:
+            #         non_member_preds.append(1)
+            #     else:
+            #         non_member_preds.append(0)
 
             predictions = np.concatenate([member_preds, non_member_preds])
 
-            true_labels = [1] * len(self.member_signals)
-            true_labels.extend([0] * len(self.non_member_signals))
+            true_labels = np.concatenate([np.ones(len(member_preds)),np.zeros(len(non_member_preds))])
 
             signal_values = np.concatenate([self.member_signals, self.non_member_signals])
 
@@ -351,7 +364,6 @@ class PopulationMetric(Metric):
                 signal_values=signal_values,
                 threshold=threshold
             )
-
             metric_result_list.append(metric_result)
 
         return metric_result_list
@@ -582,6 +594,22 @@ class ReferenceMetric(Metric):
             self._load_or_compute_signal(SignalSourceEnum.REFERENCE_MEMBER)[0]).transpose()
         self.reference_non_member_signals = np.array(
             self._load_or_compute_signal(SignalSourceEnum.REFERENCE_NON_MEMBER)[0]).transpose()
+        
+
+        max_arr = np.ones([self.reference_member_signals.shape[0],1])*100
+        min_arr = np.ones([self.reference_member_signals.shape[0],1])*0
+        self.reference_member_signals = np.concatenate([self.reference_member_signals,max_arr,min_arr],axis=1)
+        
+        
+        max_arr = np.ones([self.reference_non_member_signals.shape[0],1])*100
+        min_arr = np.ones([self.reference_non_member_signals.shape[0],1])*0
+        self.reference_non_member_signals = np.concatenate([self.reference_non_member_signals,max_arr,min_arr],axis=1)
+
+        quantile = np.logspace(-5,0,100)
+        self.reference_member_quantile = np.quantile(self.reference_member_signals, quantile,method='linear',axis=1)
+        self.reference_non_member_signals = np.quantile(self.reference_non_member_signals, quantile,method='linear',axis=1)
+
+
 
     def run_metric(self, fpr_tolerance_rate_list=None) -> List[MetricResult]:
         """
@@ -594,30 +622,19 @@ class ReferenceMetric(Metric):
         Returns:
             A list of MetricResult objects, one per fpr value.
         """
-        metric_result_list = []
-        for fpr_tolerance_rate in fpr_tolerance_rate_list:
-            member_preds = []
-            for idx, signal in enumerate(self.member_signals):
-                # Use pointwise threshold
-                threshold = self.hypothesis_test_func(self.reference_member_signals[idx], fpr_tolerance_rate)
-                if signal <= threshold:
-                    member_preds.append(1)
-                else:
-                    member_preds.append(0)
+       
 
-            non_member_preds = []
-            for idx, signal in enumerate(self.non_member_signals):
-                # Use pointwise threshold
-                threshold = self.hypothesis_test_func(self.reference_non_member_signals[idx], fpr_tolerance_rate)
-                if signal <= threshold:
-                    non_member_preds.append(1)
-                else:
-                    non_member_preds.append(0)
+        metric_result_list = []
+        for idx in range(100):
+            member_threshold = self.reference_member_quantile[idx,:]
+            non_member_threshold = self.reference_non_member_signals[idx,:]
+
+            member_preds = np.signbit(self.member_signals - member_threshold)
+            non_member_preds = np.signbit(self.non_member_signals - non_member_threshold)
 
             predictions = np.concatenate([member_preds, non_member_preds])
 
-            true_labels = [1] * len(self.member_signals)
-            true_labels.extend([0] * len(self.non_member_signals))
+            true_labels = np.concatenate([np.ones(len(self.member_signals)),np.zeros(len(self.non_member_signals))])
 
             signal_values = np.concatenate([self.member_signals, self.non_member_signals])
 
