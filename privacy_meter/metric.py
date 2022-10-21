@@ -5,7 +5,7 @@ from typing import Callable, Optional, List, Tuple, Union
 
 import numpy as np
 from sklearn.linear_model import LogisticRegression
-from torch import quantile
+from torch import quantile, threshold
 
 from privacy_meter.constants import *
 from privacy_meter.information_source import InformationSource
@@ -297,7 +297,7 @@ class PopulationMetric(Metric):
         self.member_signals, self.non_member_signals = [], []
         self.reference_signals = []
 
-    def prepare_metric(self):
+    def prepare_metric(self,max_val=100,min_val=0):
         """
         Function to prepare data needed for running the metric on the target model and dataset, using signals computed
         on the auxiliary model(s) and dataset. For the population attack, the auxiliary model is the target model
@@ -309,7 +309,7 @@ class PopulationMetric(Metric):
         self.reference_signals = flatten_array(self._load_or_compute_signal(SignalSourceEnum.REFERENCE))
 
         # map the threshold with the alpha 
-        self.reference_signals = np.concatenate([self.reference_signals,np.zeros(1),np.ones(1)],axis=0)
+        self.reference_signals = np.concatenate([self.reference_signals,np.ones(1)*max_val,np.ones(1)*min_val],axis=0)
 
         quantiles = np.logspace(-5,0,100)
         self.reference_quantile = np.quantile(self.reference_signals,quantiles,interpolation='linear')
@@ -580,7 +580,7 @@ class ReferenceMetric(Metric):
         self.reference_member_signals, self.reference_non_member_signals = [], []
         self.pointwise_member_thresholds, self.pointwise_non_member_thresholds = [], []
 
-    def prepare_metric(self):
+    def prepare_metric(self,max_val=100,min_val=0):
         """
         Function to prepare data needed for running the metric on the target model and dataset, using signals computed
         on the reference model(s) and dataset. For the reference attack, the reference models will be a list of models
@@ -596,13 +596,13 @@ class ReferenceMetric(Metric):
             self._load_or_compute_signal(SignalSourceEnum.REFERENCE_NON_MEMBER)[0]).transpose()
         
 
-        max_arr = np.ones([self.reference_member_signals.shape[0],1])*100
-        min_arr = np.ones([self.reference_member_signals.shape[0],1])*0
+        max_arr = np.ones([self.reference_member_signals.shape[0],1])*max_val
+        min_arr = np.ones([self.reference_member_signals.shape[0],1])*min_val
         self.reference_member_signals = np.concatenate([self.reference_member_signals,max_arr,min_arr],axis=1)
         
         
-        max_arr = np.ones([self.reference_non_member_signals.shape[0],1])*100
-        min_arr = np.ones([self.reference_non_member_signals.shape[0],1])*0
+        max_arr = np.ones([self.reference_non_member_signals.shape[0],1])*max_val
+        min_arr = np.ones([self.reference_non_member_signals.shape[0],1])*min_val
         self.reference_non_member_signals = np.concatenate([self.reference_non_member_signals,max_arr,min_arr],axis=1)
 
         quantile = np.logspace(-5,0,100)
@@ -622,7 +622,7 @@ class ReferenceMetric(Metric):
         Returns:
             A list of MetricResult objects, one per fpr value.
         """
-       
+
 
         metric_result_list = []
         for idx in range(100):
@@ -741,7 +741,7 @@ class GroupPopulationMetric(Metric):
 
 
 
-    def prepare_metric(self):
+    def prepare_metric(self,max_val=100,min_val=0):
         """
         Function to prepare data needed for running the metric on the target model and dataset, using signals computed
         on the auxiliary model(s) and dataset. For the population attack, the auxiliary model is the target model
@@ -755,6 +755,15 @@ class GroupPopulationMetric(Metric):
         self.non_member_groups = flatten_array(self._load_or_compute_group_membership(SignalSourceEnum.TARGET_NON_MEMBER))
         self.member_groups = flatten_array(self._load_or_compute_group_membership(SignalSourceEnum.TARGET_MEMBER))
 
+        self.reference_quantile = {} # quantile dict, one for each group
+        for g in np.unique(self.reference_groups):
+            # map the threshold with the alpha 
+            reference_group_index = np.where(self.reference_groups ==g)[0]
+            group_reference_signals = np.concatenate([self.reference_signals[reference_group_index],np.ones(1)*max_val,np.ones(1)*min_val],axis=0)
+            quantiles = np.logspace(-5,0,100)
+            self.reference_quantile[g] = np.quantile(group_reference_signals,quantiles,interpolation='linear')
+
+        
 
     def run_metric(self, fpr_tolerance_rate_list=None) -> List[MetricResult]:
         """
@@ -768,7 +777,7 @@ class GroupPopulationMetric(Metric):
             A list of MetricResult objects, one per fpr value.
         """
         metric_result_list = []
-        for fpr_tolerance_rate in fpr_tolerance_rate_list:
+        for fpr_idx in range(100):
             member_preds = []
             non_member_preds = []
             
@@ -778,9 +787,9 @@ class GroupPopulationMetric(Metric):
                 non_member_index = np.where(self.non_member_groups ==g)[0]
                 member_index = np.where(self.member_groups ==g)[0]
     
-                threshold = self.hypothesis_test_func(self.reference_signals[reference_index], fpr_tolerance_rate)
+                # threshold = self.hypothesis_test_func(self.reference_signals[reference_index], fpr_tolerance_rate)
 
-
+                threshold = self.reference_quantile[g][fpr_idx]
                 member_pred = (self.member_signals[member_index] < threshold).astype(int)
                 non_member_pred = (self.non_member_signals[non_member_index] < threshold).astype(int)
             
@@ -800,8 +809,7 @@ class GroupPopulationMetric(Metric):
 
             signal_values = np.concatenate([self.member_signals, self.non_member_signals])
 
-            print(predictions.shape)
-            print(len(true_labels))
+  
             metric_result = MetricResult(
                 metric_id=MetricEnum.POPULATION.value,
                 predicted_labels=predictions,

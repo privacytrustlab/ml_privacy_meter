@@ -69,14 +69,18 @@ if __name__ == '__main__':
     
     x_train_all, y_train_all, x_test_all, y_test_all, input_shape, num_classes = preprocess_cifar100_dataset()
 
+    g_train_all = np.argmax(y_train_all,axis=1)
+    g_test_all = np.argmax(y_test_all,axis=1)
+    
     # create the target model's dataset
     dataset = Dataset(
         data_dict={
-            'train': {'x': x_train_all, 'y': y_train_all},
-            'test': {'x': x_test_all, 'y': y_test_all}
+            'train': {'x': x_train_all, 'y': y_train_all, 'g': g_train_all},
+            'test': {'x': x_test_all, 'y': y_test_all, 'g': g_test_all},
         },
         default_input='x',
-        default_output='y'
+        default_output='y',
+        default_group='g'
     )
     
 
