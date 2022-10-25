@@ -65,7 +65,7 @@ if __name__ == '__main__':
 
     # for the reference metric
     num_reference_models = 100
-    fpr_tolerance_list = np.logspace(-5,0,100).tolist()
+    fpr_tolerance_list = np.logspace(-5,0,10).tolist()
     
     x_train_all, y_train_all, x_test_all, y_test_all, input_shape, num_classes = preprocess_cifar100_dataset()
 

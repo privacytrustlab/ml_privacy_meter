@@ -132,14 +132,14 @@ class Audit:
         if self.logs_directory_names is not None and not isinstance(self.logs_directory_names, list):
             self.logs_directory_names = [self.logs_directory_names]
 
-    def prepare(self,max_val=100,min_val=0):
+    def prepare(self):
         """
         Core function that should be called after the initialization and before the audit.run() function. Runs the
         prepare_metric function of all metric objects, which computes (or loads from memory) the signals required for
         the membership inference algorithms.
         """
         for i in range(len(self.metric_objects)):
-            self.metric_objects[i].prepare_metric(max_val=max_val,min_val=min_val)
+            self.metric_objects[i].prepare_metric()
 
     def run(self) -> List[MetricResult]:
         """
