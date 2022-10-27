@@ -13,7 +13,8 @@ import math
 
 def threshold_func(
         distribution: List[float],
-        alpha: float
+        alpha:  List[float],
+        **kwargs
 ) -> float:
     """
     Function that returns the threshold as the alpha quantile of
@@ -28,7 +29,7 @@ def threshold_func(
     Returns:
         threshold: alpha quantile of the provided distribution.
     """
-    threshold = np.quantile(distribution, q=alpha, interpolation='lower')
+    threshold = np.quantile(distribution, q=alpha, interpolation='lower',**kwargs)
     return threshold
 
 
@@ -39,9 +40,10 @@ def threshold_func(
 
 def linear_itp_threshold_func(
         distribution: List[float],
-        alpha: float,
+        alpha: List[float],
         signal_min=0,
-        signal_max=1000
+        signal_max=1000,
+        **kwargs
 ) -> float:
     """
     Function that returns the threshold as the alpha quantile of
@@ -58,7 +60,7 @@ def linear_itp_threshold_func(
     """
     distribution = np.append(distribution, signal_min)
     distribution = np.append(distribution, signal_max)
-    threshold = np.quantile(distribution, q=alpha, interpolation='linear')
+    threshold = np.quantile(distribution, q=alpha, interpolation='linear',**kwargs)
 
     return threshold
 
@@ -69,7 +71,8 @@ def linear_itp_threshold_func(
 
 def logit_rescale_threshold_func(
         distribution: List[float],
-        alpha: float
+        alpha: List[float],
+        **kwargs,
 ) -> float:
     """
     Function that returns the threshold as the alpha quantile of a Gaussian fit
@@ -85,9 +88,9 @@ def logit_rescale_threshold_func(
     distribution = np.log(np.divide(np.exp(- distribution), (1 - np.exp(- distribution))))
     len_dist = len(distribution)
     loc, scale = norm.fit(distribution)
-    threshold = norm.ppf(1 - alpha, loc=loc, scale=scale)
-    threshold = math.log(math.exp(threshold) + 1) - threshold
-
+    
+    threshold = norm.ppf(1 - np.array(alpha), loc=loc, scale=scale)
+    threshold = np.log(np.exp(threshold) + 1) - threshold
     return threshold
 
 ########################################################################################################################
@@ -97,7 +100,8 @@ def logit_rescale_threshold_func(
 
 def gaussian_threshold_func(
         distribution: List[float],
-        alpha: float
+        alpha: List[float],
+        **kwargs,
 ) -> float:
     """
     Function that returns the threshold as the alpha quantile of
@@ -110,7 +114,7 @@ def gaussian_threshold_func(
     Returns:
         threshold: alpha quantile of the provided distribution.
     """
-    loc, scale = norm.fit(distribution)
+    loc, scale = norm.fit(distribution,**kwargs,)
     threshold = norm.ppf(alpha, loc=loc, scale=scale)
     return threshold
 
@@ -121,9 +125,10 @@ def gaussian_threshold_func(
 
 def min_linear_logit_threshold_func(
         distribution: List[float],
-        alpha: float,
+        alpha: List[float],
         signal_min=0,
-        signal_max=1000
+        signal_max=1000,
+        **kwargs,
 ) -> float:
     """
     Function that returns the threshold as the minimum of 1) alpha quantile of
@@ -142,13 +147,13 @@ def min_linear_logit_threshold_func(
     """
     distribution_linear = np.append(distribution, signal_min)
     distribution_linear = np.append(distribution_linear, signal_max)
-    threshold_linear = np.quantile(distribution_linear, q=alpha, interpolation='linear')
+    threshold_linear = np.quantile(distribution_linear, q=alpha, interpolation='linear',**kwargs,)
 
     distribution = np.log(np.divide(np.exp(- distribution), (1 - np.exp(- distribution))))
     len_dist = len(distribution)
-    loc, scale = norm.fit(distribution)
+    loc, scale = norm.fit(distribution,**kwargs,)
     threshold_logit = norm.ppf(1 - alpha, loc=loc, scale=scale)
-    threshold_logit = math.log(math.exp(threshold_logit) + 1) - threshold_logit
+    threshold_logit = np.log(np.exp(threshold_logit) + 1) - threshold_logit
 
     threshold = min(threshold_logit, threshold_linear)
 

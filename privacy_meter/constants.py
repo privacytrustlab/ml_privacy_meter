@@ -9,6 +9,7 @@ class MetricEnum(Enum):
     POPULATION = "population_metric"
     SHADOW = "shadow_metric"
     REFERENCE = "reference_metric"
+    GROUPPOPULATION = "group_population_metric"
 
 ########################################################################################################################
 # ENUM: SOURCES FOR COMPUTING SIGNALS

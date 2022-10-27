@@ -18,6 +18,7 @@ class Dataset:
                  data_dict: dict,
                  default_input: str,
                  default_output: str,
+                 default_group: str=None,
                  preproc_fn_dict: dict = None,
                  preprocessed: bool = False
                  ):
@@ -28,6 +29,8 @@ class Dataset:
             default_input: The key of the data_dict that should be used by default to get the input of a model.
             default_output: The key of the data_dict that should be used by default to get the expected output
                 of a model.
+            default_group: The key of the data_dict that shouuld be used by default to get the group of the data points. 
+                This is to contruct class dependent threshold.
             preproc_fn_dict: Contains optional preprocessing functions for each feature.
             preprocessed: Indicates if the preprocessing of preproc_fn_dict has already been applied.
         """
@@ -36,6 +39,7 @@ class Dataset:
         self.data_dict = data_dict
         self.default_input = default_input
         self.default_output = default_output
+        self.default_group = default_group
         self.preproc_fn_dict = preproc_fn_dict
 
         # Store splits names and features names
@@ -78,6 +82,8 @@ class Dataset:
             feature_name = self.default_input
         elif feature_name == '<default_output>':
             feature_name = self.default_output
+        elif feature_name == '<default_group>':
+            feature_name = self.default_group
 
         # If 'indices' is not specified, returns the entire array. Else just return those indices
         if indices is None:
@@ -177,6 +183,7 @@ class Dataset:
                     data_dict=new_datasets_dict[i],
                     default_input=self.default_input,
                     default_output=self.default_output,
+                    default_group=self.default_group,
                     preproc_fn_dict=self.preproc_fn_dict,
                     preprocessed=True
                 )
