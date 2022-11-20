@@ -58,9 +58,15 @@ def linear_itp_threshold_func(
     Returns:
         threshold: alpha quantile of the provided distribution.
     """
-    distribution = np.append(distribution, signal_min)
-    distribution = np.append(distribution, signal_max)
-    threshold = np.quantile(distribution, q=alpha, interpolation='linear',**kwargs)
+    
+    if len(distribution.shape):
+        # for reference attacks
+        distribution = np.concatenate([distribution,np.repeat(signal_min,distribution.shape[0]).reshape(-1,1)],axis=1)
+        distribution = np.concatenate([distribution,np.repeat(signal_max,distribution.shape[0]).reshape(-1,1)],axis=1)
+    else:
+        distribution = np.append(distribution, signal_min)
+        distribution = np.append(distribution, signal_max)
+    threshold = np.quantile(distribution, q=alpha, method='linear',**kwargs)
 
     return threshold
 
@@ -155,6 +161,6 @@ def min_linear_logit_threshold_func(
     threshold_logit = norm.ppf(1 - alpha, loc=loc, scale=scale)
     threshold_logit = np.log(np.exp(threshold_logit) + 1) - threshold_logit
 
-    threshold = min(threshold_logit, threshold_linear)
+    threshold = np.minimum(threshold_logit, threshold_linear)
 
     return threshold
