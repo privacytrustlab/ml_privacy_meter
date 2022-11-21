@@ -11,6 +11,8 @@ from privacy_meter.metric import ReferenceMetric
 from privacy_meter.information_source_signal import ModelLoss
 from privacy_meter import audit_report
 import time
+from privacy_meter import audit_report
+
 def preprocess_cifar100_dataset():
     input_shape, num_classes = (32, 32, 3), 100
 
@@ -44,7 +46,7 @@ def get_tensorflow_cnn_classifier(input_shape, num_classes, regularizer):
 
 
 if __name__ == '__main__':
-    logdir = "testing"
+    logdir = "testing_3"
 
     seed = 1234
     np.random.seed(seed)
@@ -55,12 +57,12 @@ if __name__ == '__main__':
     num_points_per_test_split = 1000
     loss_fn = tf.keras.losses.CategoricalCrossentropy()
     optim_fn = 'adam'
-    epochs = 1
+    epochs = 10
     batch_size = 64
     regularizer_penalty = 0.01
     regularizer = tf.keras.regularizers.l2(l=regularizer_penalty)
     # for the dummy reference metric
-    num_reference_models = 20
+    num_reference_models = 10
     fpr_tolerance_list = list(np.logspace(-5,0,100))
 
     x_train_all, y_train_all, x_test_all, y_test_all, input_shape, num_classes = preprocess_cifar100_dataset()
@@ -93,7 +95,7 @@ if __name__ == '__main__':
     model = get_tensorflow_cnn_classifier(input_shape, num_classes, regularizer)
     model.summary()
     model.compile(optimizer=optim_fn, loss=loss_fn, metrics=['accuracy'])
-    # model.fit(x, y, batch_size=batch_size, epochs=epochs, verbose=2)
+    model.fit(x, y, batch_size=batch_size, epochs=epochs, verbose=2)
 
 
 
@@ -106,13 +108,13 @@ if __name__ == '__main__':
         print(f"Training dummy model {model_idx}...")
         reference_model = get_tensorflow_cnn_classifier(input_shape, num_classes, regularizer)
         reference_model.compile(optimizer=optim_fn, loss=loss_fn, metrics=['accuracy'])
-        # reference_model.fit(
-        #     datasets_list[model_idx + 1].get_feature('train', '<default_input>'),
-        #     datasets_list[model_idx + 1].get_feature('train', '<default_output>'),
-        #     batch_size=batch_size,
-        #     epochs=epochs,
-        #     verbose=2
-        # )
+        reference_model.fit(
+            datasets_list[model_idx + 1].get_feature('train', '<default_input>'),
+            datasets_list[model_idx + 1].get_feature('train', '<default_output>'),
+            batch_size=batch_size,
+            epochs=epochs,
+            verbose=2
+        )
         reference_models.append(
             TensorflowModel(model_obj=reference_model, loss_fn=loss_fn)
         )
@@ -148,11 +150,11 @@ if __name__ == '__main__':
         hypothesis_test_func = prtest.min_linear_logit_threshold_func
     )
     audit_obj = Audit(
-        metrics=[linear_itp_reference_metric],# logit_rescale_reference_metric, min_linear_logit_reference_metric],
+        metrics=[linear_itp_reference_metric, logit_rescale_reference_metric, min_linear_logit_reference_metric],
         inference_game_type=InferenceGame.PRIVACY_LOSS_MODEL,
         target_info_sources=target_info_source,
         reference_info_sources=reference_info_source,
-        fpr_tolerances=fpr_tolerance_list,
+        fpr_tolerances=np.linspace(0,1,1000).tolist(),
         logs_directory_names= [logdir, logdir, logdir]
     )
     audit_obj.prepare()
@@ -160,6 +162,28 @@ if __name__ == '__main__':
 
     audit_results = audit_obj.run()
     linear_itp_audit_results = audit_results[0]
-    # logit_rescale_audit_results = audit_results[1]
-    # min_linear_logit_audit_results = audit_results[2]
+    logit_rescale_audit_results = audit_results[1]
+    min_linear_logit_audit_results = audit_results[2]
+    print(linear_itp_audit_results[0].accuracy, logit_rescale_audit_results[0].accuracy, min_linear_logit_audit_results[0].accuracy)
     print('uses {}'.format(time.time()-start_time))
+    
+    
+    audit_report.REPORT_FILES_DIR = 'privacy_meter/report_files'
+    ROCCurveReport.generate_report(
+    metric_result=linear_itp_audit_results,
+    inference_game_type=InferenceGame.PRIVACY_LOSS_MODEL,
+    show=True,
+    filename = logdir+'/linear_itp_roc_curve.png'
+    )
+    ROCCurveReport.generate_report(
+    metric_result=logit_rescale_audit_results,
+    inference_game_type=InferenceGame.PRIVACY_LOSS_MODEL,
+    show=True,
+    filename = logdir+'/logit_rescale_audit_results.png'
+    )
+    ROCCurveReport.generate_report(
+    metric_result=min_linear_logit_audit_results,
+    inference_game_type=InferenceGame.PRIVACY_LOSS_MODEL,
+    show=True,
+    filename = logdir+'/min_linear_logit_audit_results.png'
+    )
