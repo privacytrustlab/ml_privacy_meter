@@ -101,8 +101,8 @@ def logit_rescale_threshold_func(
         scale = parameters[:,1].reshape(-1,1).repeat(num_threshold,1)
         alpha = np.array(alpha).reshape(-1,1).repeat(num_points,1)
         threshold = norm.ppf(1-np.array(alpha),loc=loc.T,scale=scale.T)
-        np.place(threshold,threshold==-np.inf, -10000)
-        np.place(threshold,threshold==np.inf,10000)
+        np.place(threshold,threshold==-np.inf, distribution.min()-0.01)
+        np.place(threshold,threshold==np.inf,distribution.max()+0.01)
     else:
         loc,scale = norm.fit(distribution)
         threshold = norm.ppf(1 - np.array(alpha), loc=loc, scale=scale)

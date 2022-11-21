@@ -127,7 +127,7 @@ class Audit:
             self.target_info_sources = [self.target_info_sources]
         if not isinstance(self.reference_info_sources, list):
             self.reference_info_sources = [self.reference_info_sources]
-        if not isinstance(self.fpr_tolerances, list):
+        if not isinstance(self.fpr_tolerances, list) and self.fpr_tolerances is not None:
             self.fpr_tolerances = [self.fpr_tolerances]
         if self.logs_directory_names is not None and not isinstance(self.logs_directory_names, list):
             self.logs_directory_names = [self.logs_directory_names]

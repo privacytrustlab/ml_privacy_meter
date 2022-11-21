@@ -10,7 +10,7 @@ from torch import quantile, threshold
 from privacy_meter.constants import *
 from privacy_meter.information_source import InformationSource
 from privacy_meter.information_source_signal import GroupInfo, Signal
-from privacy_meter.metric_result import MetricResult
+from privacy_meter.metric_result import MetricResult,CombinedMetricResult
 from privacy_meter.utils import flatten_array
 ########################################################################################################################
 # METRIC CLASS
@@ -584,11 +584,7 @@ class ReferenceMetric(Metric):
         self.reference_non_member_signals = np.array(
             self._load_or_compute_signal(SignalSourceEnum.REFERENCE_NON_MEMBER)[0]).transpose()
         
-        self.quantiles = np.logspace(-5,0,100)
-        self.reference_member_quantile = self.hypothesis_test_func(self.reference_member_signals,self.quantiles,axis=1)
-        self.reference_non_member_signals = self.hypothesis_test_func(self.reference_non_member_signals,self.quantiles,axis=1)
-
-
+        
 
     def run_metric(self, fpr_tolerance_rate_list=None) -> List[MetricResult]:
         """
@@ -602,37 +598,34 @@ class ReferenceMetric(Metric):
             A list of MetricResult objects, one per fpr value.
         """
 
-
-        metric_result_list = []
         if fpr_tolerance_rate_list is None:
-            idx_list = list(range(100)) # return the full roc 
+            self.quantiles = np.logspace(-5,0,100)
         else:
-            idx_list = [bisect_left(self.quantiles,tpr) for tpr in fpr_tolerance_rate_list]
+            self.quantiles = np.array(fpr_tolerance_rate_list)
+        self.reference_member_quantile = self.hypothesis_test_func(self.reference_member_signals,self.quantiles,axis=1)
+        self.reference_non_member_quantile = self.hypothesis_test_func(self.reference_non_member_signals,self.quantiles,axis=1)
+        
+        num_threshold = len(self.quantiles)
+        member_signals = self.member_signals.reshape(-1,1).repeat(num_threshold,1).T
+        non_member_signals = self.non_member_signals.reshape(-1,1).repeat(num_threshold,1).T
+        member_preds = np.less_equal(member_signals,self.reference_member_quantile)
+        non_member_preds = np.less_equal(non_member_signals,self.reference_non_member_quantile)
 
-        for idx in idx_list:
-            member_threshold = self.reference_member_quantile[idx,:]
-            non_member_threshold = self.reference_non_member_signals[idx,:]
+        predictions = np.concatenate([member_preds, non_member_preds],axis=1)
+        true_labels = np.concatenate([np.ones(len(self.member_signals)),np.zeros(len(self.non_member_signals))])
 
-            member_preds = np.signbit(self.member_signals - member_threshold)
-            non_member_preds = np.signbit(self.non_member_signals - non_member_threshold)
+        signal_values = np.concatenate([self.member_signals, self.non_member_signals])
+        
 
-            predictions = np.concatenate([member_preds, non_member_preds])
-
-            true_labels = np.concatenate([np.ones(len(self.member_signals)),np.zeros(len(self.non_member_signals))])
-
-            signal_values = np.concatenate([self.member_signals, self.non_member_signals])
-
-            metric_result = MetricResult(metric_id=MetricEnum.REFERENCE.value,
-                                         predicted_labels=predictions,
-                                         true_labels=true_labels,
-                                         predictions_proba=None,
-                                         signal_values=signal_values)
-
-            metric_result_list.append(metric_result)
-
+        metric_result = CombinedMetricResult(metric_id=MetricEnum.REFERENCE.value,
+                                        predicted_labels=predictions,
+                                        true_labels=true_labels,
+                                        predictions_proba=None,
+                                        signal_values=signal_values)
 
 
-        return metric_result_list
+
+        return [metric_result]
 
 
 
