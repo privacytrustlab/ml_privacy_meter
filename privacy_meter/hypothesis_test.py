@@ -59,7 +59,7 @@ def linear_itp_threshold_func(
         threshold: alpha quantile of the provided distribution.
     """
     
-    if len(distribution.shape):
+    if len(distribution.shape)>1:
         # for reference attacks
         distribution = np.concatenate([distribution,np.repeat(signal_min,distribution.shape[0]).reshape(-1,1)],axis=1)
         distribution = np.concatenate([distribution,np.repeat(signal_max,distribution.shape[0]).reshape(-1,1)],axis=1)
