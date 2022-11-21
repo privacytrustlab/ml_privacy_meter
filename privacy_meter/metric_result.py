@@ -115,13 +115,15 @@ class CombinedMetricResult:
         """
         Returns a string describing the metric result.
         """
-        txt = []
+        txt_list = []
         for idx in range(len(self.accuracy)):
-            txt.append([
+            txt = [
                 f'{" METRIC RESULT OBJECT ":=^48}',
                 f'Accuracy          = {self.accuracy[idx]}',
-                f'ROC AUC Score     = {self.roc_auc[idx]}',
+                f'ROC AUC Score     = {self.roc_auc}',
                 f'FPR               = {self.fp[idx] / (self.fp[idx] + self.tn[idx])}',
                 f'TN, FP, FN, TP    = {self.tn[idx], self.fp[idx], self.fn[idx], self.tp[idx]}'
-            ])
-        return '\n'.join(txt)
+            ]
+            
+            txt_list.append('\n'.join(txt))
+        return '\n\n'.join(txt_list)
