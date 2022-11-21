@@ -91,8 +91,10 @@ def logit_rescale_threshold_func(
     Returns:
         threshold: alpha quantile of the provided distribution.
     """
+
+    distribution = distribution+0.000001 # avoid nan
     distribution = np.log(np.divide(np.exp(- distribution), (1 - np.exp(- distribution))))
-    len_dist = len(distribution)
+  
     if len(distribution.shape)>1:
         parameters = np.array([norm.fit(distribution[i]) for i in range(distribution.shape[0])])
         num_threshold = alpha.shape[0]
@@ -101,9 +103,9 @@ def logit_rescale_threshold_func(
         scale = parameters[:,1].reshape(-1,1).repeat(num_threshold,1)
         alpha = np.array(alpha).reshape(-1,1).repeat(num_points,1)
         threshold = norm.ppf(1-np.array(alpha),loc=loc.T,scale=scale.T)
-        np.place(threshold,threshold==-np.inf, distribution.min()-0.01)
-        np.place(threshold,threshold==np.inf,distribution.max()+0.01)
     else:
+        print('none')
+        print(np.sum(distribution==-np.inf))
         loc,scale = norm.fit(distribution)
         threshold = norm.ppf(1 - np.array(alpha), loc=loc, scale=scale)
     

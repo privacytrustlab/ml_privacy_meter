@@ -83,6 +83,7 @@ class CombinedMetricResult:
             predictions_proba=None,
             signal_values=None,
             threshold: float = None
+            
     ):
         """
         Constructor.
@@ -102,7 +103,7 @@ class CombinedMetricResult:
         self.predictions_proba = predictions_proba
         self.signal_values = signal_values
         self.threshold = threshold
-
+        
         self.accuracy = np.mean(predicted_labels == true_labels,axis=1)
         self.tn = np.sum(true_labels==0) - np.sum(predicted_labels[:,true_labels==0],axis=1)
         self.tp = np.sum(predicted_labels[:,true_labels==1],axis=1)

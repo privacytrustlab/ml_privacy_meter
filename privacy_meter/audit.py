@@ -23,7 +23,8 @@ class Audit:
             target_info_sources: Union[InformationSource, List[InformationSource]] = None,
             reference_info_sources: Union[InformationSource, List[InformationSource]] = None,
             fpr_tolerances: Union[float, List[float]] = None,
-            logs_directory_names: Union[str, List[str]] = None
+            logs_directory_names: Union[str, List[str]] = None,
+            save_logs: bool=True
     ):
         """
         Constructor
@@ -39,6 +40,7 @@ class Audit:
                 on, and the corresponding Dataset(s).
             fpr_tolerances: FPR tolerance value(s) to be used by the audit.
             logs_directory_names: Path(s) to logging directory(ies).
+            save_logs: Whether to save the signal(s).
         """
 
         self.metrics = metrics
@@ -47,6 +49,7 @@ class Audit:
         self.reference_info_sources = reference_info_sources
         self.fpr_tolerances = fpr_tolerances
         self.logs_directory_names = logs_directory_names
+        self.save_logs = save_logs
 
         self.__init_lists()
         self.__init_logs_directories()
@@ -57,7 +60,7 @@ class Audit:
         Private function part of the initialization process, to specify default logging directory(ies), and create them
         if necessary.
         """
-        if self.logs_directory_names is None:
+        if self.logs_directory_names is None and self.save_logs is True:
             self.logs_directory_names = []
             for i in range(len(self.metrics)):
                 logs_dirname = os.path.join(
@@ -66,10 +69,12 @@ class Audit:
                 )
                 os.mkdir(logs_dirname)
                 self.logs_directory_names.append(logs_dirname)
-        else:
+        elif self.save_logs:
             for path in self.logs_directory_names:
                 if not os.path.isdir(path):
                     os.mkdir(path)
+        else:
+            self.logs_directory_names = None
 
     def __init_metric_objects(self):
         """
@@ -114,7 +119,8 @@ class Audit:
 
             else:
                 # If the user wants to pass in their custom metric object
-                metric.logs_dirname = self.logs_directory_names[k]
+                if self.save_logs:
+                    metric.logs_dirname = self.logs_directory_names[k]
                 self.metric_objects.append(metric)
 
     def __init_lists(self):

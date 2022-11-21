@@ -64,8 +64,11 @@ class Metric(ABC):
         Returns:
             Signals computed using the specified information source and mapping object.
         """
-        signal_filepath = f'{self.logs_dirname}/{type(self).__name__}_{signal_source.value}'
-
+        if self.logs_dirname is not None:
+            signal_filepath = f'{self.logs_dirname}/{type(self).__name__}_{signal_source.value}'
+        else:
+            signal_filepath = None
+            
         if signal_source == SignalSourceEnum.TARGET_MEMBER:
             info_source_obj = self.target_info_source
             mapping_obj = self.target_model_to_train_split_mapping
@@ -92,8 +95,9 @@ class Metric(ABC):
                 signals.append(
                     info_source_obj.get_signal(signal, mapping_obj)
                 )
-            np.savez(signal_filepath, signals)
-
+            if signal_filepath is not None:
+                np.savez(signal_filepath, signals)
+        
         return signals
 
     def _load_or_compute_group_membership(
@@ -779,5 +783,6 @@ class GroupPopulationMetric(Metric):
                                         predicted_labels=predictions,
                                         true_labels=true_labels,
                                         predictions_proba=None,
-                                        signal_values=signal_values)
+                                        signal_values=signal_values,
+                                        threshold= reference_thresholds)
         return [metric_result]
