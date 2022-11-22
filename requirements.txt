@@ -9,3 +9,4 @@ scipy
 pandas
 jinja2
 pillow
+opacus
