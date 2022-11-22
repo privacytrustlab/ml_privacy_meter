@@ -10,8 +10,8 @@ from torch import quantile, threshold
 from privacy_meter.constants import *
 from privacy_meter.information_source import InformationSource
 from privacy_meter.information_source_signal import GroupInfo, Signal
-from privacy_meter.metric_result import MetricResult
-from privacy_meter.utils import flatten_array
+from privacy_meter.metric_result import MetricResult,CombinedMetricResult
+from privacy_meter.utils import flatten_array,default_quantile
 ########################################################################################################################
 # METRIC CLASS
 ########################################################################################################################
@@ -64,8 +64,11 @@ class Metric(ABC):
         Returns:
             Signals computed using the specified information source and mapping object.
         """
-        signal_filepath = f'{self.logs_dirname}/{type(self).__name__}_{signal_source.value}'
-
+        if self.logs_dirname is not None:
+            signal_filepath = f'{self.logs_dirname}/{type(self).__name__}_{signal_source.value}'
+        else:
+            signal_filepath = None
+            
         if signal_source == SignalSourceEnum.TARGET_MEMBER:
             info_source_obj = self.target_info_source
             mapping_obj = self.target_model_to_train_split_mapping
@@ -92,8 +95,9 @@ class Metric(ABC):
                 signals.append(
                     info_source_obj.get_signal(signal, mapping_obj)
                 )
-            np.savez(signal_filepath, signals)
-
+            if signal_filepath is not None:
+                np.savez(signal_filepath, signals)
+        
         return signals
 
     def _load_or_compute_group_membership(
@@ -308,11 +312,6 @@ class PopulationMetric(Metric):
         self.non_member_signals = flatten_array(self._load_or_compute_signal(SignalSourceEnum.TARGET_NON_MEMBER))
         self.reference_signals = flatten_array(self._load_or_compute_signal(SignalSourceEnum.REFERENCE))
 
-        # map the threshold with the alpha 
-        self.quantiles = np.logspace(-5,0,100)
-        self.reference_quantile = self.hypothesis_test_func(self.reference_signals,self.quantiles)
-
-        
 
 
     def run_metric(self, fpr_tolerance_rate_list=None) -> List[MetricResult]:
@@ -326,36 +325,29 @@ class PopulationMetric(Metric):
         Returns:
             A list of MetricResult objects, one per fpr value.
         """
-        metric_result_list = []
-        if fpr_tolerance_rate_list is None:
-            idx_list = list(range(100)) # return the full roc 
+        # map the threshold with the alpha 
+        if fpr_tolerance_rate_list is not None:
+            self.quantiles  = fpr_tolerance_rate_list
         else:
-            idx_list = [bisect_left(self.quantiles,tpr) for tpr in fpr_tolerance_rate_list]
-
-
-        for idx in idx_list:
-            threshold = self.reference_quantile[idx]
-            member_preds = (self.member_signals <= threshold).astype(int)
-            non_member_preds = (self.non_member_signals <= threshold).astype(int)
-           
-
-            predictions = np.concatenate([member_preds, non_member_preds])
-
-            true_labels = np.concatenate([np.ones(len(member_preds)),np.zeros(len(non_member_preds))])
-
-            signal_values = np.concatenate([self.member_signals, self.non_member_signals])
-
-            metric_result = MetricResult(
-                metric_id=MetricEnum.POPULATION.value,
-                predicted_labels=predictions,
-                true_labels=true_labels,
-                predictions_proba=None,
-                signal_values=signal_values,
-                threshold=threshold
-            )
-            metric_result_list.append(metric_result)
-
-        return metric_result_list
+            self.quantiles = default_quantile()
+        thresholds = self.hypothesis_test_func(self.reference_signals,self.quantiles).reshape(-1,1)
+        
+        num_threshold = len(self.quantiles)
+        member_signals = self.member_signals.reshape(-1,1).repeat(num_threshold,1).T
+        non_member_signals = self.non_member_signals.reshape(-1,1).repeat(num_threshold,1).T
+        member_preds = np.less_equal(member_signals,thresholds)
+        non_member_preds = np.less_equal(non_member_signals,thresholds)
+        
+        predictions = np.concatenate([member_preds, non_member_preds],axis=1)
+        true_labels = np.concatenate([np.ones(len(self.member_signals)),np.zeros(len(self.non_member_signals))])
+        signal_values = np.concatenate([self.member_signals, self.non_member_signals])
+        metric_result = CombinedMetricResult(metric_id=MetricEnum.REFERENCE.value,
+                                        predicted_labels=predictions,
+                                        true_labels=true_labels,
+                                        predictions_proba=None,
+                                        signal_values=signal_values)
+        return [metric_result]
+    
 
 ########################################################################################################################
 # SHADOW_METRIC CLASS
@@ -584,11 +576,7 @@ class ReferenceMetric(Metric):
         self.reference_non_member_signals = np.array(
             self._load_or_compute_signal(SignalSourceEnum.REFERENCE_NON_MEMBER)[0]).transpose()
         
-        self.quantiles = np.logspace(-5,0,100)
-        self.reference_member_quantile = self.hypothesis_test_func(self.reference_member_signals,self.quantiles,axis=1)
-        self.reference_non_member_signals = self.hypothesis_test_func(self.reference_non_member_signals,self.quantiles,axis=1)
-
-
+        
 
     def run_metric(self, fpr_tolerance_rate_list=None) -> List[MetricResult]:
         """
@@ -602,37 +590,34 @@ class ReferenceMetric(Metric):
             A list of MetricResult objects, one per fpr value.
         """
 
-
-        metric_result_list = []
         if fpr_tolerance_rate_list is None:
-            idx_list = list(range(100)) # return the full roc 
+            self.quantiles = default_quantile()
         else:
-            idx_list = [bisect_left(self.quantiles,tpr) for tpr in fpr_tolerance_rate_list]
+            self.quantiles = np.array(fpr_tolerance_rate_list)
+        reference_member_threshold = self.hypothesis_test_func(self.reference_member_signals,self.quantiles,axis=1)
+        reference_non_member_threshold = self.hypothesis_test_func(self.reference_non_member_signals,self.quantiles,axis=1)
+        
+        num_threshold = len(self.quantiles)
+        member_signals = self.member_signals.reshape(-1,1).repeat(num_threshold,1).T
+        non_member_signals = self.non_member_signals.reshape(-1,1).repeat(num_threshold,1).T
+        member_preds = np.less_equal(member_signals,reference_member_threshold)
+        non_member_preds = np.less_equal(non_member_signals,reference_non_member_threshold)
 
-        for idx in idx_list:
-            member_threshold = self.reference_member_quantile[idx,:]
-            non_member_threshold = self.reference_non_member_signals[idx,:]
+        predictions = np.concatenate([member_preds, non_member_preds],axis=1)
+        true_labels = np.concatenate([np.ones(len(self.member_signals)),np.zeros(len(self.non_member_signals))])
 
-            member_preds = np.signbit(self.member_signals - member_threshold)
-            non_member_preds = np.signbit(self.non_member_signals - non_member_threshold)
+        signal_values = np.concatenate([self.member_signals, self.non_member_signals])
+        
 
-            predictions = np.concatenate([member_preds, non_member_preds])
-
-            true_labels = np.concatenate([np.ones(len(self.member_signals)),np.zeros(len(self.non_member_signals))])
-
-            signal_values = np.concatenate([self.member_signals, self.non_member_signals])
-
-            metric_result = MetricResult(metric_id=MetricEnum.REFERENCE.value,
-                                         predicted_labels=predictions,
-                                         true_labels=true_labels,
-                                         predictions_proba=None,
-                                         signal_values=signal_values)
-
-            metric_result_list.append(metric_result)
-
+        metric_result = CombinedMetricResult(metric_id=MetricEnum.REFERENCE.value,
+                                        predicted_labels=predictions,
+                                        true_labels=true_labels,
+                                        predictions_proba=None,
+                                        signal_values=signal_values)
 
 
-        return metric_result_list
+
+        return [metric_result]
 
 
 
@@ -741,14 +726,7 @@ class GroupPopulationMetric(Metric):
         self.non_member_groups = flatten_array(self._load_or_compute_group_membership(SignalSourceEnum.TARGET_NON_MEMBER))
         self.member_groups = flatten_array(self._load_or_compute_group_membership(SignalSourceEnum.TARGET_MEMBER))
 
-        self.reference_quantile = {} # quantile dict, one for each group
-        self.quantiles = np.logspace(-5,0,100)
-        for g in np.unique(self.reference_groups):
-            # map the threshold with the alpha 
-            reference_group_index = np.where(self.reference_groups ==g)[0]
-            self.reference_quantile[g] = self.hypothesis_test_func(self.reference_signals[reference_group_index],self.quantiles)
-
-        
+           
 
     def run_metric(self, fpr_tolerance_rate_list=None) -> List[MetricResult]:
         """
@@ -761,50 +739,50 @@ class GroupPopulationMetric(Metric):
         Returns:
             A list of MetricResult objects, one per fpr value.
         """
-        metric_result_list = []
-        if fpr_tolerance_rate_list is None:
-            idx_list = list(range(100)) # return the full roc 
+        if fpr_tolerance_rate_list == None:
+            self.quantiles = default_quantile()
         else:
-            idx_list = [bisect_left(self.quantiles,tpr) for tpr in fpr_tolerance_rate_list]
- 
-        for fpr_idx in idx_list:
-            member_preds = []
-            non_member_preds = []
+            self.quantiles = fpr_tolerance_rate_list
+        
+        
+        num_threshold = len(self.quantiles)
+        member_preds = []
+        non_member_preds = []
+        reference_thresholds = {} 
+        member_signal_list = []
+        non_member_signal_list = []
+        for g in np.unique(self.reference_groups):
             
-            for g in np.unique(self.reference_groups):
-                non_member_index = np.where(self.non_member_groups ==g)[0]
-                member_index = np.where(self.member_groups ==g)[0]
-
-                threshold = self.reference_quantile[g][fpr_idx]
-                member_pred = (self.member_signals[member_index] < threshold).astype(int)
-                non_member_pred = (self.non_member_signals[non_member_index] < threshold).astype(int)
+            thresholds = self.hypothesis_test_func(self.reference_signals[self.reference_groups ==g],self.quantiles).reshape(-1,1)
             
-
-                member_preds.append(member_pred)
-                non_member_preds.append(non_member_pred)
+            member_signals = self.member_signals[self.member_groups ==g].reshape(-1,1).repeat(num_threshold,1).T
             
-
-            member_preds = np.concatenate(member_preds,axis=0)
-            non_member_preds = np.concatenate(non_member_preds,axis=0)
-
-            predictions = np.concatenate([member_preds, non_member_preds])
             
+            non_member_signals = self.non_member_signals[self.non_member_groups ==g].reshape(-1,1).repeat(num_threshold,1).T
+            member_pred = np.less_equal(member_signals,thresholds)
+            non_member_pred = np.less_equal(non_member_signals,thresholds)
 
-            true_labels = [1] * len(self.member_signals)
-            true_labels.extend([0] * len(self.non_member_signals))
+            member_signal_list.append(self.member_signals[self.member_groups ==g])
+            non_member_signal_list.append(self.non_member_signals[self.member_groups ==g])
+            member_preds.append(member_pred)
+            non_member_preds.append(non_member_pred)
+   
+            reference_thresholds[g] = thresholds
+        
+        member_preds = np.concatenate(member_preds,axis=1)
+        non_member_preds = np.concatenate(non_member_preds,axis=1)
+        predictions = np.concatenate([member_preds, non_member_preds],axis=1)
+        true_labels = np.concatenate([np.ones(len(self.member_signals)),np.zeros(len(self.non_member_signals))])
+        
+        member_signals = np.concatenate(member_signal_list,axis=0) # reoder based on the groups
+        non_member_signals = np.concatenate(non_member_signal_list,axis=0)
 
-            signal_values = np.concatenate([self.member_signals, self.non_member_signals])
-
-  
-            metric_result = MetricResult(
-                metric_id=MetricEnum.POPULATION.value,
-                predicted_labels=predictions,
-                true_labels=true_labels,
-                predictions_proba=None,
-                signal_values=signal_values,
-                threshold=threshold
-            )
-
-            metric_result_list.append(metric_result)
-
-        return metric_result_list
+        signal_values = np.concatenate([member_signals, non_member_signals])
+        
+        metric_result = CombinedMetricResult(metric_id=MetricEnum.REFERENCE.value,
+                                        predicted_labels=predictions,
+                                        true_labels=true_labels,
+                                        predictions_proba=None,
+                                        signal_values=signal_values,
+                                        threshold= reference_thresholds)
+        return [metric_result]

@@ -1,8 +1,10 @@
 from abc import ABC, abstractmethod
 from copy import deepcopy
+from multiprocessing import reduction
 
 import numpy as np
-
+import torch
+from opacus import GradSampleModule # For speeding up the gradient computation
 ########################################################################################################################
 # MODEL CLASS
 ########################################################################################################################
@@ -464,3 +466,157 @@ class HuggingFaceCausalLanguageModel(LanguageModel):
             ppl_values.append(ppl)
 
         return ppl_values
+
+
+
+class PytorchModelTensor(Model):
+    """
+    Inherits from the Model class, an interface to query a model without any assumption on how it is implemented.
+    This particular class is to be used with pytorch models.
+    """
+
+    def __init__(self, model_obj, loss_fn,device='cpu',batch_size=25):
+        """Constructor
+
+        Args:
+            model_obj: Model object.
+            loss_fn: Loss function.
+            device: Indicate the device to compute the signals
+            batch_size: Indicate the batch size to compute the signals
+        """
+
+        # Imports torch with global scope
+        globals()['torch'] = __import__('torch')
+
+        # Initializes the parent model
+        super().__init__(model_obj, loss_fn)
+
+        # Create a second loss function, per point
+        self.loss_fn_no_reduction = deepcopy(loss_fn)
+        self.loss_fn_no_reduction.reduction = 'none'
+        self.device = device
+        self.grad_sampler_model = None
+        self.model_obj.to(device)
+        self.batch_size = batch_size
+        
+
+    def get_logits(self, batch_samples):
+        """Function to get the model output from a given input.
+
+        Args:
+            batch_samples: Model input.
+
+        Returns:
+            Model output.
+        """
+
+        return self.model_obj(batch_samples).detach().numpy()
+
+    def get_loss(self, batch_samples, batch_labels, per_point=True):
+        """Function to get the model loss on a given input and an expected output.
+
+        Args:
+            batch_samples: Model input.
+            batch_labels: Model expected output.
+            per_point: Boolean indicating if loss should be returned per point or reduced.
+
+        Returns:
+            The loss value, as defined by the loss_fn attribute.
+        """
+        if per_point:
+            self.model_obj.eval()
+            loss_list = []
+            batched_samples = torch.split(batch_samples,self.batch_size)
+            batched_labels = torch.split(batch_labels,self.batch_size)
+            for x, y in zip(batched_samples,batched_labels):
+                x=x.to(self.device)
+                y = y.to(self.device)
+                loss = self.loss_fn_no_reduction(self.model_obj(x), y)
+                loss_list.append(loss.detach()) # to avoid the OOM
+            return torch.cat(loss_list).detach().cpu().numpy()
+        else:
+            return self.loss_fn(self.model_obj(torch.Tensor(batch_samples)), torch.Tensor(batch_labels)).item()
+
+    def get_grad(self, batch_samples, batch_labels):
+        """Function to get the gradient of the model loss with respect to the model parameters, on a given input and an
+        expected output.
+
+        Args:
+            batch_samples: Model input.
+            batch_labels: Model expected output.
+
+        Returns:
+            A list of gradients of the model loss (one item per layer) with respect to the model parameters.
+        """
+        if self.grad_sampler_model is None:
+            self.grad_sampler_model = GradSampleModule(self.model_obj)
+        
+        self.grad_sampler_model._module.train()
+        batch_size = 25
+        grad_norm = []
+        batched_samples = torch.split(batch_samples,batch_size)
+        batched_labels = torch.split(batch_labels,batch_size)
+        self.grad_sampler_model.zero_grad()
+        for x, y in zip(batched_samples,batched_labels):
+            batch_samples = batch_samples.to(self.device)
+            batched_labels = batched_labels.to(self.device)
+            loss = self.loss_fn(self.grad_sampler_model(x), y).sum()
+            loss.backward()
+            
+        grade = torch.cat([p.grad_sample.view(-1) for p in self.grad_sampler_model.parameters()]).detach().cpu().numpy()
+        return grade
+
+    
+    def get_gradnorm(self, batch_samples, batch_labels,is_features=True,layer_number=1):
+        """Function to get the gradient of the model loss with respect to the model parameters, on a given input and an
+        expected output.
+
+        Args:
+            batch_samples: Model input.
+            batch_labels: Model expected output.
+
+        Returns:
+            A list of gradients of the model loss (one item per layer) with respect to the model parameters.
+        """
+        if self.grad_sampler_model is None:
+            self.grad_sampler_model = GradSampleModule(self.model_obj)
+        self.grad_sampler_model._module.train()
+        grad_norm = []
+        batched_samples = torch.split(batch_samples,self.batch_size)
+        batched_labels = torch.split(batch_labels,self.batch_size)
+        self.grad_sampler_model.zero_grad()
+        for x, y in zip(batched_samples,batched_labels):
+            x = x.to(self.device)
+            y = y.to(self.device)
+            loss = self.loss_fn(self.grad_sampler_model(x), y).sum()
+            loss.backward()
+            if is_features:
+                grad_norm.append(torch.norm(self.grad_sampler_model.features[layer_number].weight.grad_sample.reshape(self.batch_size,-1).detach(),dim=1)) # this detach can not be deleted
+            else:
+                grad_norm.append(torch.norm(self.grad_sampler_model.classifier[layer_number].weight.grad_sample.reshape(self.batch_size,-1).detach(),dim=1)) # this detach can not be deleted
+
+            self.grad_sampler_model.zero_grad()
+        grad_norm = torch.cat(grad_norm).detach().cpu().numpy()
+        return grad_norm
+
+    def get_intermediate_outputs(self, layers, batch_samples, forward_pass=True):
+        """Function to get the intermediate output of layers (a.k.a. features), on a given input.
+
+        Args:
+            layers: List of integers and/or strings, indicating which layers values should be returned.
+            batch_samples: Model input.
+            forward_pass: Boolean indicating if a new forward pass should be executed. If True, then a forward pass is
+                executed on batch_samples. Else, the result is the one of the last forward pass.
+
+        Returns:
+            A list of intermediate outputs of layers.
+        """
+        if forward_pass:
+            _ = self.get_logits(torch.Tensor(batch_samples))
+        layer_names = []
+        for layer in layers:
+            if isinstance(layer, str):
+                layer_names.append(layer)
+            else:
+                layer_names.append(list(self.model_obj._modules.keys())[layer])
+        return [self.intermediate_outputs[layer_name].detach().numpy() for layer_name in layer_names]

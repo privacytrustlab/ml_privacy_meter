@@ -20,3 +20,12 @@ def flatten_array(arr):
         else:
             flat_array.append(item)
     return np.array(flat_array)
+
+
+def default_quantile():
+    """Return the default fprs
+
+    Returns:
+        arr: Numpy array, indicating the default fprs
+    """
+    return np.logspace(-5,0,100)

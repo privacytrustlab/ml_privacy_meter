@@ -16,7 +16,7 @@ from scipy import interpolate
 from privacy_meter.constants import InferenceGame
 from privacy_meter.information_source import InformationSource
 from privacy_meter.information_source_signal import DatasetSample
-from privacy_meter.metric_result import MetricResult
+from privacy_meter.metric_result import MetricResult,CombinedMetricResult
 
 
 ########################################################################################################################
@@ -54,7 +54,7 @@ class AuditReport(ABC):
     @staticmethod
     @abstractmethod
     def generate_report(
-            metric_result: Union[MetricResult, List[MetricResult], dict],
+            metric_result: Union[MetricResult, List[MetricResult], dict,CombinedMetricResult],
             inference_game_type: InferenceGame
     ):
         """
@@ -102,7 +102,7 @@ class ROCCurveReport(AuditReport):
 
     @staticmethod
     def generate_report(
-            metric_result: Union[MetricResult, List[MetricResult], List[List[MetricResult]]],
+            metric_result: Union[MetricResult, List[MetricResult], List[List[MetricResult]],CombinedMetricResult],
             inference_game_type: InferenceGame,
             show: bool = False,
             save: bool = True,
@@ -119,40 +119,54 @@ class ROCCurveReport(AuditReport):
             filename: File name to be used if the plot is saved as a file.
         """
 
-        # Casts type to a 2D list
-        if not isinstance(metric_result, list):
-            metric_result = [metric_result]
-        if not isinstance(metric_result[0], list):
-            metric_result = [metric_result]
-
+        
         # Read and store the explanation dict
         with open(f'{REPORT_FILES_DIR}/explanations.json', 'r') as f:
             explanations = json.load(f)
-
-        # Computes fpr, tpr and auc in different ways, depending on the available information and inference game
-        if inference_game_type == InferenceGame.PRIVACY_LOSS_MODEL:
-            if metric_result[0][0].predictions_proba is None:
-                fpr = [mr.fp / (mr.fp + mr.tn) for mr in metric_result[0]]
-                tpr = [mr.tp / (mr.tp + mr.fn) for mr in metric_result[0]]
-                roc_auc = np.trapz(x=fpr, y=tpr)
+            
+            
+        # Check if it is the combined report:
+        if not isinstance(metric_result, list):
+            metric_result = [metric_result]
+        if not isinstance(metric_result[0],CombinedMetricResult):
+            # Casts type to a 2D list
+            if not isinstance(metric_result[0], list):
+                metric_result = [metric_result]
+            # Computes fpr, tpr and auc in different ways, depending on the available information and inference game
+            if inference_game_type == InferenceGame.PRIVACY_LOSS_MODEL:
+                if metric_result[0][0].predictions_proba is None:
+                    fpr = [mr.fp / (mr.fp + mr.tn) for mr in metric_result[0]]
+                    tpr = [mr.tp / (mr.tp + mr.fn) for mr in metric_result[0]]
+                    roc_auc = np.trapz(x=fpr, y=tpr)
+                else:
+                    fpr, tpr, _ = metric_result[0][0].roc
+                    roc_auc = metric_result[0][0].roc_auc
+            elif inference_game_type == InferenceGame.AVG_PRIVACY_LOSS_TRAINING_ALGO:
+                if metric_result[0][0].predictions_proba is None:
+                    fpr = [[metric_result[i][j].fp / (metric_result[i][j].fp + metric_result[i][j].tn) for j in range(len(metric_result[0]))] for i in range(len(metric_result))]
+                    tpr = [[metric_result[i][j].tp / (metric_result[i][j].tp + metric_result[i][j].fn) for j in range(len(metric_result[0]))] for i in range(len(metric_result))]
+                    fpr = np.mean(fpr, axis=0)
+                    tpr = np.mean(tpr, axis=0)
+                    roc_auc = np.trapz(x=fpr, y=tpr)
+                else:
+                    fpr, tpr = ROCCurveReport.__avg_roc(
+                        fpr_2d_list=[metric_result[i][0].roc[0] for i in range(len(metric_result))],
+                        tpr_2d_list=[metric_result[i][0].roc[1] for i in range(len(metric_result))]
+                    )
+                    roc_auc = np.trapz(x=fpr, y=tpr)
             else:
-                fpr, tpr, _ = metric_result[0][0].roc
-                roc_auc = metric_result[0][0].roc_auc
-        elif inference_game_type == InferenceGame.AVG_PRIVACY_LOSS_TRAINING_ALGO:
-            if metric_result[0][0].predictions_proba is None:
-                fpr = [[metric_result[i][j].fp / (metric_result[i][j].fp + metric_result[i][j].tn) for j in range(len(metric_result[0]))] for i in range(len(metric_result))]
-                tpr = [[metric_result[i][j].tp / (metric_result[i][j].tp + metric_result[i][j].fn) for j in range(len(metric_result[0]))] for i in range(len(metric_result))]
-                fpr = np.mean(fpr, axis=0)
-                tpr = np.mean(tpr, axis=0)
-                roc_auc = np.trapz(x=fpr, y=tpr)
-            else:
-                fpr, tpr = ROCCurveReport.__avg_roc(
-                    fpr_2d_list=[metric_result[i][0].roc[0] for i in range(len(metric_result))],
-                    tpr_2d_list=[metric_result[i][0].roc[1] for i in range(len(metric_result))]
-                )
-                roc_auc = np.trapz(x=fpr, y=tpr)
+                raise NotImplementedError
         else:
-            raise NotImplementedError
+            # Generate report for the combined report
+            # Computes fpr, tpr and auc in different ways, depending on the available information and inference game
+            if inference_game_type == InferenceGame.PRIVACY_LOSS_MODEL:
+                if metric_result[0].predictions_proba is None:
+                    mr = metric_result[0]
+                    fpr = mr.fp / (mr.fp + mr.tn)
+                    tpr = mr.tp / (mr.tp + mr.fn)
+                    roc_auc = np.trapz(x=fpr, y=tpr)
+            else:
+                raise NotImplementedError
 
         # Gets metric ID
         if isinstance(metric_result, list):
