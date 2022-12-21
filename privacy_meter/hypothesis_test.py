@@ -174,9 +174,6 @@ def min_linear_logit_threshold_func(
     Returns:
         threshold: alpha quantile of the provided distribution.
     """
-    # distribution_linear = np.append(distribution, signal_min)
-    # distribution_linear = np.append(distribution_linear, signal_max)
-    # threshold_linear = np.quantile(distribution_linear, q=alpha, interpolation='linear',**kwargs,)
 
     threshold_linear = linear_itp_threshold_func(distribution,alpha,signal_min,signal_max,**kwargs)
     threshold_logit = logit_rescale_threshold_func(distribution,alpha,**kwargs)
