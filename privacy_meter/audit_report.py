@@ -285,7 +285,7 @@ class SignalHistogramReport(AuditReport):
             save: Boolean specifying if the plot should be saved as a file.
             filename: File name to be used if the plot is saved as a file.
         """
-
+        
         if inference_game_type == InferenceGame.PRIVACY_LOSS_MODEL:
             values = np.array(metric_result.signal_values).ravel()
             labels = np.array(metric_result.true_labels).ravel()
@@ -308,8 +308,8 @@ class SignalHistogramReport(AuditReport):
             element='step',
             kde=True
         )
-
-        if threshold is not None:
+        
+        if threshold is not None and len(threshold) == 1:
             histogram.axvline(
                 x=threshold,
                 linestyle='--',

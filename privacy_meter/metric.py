@@ -594,8 +594,8 @@ class ReferenceMetric(Metric):
             self.quantiles = default_quantile()
         else:
             self.quantiles = np.array(fpr_tolerance_rate_list)
-        reference_member_threshold = self.hypothesis_test_func(self.reference_member_signals,self.quantiles,axis=1)
-        reference_non_member_threshold = self.hypothesis_test_func(self.reference_non_member_signals,self.quantiles,axis=1)
+        reference_member_threshold = self.hypothesis_test_func(self.reference_member_signals,self.quantiles)
+        reference_non_member_threshold = self.hypothesis_test_func(self.reference_non_member_signals,self.quantiles)
         
         num_threshold = len(self.quantiles)
         member_signals = self.member_signals.reshape(-1,1).repeat(num_threshold,1).T

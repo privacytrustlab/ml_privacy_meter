@@ -63,11 +63,12 @@ def linear_itp_threshold_func(
         # for reference attacks
         distribution = np.concatenate([distribution,np.repeat(signal_min,distribution.shape[0]).reshape(-1,1)],axis=1)
         distribution = np.concatenate([distribution,np.repeat(signal_max,distribution.shape[0]).reshape(-1,1)],axis=1)
+        threshold = np.quantile(distribution, q=alpha, method='linear',axis=1,**kwargs)
+
     else:
         distribution = np.append(distribution, signal_min)
         distribution = np.append(distribution, signal_max)
-    threshold = np.quantile(distribution, q=alpha, method='linear',**kwargs)
-
+        threshold = np.quantile(distribution, q=alpha, method='linear',**kwargs)
     return threshold
 
 ########################################################################################################################
@@ -133,8 +134,17 @@ def gaussian_threshold_func(
     Returns:
         threshold: alpha quantile of the provided distribution.
     """
-    loc, scale = norm.fit(distribution,**kwargs,)
-    threshold = norm.ppf(alpha, loc=loc, scale=scale)
+    if len(distribution.shape)>1:
+        parameters = np.array([norm.fit(distribution[i]) for i in range(distribution.shape[0])])
+        num_threshold = alpha.shape[0]
+        num_points = distribution.shape[0]
+        loc = parameters[:,0].reshape(-1,1).repeat(num_threshold,1)
+        scale = parameters[:,1].reshape(-1,1).repeat(num_threshold,1)
+        alpha = np.array(alpha).reshape(-1,1).repeat(num_points,1)
+        threshold = norm.ppf(1-np.array(alpha),loc=loc.T,scale=scale.T)
+    else:
+        loc, scale = norm.fit(distribution)
+        threshold = norm.ppf(alpha, loc=loc, scale=scale)
     return threshold
 
 ########################################################################################################################
