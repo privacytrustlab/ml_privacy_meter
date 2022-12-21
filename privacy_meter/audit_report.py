@@ -309,7 +309,7 @@ class SignalHistogramReport(AuditReport):
             kde=True
         )
         
-        if threshold is not None and len(threshold) == 1:
+        if threshold is not None and type(threshold) == float:
             histogram.axvline(
                 x=threshold,
                 linestyle='--',
