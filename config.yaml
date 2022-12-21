@@ -1,0 +1,23 @@
+run:
+  random_seed: 1234
+
+attack:
+  attack_algorithm: reference_attack
+  num_reference_models: 10
+
+game:
+  privacy_game: privacy_loss_model
+
+train:
+  type: pytorch
+  epochs: 10
+  batch_size: 20
+  optimizer: sgd
+  learning_rate: 0.1
+  weight_decay: 0.06
+
+data:  
+  dataset: cifar10
+  f_train_points: 0.5
+  f_test_points: 0.3
+  f_attack_points: 0.1
