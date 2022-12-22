@@ -1,11 +1,13 @@
 run: # the configurations for the running setup
   random_seed: 1234 
+  log_dir: test
 
-attack: # the configurations for the MIA
-  attack_algorithm: reference_attack
+audit: # the configurations for the MIA
+  algorithm: population
   num_reference_models: 10
-  privacy_game: privacy_loss_model # the configuarations for the privacy loss game
-
+  privacy_game: privacy_loss_model #avg_privacy_loss_training_algo # the configuarations for the privacy loss game
+  device: cuda:0 # indicate on which device we conduct the MIA
+  audit_batch_size: 1000
 
 train: # the configuarations for the training
   type: pytorch
@@ -21,7 +23,7 @@ train: # the configuarations for the training
 
 data:  # the configuarations for the dataset
   dataset: cifar10
-  f_train: 0.8
-  f_test: 0.1
-  f_audit: 0.1
+  f_train: 0.3
+  f_test: 0.3
+  f_audit: 0.3
   num_split: 1 # repeat the split f_split times
