@@ -25,11 +25,14 @@ from models import Net
 
 #todo: In this code, we provide the tutorials about auditing privacy risk for different types of games
 
+import multiprocessing as mp
+
 logging.basicConfig()
 logging.getLogger().setLevel(logging.INFO)
 
-from concurrent import futures
+    
 
+ 
 
 
 
@@ -148,53 +151,51 @@ def prepare_datasets(dataset_size,configs):
     return dataset_splits
 
 
-def prepare_models(dataset,data_split,configs):
+def prepare_models(dataset,data_split,configs, split_idx):
     # train the mdoels based on the datasets we have 
     start_time = time.time()
     model_list = []
     
-    for split in range(len(data_split['split'])): # iterative over the dataset splits
-        logging.info(f'training models for {split}-th split of the dataset')
-        train_index = data_split['split'][split]['train']
-        test_index = data_split['split'][split]['test']
+    
+    logging.info(f'training models for {split_idx}-th split of the dataset')
+    train_index = data_split['split'][split_idx]['train']
+    test_index = data_split['split'][split_idx]['test']
+    
+    train_data = copy.deepcopy(dataset)
+    train_data.data = train_data.data[train_index]
+    train_data.targets = list(np.array(train_data.targets)[train_index])
+    
+    test_data = copy.deepcopy(dataset)
+    test_data.data = test_data.data[test_index]
+    test_data.targets = list(np.array(test_data.targets)[test_index])
+    
+    
+    train_loader = torch.utils.data.DataLoader(train_data, batch_size=configs['train_batch_size'],
+                                            shuffle=True, num_workers=2)
+    test_loader = torch.utils.data.DataLoader(test_data, batch_size=configs['test_batch_size'],
+                                            shuffle=False, num_workers=2)
+    
+    print(20*"#")
+    print(f'Training the {split_idx}-th model: the training dataset of size {len(train_data)} and test dataset of size {len(test_data)}')
+    model = Net()
+    train(model,train_loader,test_loader,configs) # all the operation is done on gpu at this stage
+    
+    model_list.append(copy.deepcopy(model))
+    print(20*"#")
         
-        train_data = copy.deepcopy(dataset)
-        train_data.data = train_data.data[train_index]
-        train_data.targets = list(np.array(train_data.targets)[train_index])
-        
-        test_data = copy.deepcopy(dataset)
-        test_data.data = test_data.data[test_index]
-        test_data.targets = list(np.array(test_data.targets)[test_index])
-        
-        
-        train_loader = torch.utils.data.DataLoader(train_data, batch_size=configs['train_batch_size'],
-                                                shuffle=True, num_workers=2)
-        test_loader = torch.utils.data.DataLoader(test_data, batch_size=configs['test_batch_size'],
-                                                shuffle=False, num_workers=2)
-        
-        print(20*"#")
-        print(f'Training the {split}-th model: the training dataset of size {len(train_data)} and test dataset of size {len(test_data)}')
-        model = Net()
-        train(model,train_loader,test_loader,configs) # all the operation is done on gpu at this stage
-        
-        model_list.append(copy.deepcopy(model))
-        print(20*"#")
-        
-    logging.info(f'training {split} uses {time.time()-start_time} seconds') 
+    logging.info(f'training {split_idx} uses {time.time()-start_time} seconds') 
     return model_list
 
-def prepare_information_source(dataset,data_split_info,model_list,configs):
+def prepare_information_source(models, datasets, configs):
     # prepare the information source based on the settings, including training reference mdoels
     return None
 
-
-
-def audit(target_info, reference_info, configs):
+def preparation(configs,models, datasets):
     #todo: call data_prepare
     return None
 
 
-def generate_priavcy_risk_report(audit_results, data_split_info):
+def generate_priavcy_risk_report(pm_results, configs):
     return None
 
 
@@ -210,10 +211,18 @@ if __name__ == '__main__':
     dataset = get_dataset(configs['data']['dataset']) # can load from the disk
     data_split_info = prepare_datasets(len(dataset),configs['data'])
     
-    
-    model_list = prepare_models(dataset,data_split_info,configs['train'])
-    
-    target_information_source, reference_information_source = prepare_information_source(dataset,data_split_info,model_list,configs['attack'])
-    
-    auditing_results = audit(target_information_source, reference_information_source, configs=configs['attack'])
+       # Step 1: Use multiprocessing.Pool() and specify number of cores to use (here I use 4).
+    pool = mp.Pool(10)
+    results = pool.starmap(prepare_models, [( dataset,data_split_info,configs['train'], idx) for idx in range(10)])
+    # Step 3: Don't forget to close
+    pool.close()
+
+
+
+
+# with futures.ProcessPoolExecutor() as pool:
+#     model_list = []
+#     for mdoel in pool.map(prepare_models,):
+#         model_list.append(model)
+#     # prepare_models(dataset,data_split_info,configs['train'])
     

@@ -1,23 +1,27 @@
-run:
-  random_seed: 1234
+run: # the configurations for the running setup
+  random_seed: 1234 
 
-attack:
+attack: # the configurations for the MIA
   attack_algorithm: reference_attack
   num_reference_models: 10
+  privacy_game: privacy_loss_model # the configuarations for the privacy loss game
 
-game:
-  privacy_game: privacy_loss_model
 
-train:
+train: # the configuarations for the training
   type: pytorch
-  epochs: 10
-  batch_size: 20
-  optimizer: sgd
-  learning_rate: 0.1
-  weight_decay: 0.06
+  epochs: 20
+  train_batch_size: 64
+  test_batch_size: 10000
+  optimizer: Adam
+  lr: 0.001
+  wd: 0
+  # momentum: 0.05
+  model: CNN
+  device: cuda:0
 
-data:  
+data:  # the configuarations for the dataset
   dataset: cifar10
-  f_train_points: 0.5
-  f_test_points: 0.3
-  f_attack_points: 0.1
+  f_train: 0.8
+  f_test: 0.1
+  f_audit: 0.1
+  num_split: 1 # repeat the split f_split times
