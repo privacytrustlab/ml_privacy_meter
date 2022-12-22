@@ -3,7 +3,7 @@ from datetime import datetime
 from typing import List, Union
 
 from privacy_meter.constants import MetricEnum, InferenceGame
-from privacy_meter.hypothesis_test import threshold_func
+from privacy_meter.hypothesis_test import threshold_func,linear_itp_threshold_func
 from privacy_meter.information_source import InformationSource
 from privacy_meter.information_source_signal import ModelLoss
 from privacy_meter.metric import Metric, PopulationMetric, ShadowMetric, ReferenceMetric,GroupPopulationMetric
@@ -89,7 +89,7 @@ class Audit:
                         target_info_source=self.target_info_sources[k],
                         reference_info_source=self.reference_info_sources[k],
                         signals=[ModelLoss()],
-                        hypothesis_test_func=threshold_func,
+                        hypothesis_test_func=linear_itp_threshold_func,
                         logs_dirname=self.logs_directory_names[k]
                     ))
                 elif metric == MetricEnum.SHADOW:
@@ -105,7 +105,7 @@ class Audit:
                         target_info_source=self.target_info_sources[k],
                         reference_info_source=self.reference_info_sources[k],
                         signals=[ModelLoss()],
-                        hypothesis_test_func=threshold_func,
+                        hypothesis_test_func=linear_itp_threshold_func,
                         logs_dirname=self.logs_directory_names[k]
                     ))
                 elif metric == MetricEnum.GROUPPOPULATION:
@@ -113,7 +113,7 @@ class Audit:
                         target_info_source=self.target_info_sources[k],
                         reference_info_source=self.reference_info_sources[k],
                         signals=[ModelLoss()],
-                        hypothesis_test_func=threshold_func,
+                        hypothesis_test_func=linear_itp_threshold_func,
                         logs_dirname=self.logs_directory_names[k]
                     ))
 
