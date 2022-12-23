@@ -50,7 +50,7 @@ def get_optimizer(model,configs):
     else:
         raise AttributeError(f"Optimizer {configs['optimizer']}  has not been implemented. Please choose from SGD or Adam")
 
-def train(model, train_loader, test_loader,configs):
+def train(model, train_loader,configs,test_loader=None):
     # update the model based on the train_dataset
     logging.info('training models')
    
@@ -72,10 +72,9 @@ def train(model, train_loader, test_loader,configs):
             loss.backward()
             optimizer.step()
             train_loss += loss.item()
-
-        print(f'epoch {epoch_idx}: training loss is {train_loss/len(train_loader)}')    
         
-        inference(model,test_loader,device)
+        if test_loader is not None:
+            inference(model,test_loader,device)
         inference(model,train_loader,device)
     model.to('cpu')
     
@@ -84,6 +83,7 @@ def train(model, train_loader, test_loader,configs):
 
 def inference(model,test_loader,device):
     model.eval()
+    model.to(device)
     loss = 0
     acc = 0
     with torch.no_grad():
@@ -103,7 +103,7 @@ def inference(model,test_loader,device):
     
 
 
-def get_dataset(dataset_name,group=None):
+def get_dataset(dataset_name):
     # load the dataset 
     if os.path.exists((f'{log_dir}/data.pkl')):
         with open(f'{log_dir}/data.pkl','rb') as f:
@@ -151,10 +151,18 @@ def prepare_datasets(dataset_size,configs):
         for split in range(configs['num_split']):
             data_use = np.zeros(dataset_size)
             selected_index = np.random.choice(all_index,int((configs['f_train']+configs['f_test'])*dataset_size),replace=False)
-            audit_index = np.array([i for i in all_index if i not in selected_index])
-            train_index, test_index = train_test_split(selected_index, test_size=configs['f_test']/(configs['f_train']+configs['f_test']))
-            index_list.append({'train':train_index,'test':test_index,'audit':audit_index})
             
+            train_index, test_index = train_test_split(selected_index, test_size=configs['f_test']/(configs['f_train']+configs['f_test']))
+            
+            if configs['audit_split_method'] == 'no_overlapping':
+                audit_index = np.array([i for i in all_index if i not in selected_index])
+            elif configs['audit_split_method'] == 'uniform':
+                audit_index =  np.random.choice(all_index,int(configs['f_audit']*dataset_size),replace=False)
+            else:
+                raise ValueError(f"{configs['audit_split_method']}' is not implemented")
+            
+            index_list.append({'train':train_index,'test':test_index,'audit':audit_index})
+
             # track teh data usage
             data_use[train_index] = 1 #train
             data_use[test_index] = 0 #test
@@ -175,7 +183,7 @@ def get_cifar10_subset(dataset, index,is_tensor=False):
     selected_data.targets = list(np.array(selected_data.targets)[index])
     
     if is_tensor:
-        selected_data.data = torch.from_numpy(selected_data.data).float().permute(0, 3, 1,2) # channel first
+        selected_data.data = torch.from_numpy(selected_data.data).float().permute(0, 3, 1,2)/255 # channel first 
         selected_data.targets = torch.tensor(selected_data.targets)
         
     return selected_data
@@ -201,13 +209,14 @@ def prepare_models(dataset,data_split,configs):
             test_loader = torch.utils.data.DataLoader(test_data, batch_size=configs['test_batch_size'],
                                                     shuffle=False, num_workers=2)
             
-            print(20*"#")
+            print(50*"#")
             print(f'Training the {split}-th model: the training dataset of size {len(train_data)} and test dataset of size {len(test_data)}')
-            model = Net()
-            train(model,train_loader,test_loader,configs) # all the operation is done on gpu at this stage
+            
+            model = get_model(configs['model_name'])
+            model = train(model,train_loader,configs,test_loader) # all the operation is done on gpu at this stage
             
             model_list.append(copy.deepcopy(model))
-            print(20*"#")
+            print(50*"#")
         
         with open(f'{log_dir}/model_list.pkl','wb') as f:
             pickle.dump(model_list,f)
@@ -216,89 +225,143 @@ def prepare_models(dataset,data_split,configs):
 
 
 
+
+def get_info_source_population_attack(dataset,data_split,model, configs):
+    train_data = get_cifar10_subset(dataset,data_split['train'],is_tensor=True)
+    test_data = get_cifar10_subset(dataset, data_split['test'],is_tensor=True)
+    audit_data = get_cifar10_subset(dataset, data_split['audit'],is_tensor=True)
+    audit_data_usage = [data_split['audit']] #indicate which data point is used for auditing
+    target_dataset = Dataset(
+        data_dict={
+            'train': {'x': train_data.data, 'y': train_data.targets},
+            'test': {'x': test_data.data, 'y': test_data.targets},
+        },
+        default_input='x',
+        default_output='y'
+    )
+    
+    audit_dataset  = Dataset(
+        data_dict={
+            'train': {'x': audit_data.data, 'y': audit_data.targets}
+        },
+        default_input='x',
+        default_output='y'
+    )
+    target_model = PytorchModelTensor(model_obj=model, loss_fn=nn.CrossEntropyLoss(),device=configs['device'], batch_size=configs['audit_batch_size'])
+    return [target_dataset], [audit_dataset], [target_model], [target_model],audit_data_usage
+
+
+def get_reference_datasets(audit_index,num_reference_datasets,size):
+    data_use_matrix = [] # indicate which data points is used for auditing
+    all_auditing_index = audit_index
+    for reference_idx in range(num_reference_datasets):
+        data_index = np.random.choice(all_auditing_index,size,replace=False)
+        data_use_matrix.append(data_index)
+    return data_use_matrix    
+
+
+
+def get_info_source_reference_attack(dataset,data_split,model,configs):
+    start_time = time.time()
+    train_data = get_cifar10_subset(dataset,data_split['train'],is_tensor=True)
+    test_data = get_cifar10_subset(dataset, data_split['test'],is_tensor=True)
+    target_dataset = Dataset(
+        data_dict={
+            'train': {'x': train_data.data, 'y': train_data.targets},
+            'test': {'x': test_data.data, 'y': test_data.targets},
+        },
+        default_input='x',
+        default_output='y'
+    )
+    
+    if os.path.exists((f'{log_dir}/reference_model_list.pkl')):
+        with open(f'{log_dir}/reference_model_list.pkl','rb') as f:
+            reference_models = pickle.load(f)
+        with open(f'{log_dir}/reference_datasets_list.pkl','rb') as f:
+            reference_dataset_list = pickle.load(f)
+  
+    else:
+        reference_models = []
+        reference_dataset_list = get_reference_datasets(data_split['audit'],configs['num_reference_models'],int(configs['f_reference_dataset']*len(train_data)))
+        
+        for reference_idx in range(len(reference_dataset_list)):
+            print(f'training  {reference_idx}-th reference model')
+            reference_loader = torch.utils.data.DataLoader(get_cifar10_subset(dataset,reference_dataset_list[reference_idx]), batch_size=configs['reference_batch_size'],
+                                                        shuffle=False, num_workers=2)
+        
+            reference_model = get_model(configs['model_name'])
+            reference_model = train(reference_model,reference_loader,configs,None)
+            reference_models.append(PytorchModelTensor(model_obj=reference_model, loss_fn=nn.CrossEntropyLoss(),device=configs['device'], batch_size=configs['audit_batch_size']))
+
+        with open(f'{log_dir}/reference_model_list.pkl','wb') as f:
+            pickle.dump(reference_models,f)
+        with open(f'{log_dir}/reference_datasets_list.pkl','wb') as f:
+            pickle.dump(reference_dataset_list,f)
+
+    
+    target_model = PytorchModelTensor(model_obj=model, loss_fn=nn.CrossEntropyLoss(),device=configs['device'], batch_size=configs['audit_batch_size'])
+    return [target_dataset], [target_dataset], [target_model], reference_models, reference_dataset_list
+
+
+
+
 def prepare_information_source(dataset,data_split,model_list,configs):
-    # construct the auditing datataset for each setting
-    if configs['algorithm'] == 'population':
-        target_dataset_list = []
-        audit_dataset_list = []
-        target_model_list = []
-        for split in range(len(data_split['split'])): # iterative over the dataset splits
-            logging.info(f'training models for {split}-th split of the dataset')
-            
-            train_data = get_cifar10_subset(dataset,data_split['split'][split]['train'],is_tensor=True)
-            
-            test_data = get_cifar10_subset(dataset, data_split['split'][split]['test'],is_tensor=True)
-            
-            audit_data = get_cifar10_subset(dataset, data_split['split'][split]['audit'],is_tensor=True)
-                
-            # create the target model's dataset
-            target_dataset = Dataset(
-                data_dict={
-                    'train': {'x': train_data.data, 'y': train_data.targets},
-                    'test': {'x': test_data.data, 'y': test_data.targets},
-                },
-                default_input='x',
-                default_output='y'
-            )
-            
-            audit_dataset  = Dataset(
-                data_dict={
-                    'train': {'x': audit_data.data, 'y': audit_data.targets}
-                },
-                default_input='x',
-                default_output='y'
-            )
-            
-            target_dataset_list.append(target_dataset)
-            audit_dataset_list.append(audit_dataset)
+    audit_data_usage_matrix = []
     
-            target_model = PytorchModelTensor(model_obj=model_list[split], loss_fn=nn.CrossEntropyLoss(),device=configs['device'], batch_size=configs['audit_batch_size'])
-            target_model_list.append(target_model)
-    
+    reference_info_source_list = []
+    target_info_source_list = []
+    metric_list = []
+    for split in range(len(data_split['split'])): # iterative over the dataset splits
+        logging.info(f'preparing information sources for {split}-th split of the dataset')
+        # create the target model's dataset
+        if configs['algorithm'] == 'population':
+            target_dataset, audit_dataset, target_model, audit_models, audit_data_usage = get_info_source_population_attack(dataset,data_split['split'][split],model_list[split],configs)
+            metrics = MetricEnum.POPULATION
+        elif configs['algorithm'] == 'reference':
+            target_dataset, audit_dataset, target_model, audit_models, audit_data_usage = get_info_source_reference_attack(dataset,data_split['split'][split],model_list[split],configs)
+            metrics = MetricEnum.REFERENCE      
+        metric_list.append(metrics)  
+        audit_data_usage_matrix.append(audit_data_usage)
+        
         target_info_source = InformationSource(
-            models=target_model_list, 
-            datasets=target_dataset_list
+            models=target_model, 
+            datasets=target_dataset
         )
 
         reference_info_source = InformationSource(
-            models=target_model_list,
-            datasets=audit_dataset_list
+            models=audit_models,
+            datasets=audit_dataset
         )
+        reference_info_source_list.append(reference_info_source)
+        target_info_source_list.append(target_info_source)
         
-    
-
-    # prepare the information source based on the settings, including training reference mdoels
-    return target_info_source,reference_info_source
+    return target_info_source, reference_info_source,metric_list,audit_data_usage_matrix
 
 
 
-def audit(target_info, reference_info, configs):
-    #todo: call data_prepare
-    return None
-
-
-def generate_priavcy_risk_report(audit_results,configs, data_split_info=None):
+def prepare_priavcy_risk_report(audit_results,configs, data_split_info=None,save_path=None):
     audit_report.REPORT_FILES_DIR = 'privacy_meter/report_files'
+    if save_path is None:
+        save_path = log_dir
     
     if len(audit_results) == 1 and configs['privacy_game']=='privacy_loss_model':
         ROCCurveReport.generate_report(
             metric_result=audit_results[0],
             inference_game_type=InferenceGame.PRIVACY_LOSS_MODEL,
             save=True, 
-            filename = log_dir+'/ROC.png'
+            filename = f"{save_path}/ROC.png"
         )
         SignalHistogramReport.generate_report(
             metric_result=audit_results[0][0],
             inference_game_type=InferenceGame.PRIVACY_LOSS_MODEL,
             save=True, 
-            filename = log_dir+'/Signals.png'
+            filename = f"{save_path}/Histogram.png"
         )
             
     return None
 
-
 if __name__ == '__main__':
-
+    start_time = time.time()
     config_file = open("config.yaml", 'r')
     configs = yaml.load(config_file,Loader=yaml.Loader)
 
@@ -306,32 +369,68 @@ if __name__ == '__main__':
     torch.manual_seed(configs['run']['random_seed'])
     
     # checks about the setting
+    
     if configs['audit']['privacy_game'] == 'privacy_loss_model':
+        
         assert configs['data']['num_split'] == 1, "only need one model for auditing the privacy risk for a trained model"
     elif configs['audit']['privacy_game'] == 'avg_privacy_loss_training_algo':
         assert configs['data']['num_split'] > 1, "need more models for computing the average privacy loss for an algorithm"
     else:
         raise ValueError(f"{configs['audit']['privacy_game']} has not been implemented")
+    inference_game_type = configs['audit']['privacy_game'].upper()
     
-    global log_dir 
+    
+    
+    # indicate the folder path for the logs
+    global log_dir
     log_dir = configs['run']['log_dir']
-    Path(log_dir).mkdir(parents=True, exist_ok=True)
-    Path(f'{log_dir}/report').mkdir(parents=True, exist_ok=True)
 
+    
+    
+    Path(log_dir).mkdir(parents=True, exist_ok=True)
+    Path(f"{log_dir}/{configs['audit']['report_log']}").mkdir(parents=True, exist_ok=True)
+
+
+    # construct the dataset
+    
+    baseline_time = time.time()
     dataset = get_dataset(configs['data']['dataset']) # can load from the disk
     data_split_info = prepare_datasets(len(dataset),configs['data'])    
+    
+    logging.info(f'prepare the dataset costs {time.time()-baseline_time} seconds')
+    logging.info(50*"#")
+    
+    
+    baseline_time = time.time()
     model_list = prepare_models(dataset,data_split_info,configs['train'])
-    target_info_source, reference_info_source = prepare_information_source(dataset,data_split_info,model_list,configs['audit'])
-        
+    
+    logging.info(f'prepare the target model costs {time.time()-baseline_time} seconds')
+    logging.info(50*"#")
+    
+    baseline_time = time.time()
+    target_info_source, reference_info_source,metrics,reference_data_usage = prepare_information_source(dataset,data_split_info,model_list,configs['audit'])
+    logging.info(f'prepare the information source costs {time.time()-baseline_time} seconds')
+    logging.info(50*"#")
+    
+    
+    baseline_time = time.time()
     audit_obj = Audit(
-        metrics=MetricEnum.POPULATION,
-        inference_game_type=InferenceGame.PRIVACY_LOSS_MODEL,
+        metrics=metrics,
+        inference_game_type=inference_game_type,
         target_info_sources=target_info_source,
         reference_info_sources=reference_info_source,
         fpr_tolerances=None,
-        logs_directory_names=f'{log_dir}/report'
+        logs_directory_names=f"{log_dir}/{configs['audit']['report_log']}"
     )
     audit_obj.prepare()
-    audit_results = audit_obj.run()
+    audit_results = audit_obj.run()  
+    logging.info(f'running privacy meter costs {time.time()-baseline_time} seconds')
+    logging.info(50*"#")
     
-    generate_priavcy_risk_report(audit_results,configs['audit'])
+     
+    baseline_time = time.time()
+    prepare_priavcy_risk_report(audit_results,configs['audit'],reference_data_usage,save_path=f"{log_dir}/{configs['audit']['report_log']}")
+    logging.info(f'plotting the report {time.time()-baseline_time} seconds')
+    logging.info(50*"#")
+    
+    logging.info(f'overall process costs {time.time()-start_time} seconds')

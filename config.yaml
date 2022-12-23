@@ -1,29 +1,37 @@
 run: # the configurations for the running setup
   random_seed: 1234 
-  log_dir: test
+  log_dir: demo
 
 audit: # the configurations for the MIA
-  algorithm: population
-  num_reference_models: 10
   privacy_game: privacy_loss_model #avg_privacy_loss_training_algo # the configuarations for the privacy loss game
   device: cuda:0 # indicate on which device we conduct the MIA
   audit_batch_size: 1000
+  algorithm: population # the following arguments are for reference attacks
+  num_reference_models: 10
+  reference_batch_size: 64
+  f_reference_dataset: 1 # compare to the training dataset size of the target model
+  optimizer: Adam
+  lr: 0.001
+  wd: 0
+  model_name: CNN
+  epochs: 30
+  report_log: report_population
 
 train: # the configuarations for the training
   type: pytorch
-  epochs: 20
+  epochs: 30
   train_batch_size: 64
   test_batch_size: 10000
   optimizer: Adam
   lr: 0.001
   wd: 0
-  # momentum: 0.05
-  model: CNN
+  model_name: CNN
   device: cuda:0
 
 data:  # the configuarations for the dataset
   dataset: cifar10
   f_train: 0.3
   f_test: 0.3
-  f_audit: 0.3
   num_split: 1 # repeat the split f_split times
+  audit_split_method: no_overlapping # how to sample the auditing dataset 
+  f_audit: 0.1  # when it is uniformly sampled from the dataset 
