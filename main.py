@@ -311,6 +311,7 @@ def prepare_information_source(dataset,data_split,model_list,configs):
     reference_info_source_list = []
     target_info_source_list = []
     metric_list = []
+    log_dir_list = []
     for split in range(len(data_split['split'])): # iterative over the dataset splits
         logging.info(f'preparing information sources for {split}-th split of the dataset')
         # create the target model's dataset
@@ -335,7 +336,12 @@ def prepare_information_source(dataset,data_split,model_list,configs):
         reference_info_source_list.append(reference_info_source)
         target_info_source_list.append(target_info_source)
         
-    return target_info_source, reference_info_source,metric_list,audit_data_usage_matrix
+        
+        log_dir_path = f"{log_dir}/{configs['report_log']}_{split}"
+        Path(log_dir_path).mkdir(parents=True, exist_ok=True)
+        log_dir_list.append(log_dir_path)
+        
+    return target_info_source_list, reference_info_source_list,metric_list,audit_data_usage_matrix,log_dir_list
 
 
 
@@ -357,6 +363,25 @@ def prepare_priavcy_risk_report(audit_results,configs, data_split_info=None,save
             save=True, 
             filename = f"{save_path}/Histogram.png"
         )
+    
+    elif len(audit_results) > 1 and configs['privacy_game'] == 'avg_privacy_loss_training_algo':
+        ROCCurveReport.generate_report(
+            metric_result=audit_results,
+            inference_game_type=InferenceGame.AVG_PRIVACY_LOSS_TRAINING_ALGO,
+            save=True, 
+            filename = f"{save_path}/ROC.png"
+        )
+        
+        SignalHistogramReport.generate_report(
+            metric_result=audit_results,
+            inference_game_type=InferenceGame.AVG_PRIVACY_LOSS_TRAINING_ALGO,
+            save=True, 
+            filename = f"{save_path}/Histogram.png"
+        )
+
+    else:
+        
+        raise ValueError(f"{configs['privacy_game']} is not implemented yet")
             
     return None
 
@@ -408,7 +433,7 @@ if __name__ == '__main__':
     logging.info(50*"#")
     
     baseline_time = time.time()
-    target_info_source, reference_info_source,metrics,reference_data_usage = prepare_information_source(dataset,data_split_info,model_list,configs['audit'])
+    target_info_source, reference_info_source,metrics,reference_data_usage,log_dir_list = prepare_information_source(dataset,data_split_info,model_list,configs['audit'])
     logging.info(f'prepare the information source costs {time.time()-baseline_time} seconds')
     logging.info(50*"#")
     
@@ -420,7 +445,7 @@ if __name__ == '__main__':
         target_info_sources=target_info_source,
         reference_info_sources=reference_info_source,
         fpr_tolerances=None,
-        logs_directory_names=f"{log_dir}/{configs['audit']['report_log']}"
+        logs_directory_names=log_dir_list 
     )
     audit_obj.prepare()
     audit_results = audit_obj.run()  
