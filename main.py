@@ -4,7 +4,7 @@ import torch
 from torch import nn, optim, Tensor
 import tensorflow as tf
 from torchvision import models
-
+import argparse
 from privacy_meter.audit import Audit, MetricEnum
 from privacy_meter.audit_report import ROCCurveReport, SignalHistogramReport
 from privacy_meter.constants import InferenceGame
@@ -386,8 +386,15 @@ def prepare_priavcy_risk_report(audit_results,configs, data_split_info=None,save
     return None
 
 if __name__ == '__main__':
+
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--cf', type=str, default="config.yaml",help='Yaml file which contains the configurations')
+    args = parser.parse_args()
+    
+    
     start_time = time.time()
-    config_file = open("config.yaml", 'r')
+    config_file = open(args.cf, 'r')
     configs = yaml.load(config_file,Loader=yaml.Loader)
 
     np.random.seed(configs['run']['random_seed'])
