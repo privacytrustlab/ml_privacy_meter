@@ -77,16 +77,56 @@ def prepare_datasets(dataset_size,num_target_model,configs,model_metadata_list,m
 
 
 
+
+def prepare_datasets_for_sample_privacy_risk(dataset_size,num_total,num_models,data_idx,configs,data_type,model_metadata_list,matched_in_idx=None):         
+    associated_models = []    
+    if configs['split_method'] == 'uniform':
+        index_list = [] # list of data split
+        for _ in range(num_total - num_models):
+            index_list.append({})
+            
+        all_index = np.arange(dataset_size)
+        all_index_exclude_z = np.array([i for i in all_index if i != data_idx])
+        for _ in range(num_models):
+            if data_type == 'in':
+                train_index = np.random.choice(all_index_exclude_z,int((configs['f_train'])*dataset_size)-1,replace=False)
+                index_list.append({'train':np.append(train_index,data_idx),'test':all_index,'audit':all_index})
+            if data_type == 'out':
+                train_index = np.random.choice(all_index_exclude_z,int((configs['f_train'])*dataset_size),replace=False)
+                index_list.append({'train':train_index,'test':all_index,'audit':all_index})
+            
+    
+    if configs['split_method'] == 'leave_one_out':
+        assert matched_in_idx is not None, "Please indicate the in world model metdadata"
+        assert len(matched_in_idx) >= num_models, "input enough in world to generate the out world"
+        index_list = [] # list of data split
+        all_index = np.arange(dataset_size)
+        all_index_exclude_z = np.array([i for i in all_index if i != data_idx])
+        
+        for _ in range(num_total - num_models):
+            index_list.append({})
+            associated_models.append(None)
+            
+        for metadata_idx in matched_in_idx:
+            metadata = model_metadata_list['model_metadata'][metadata_idx]
+            train_index = np.delete(metadata['train_split'],np.where(metadata['train_split']==data_idx)[0])
+            index_list.append({'train':np.append(train_index),'test':all_index,'audit':all_index})
+            associated_models.append(metadata['idx'])
+    
+    dataset_splits = {'split':index_list,'split_method':configs['split_method'],'associated_models':associated_models}
+    return dataset_splits
+
 def prepare_models(dataset,data_split,configs,model_metadata_list,matched_idx=None): 
     model_list = []
     if matched_idx is not None: 
         for metadata_idx in matched_idx:
-            metadata = model_metadata_list['model_metadata'][metadata_idx]
+            metadata = model_metadata_list['model_metadata'][metadata_idx]    
             model = get_model(configs['model_name'])
             with open(f"{metadata['model_path']}",'rb') as f:
                 model_weight = pickle.load(f)
             model.load_state_dict(model_weight)
             model_list.append(model)
+            
         logging.info(f"Load existing {len(model_list)} target models")
     
 
@@ -134,11 +174,15 @@ def prepare_models(dataset,data_split,configs,model_metadata_list,matched_idx=No
         meta_data['lr'] = configs['lr']
         meta_data['wd'] = configs['wd']
         meta_data['model_path'] = f'{log_dir}/model_{model_idx}.pkl'
+        if split < len(data_split['associated_models']):
+                meta_data['associated_models'] = {'remove_from':data_split['associated_models'][split]}
         model_metadata_list['model_metadata'].append(meta_data)
+        
         with open(f'{log_dir}/models_metadata.pkl','wb') as f:
             pickle.dump(model_metadata_list,f)
             
-    return model_list,model_metadata_list
+        matched_idx.append(model_idx)
+    return model_list,model_metadata_list, matched_idx
 
 
 
@@ -349,7 +393,7 @@ def load_existing_target_model(N, model_metadata_list,configs):
             if configs['train']['key'] == 'none':
                 matched_idx.append(meta_idx)
             elif configs['train']['key'] == 'data_idx':
-                if (configs['train']['type'] == 'include' and configs['train']['idx'] in meta_data['train_split']) or (configs['train']['type'] == 'exclude' and configs['train']['idx'] not in meta_data['train_spit']): #check if the idx is in the training dataset size.
+                if (configs['train']['type'] == 'include' and configs['train']['idx'] in meta_data['train_split']) or (configs['train']['type'] == 'exclude' and configs['train']['idx'] not in meta_data['train_split']): #check if the idx is in the training dataset size.
                     matched_idx.append(meta_idx)
             elif configs['train']['key'] == 'model_idx':
                 if meta_data['idx'] == configs['train']['idx']:
@@ -360,9 +404,9 @@ def load_existing_target_model(N, model_metadata_list,configs):
                 raise ValueError(f'key can only be model idx or data idx')
                 
         if len(matched_idx) == configs['train']['num_target_model']:
-                return matched_idx
+            break
     
-    return None
+    return matched_idx
    
 
 
@@ -415,19 +459,13 @@ if __name__ == '__main__':
     
     # checks about the setting
     
-    if configs['audit']['privacy_game'] == 'privacy_loss_model':
-        assert configs['train']['num_target_model'] == 1, "only need one model for auditing the privacy risk for a trained model"
-    elif configs['audit']['privacy_game'] == 'avg_privacy_loss_training_algo' or configs['audit']['privacy_game'] == 'privacy_loss_sample':
-        assert configs['train']['num_target_model'] > 1, "need more models for computing the average privacy loss for an algorithm"
-    else:
-        raise ValueError(f"{configs['audit']['privacy_game']} has not been implemented")
+    
     inference_game_type = configs['audit']['privacy_game'].upper()
     
 
     
     # indicate the folder path for the logs
     global log_dir
-        
     log_dir = configs['run']['log_dir']
     Path(log_dir).mkdir(parents=True, exist_ok=True)
     Path(f"{log_dir}/{configs['audit']['report_log']}").mkdir(parents=True, exist_ok=True)
@@ -446,6 +484,14 @@ if __name__ == '__main__':
     
     
     if configs['audit']['privacy_game'] in ['avg_privacy_loss_training_algo','privacy_loss_model']:
+        if configs['audit']['privacy_game'] == 'privacy_loss_model':
+            assert configs['train']['num_target_model'] == 1, "only need one model for auditing the privacy risk for a trained model"
+        elif configs['audit']['privacy_game'] == 'avg_privacy_loss_training_algo':
+            assert configs['train']['num_target_model'] > 1, "need more models for computing the average privacy loss for an algorithm"
+        else:
+            raise ValueError(f"{configs['audit']['privacy_game']} has not been implemented")
+        
+        # If the privacy game is about the auditing the privacy loss for a trained model or the privacy loss for the training algorithm
         #load the saved models which are useful for the auditing (target model information)
         if model_metadata_list['current_idx'] > 0:
             matched_idx = load_existing_target_model(len(dataset),model_metadata_list,configs)
@@ -464,7 +510,7 @@ if __name__ == '__main__':
         
         
         baseline_time = time.time()
-        model_list, model_metadata_list = prepare_models(dataset,data_split_info,configs['train'],model_metadata_list,matched_idx)
+        model_list, model_metadata_list,matched_idx = prepare_models(dataset,data_split_info,configs['train'],model_metadata_list,matched_idx)
         
         logging.info(f'prepare the target model costs {time.time()-baseline_time} seconds')
         logging.info(25*"#"+"Prepare the information source, including attack models"+25*"#")
@@ -503,10 +549,40 @@ if __name__ == '__main__':
         logging.info(100*"#")
 
     
-    # elif configs['audit']['privacy_game'] == 'privacy_loss_sample':
-        # TODO: load the references information source and target information source 
-        # TODO: given a set of target models (trained with data_idx) and reference models (trained without data_idx), infer the membership information from 
+    elif configs['audit']['privacy_game'] == 'privacy_loss_sample':
+        in_configs = copy.deepcopy(configs)
+        in_configs['train']['type'] = 'include'
+        in_configs['train']['num_target_model'] = configs['audit']['num_in_models']
         
-    
-        # target_info_source['models'].get_signal()
+        out_configs = copy.deepcopy(configs)
+        out_configs['train']['type'] = 'exclude'
+        out_configs['train']['num_target_model']  = configs['audit']['num_out_models']
+        
+        matched_in_idx = load_existing_target_model(len(dataset),model_metadata_list,in_configs)
+        matched_out_idx = load_existing_target_model(len(dataset),model_metadata_list,out_configs)
+        
+        if len(matched_in_idx) <  configs['audit']['num_in_models']:
+            data_split_info_in = prepare_datasets_for_sample_privacy_risk(len(dataset), configs['audit']['num_in_models'],configs['audit']['num_in_models']- len(matched_in_idx),configs['audit']['idx'],configs['data'],'in',model_metadata_list)
+            in_model_list, model_metadata_list,matched_in_idx = prepare_models(dataset,data_split_info_in,configs['train'],model_metadata_list,matched_in_idx)
+        else:
+            in_model_list, model_metadata_list,matched_in_idx = prepare_models(dataset,{'split':[]},configs['train'],model_metadata_list,matched_in_idx[:configs['audit']['num_in_models']])
+
+            
+        if len(matched_out_idx) <  configs['audit']['num_out_models']:
+            data_split_info_out = prepare_datasets_for_sample_privacy_risk(len(dataset),configs['audit']['num_out_models'], configs['audit']['num_out_models']- len(matched_out_idx),configs['audit']['idx'],configs['data'],'out',model_metadata_list)
+            out_model_list, model_metadata_list,matched_out_idx = prepare_models(dataset,data_split_info_out,configs['train'],model_metadata_list,matched_out_idx)
+        else:
+            out_model_list, model_metadata_list,matched_out_idx = prepare_models(dataset,{'split':[]},configs['train'],model_metadata_list,matched_out_idx[:configs['audit']['num_out_models']])
+
+
+        target_data = get_cifar10_subset(dataset,[configs['audit']['idx']],is_tensor=True)
+        # construct the in signals
+        in_model_list_pm = [PytorchModelTensor(model_obj=model, loss_fn=nn.CrossEntropyLoss(), batch_size=1000) for model in in_model_list]
+        in_signal = [model.get_loss(target_data.data,target_data.targets).item() for model in in_model_list_pm]
+        
+        out_model_list_pm = [PytorchModelTensor(model_obj=model, loss_fn=nn.CrossEntropyLoss(), batch_size=1000) for model in out_model_list]
+        out_signal = [model.get_loss(target_data.data,target_data.targets).item() for model in out_model_list_pm]
+        
+        #TODO: given the in_signals and out_signals, infer the membership information (linear sweep)
+       
         
