@@ -1,5 +1,5 @@
 tensorflow>=2.4.0
-torch>=1.10.0
+torch==1.13.0
 matplotlib
 numpy
 scikit-learn
@@ -10,3 +10,5 @@ pandas
 jinja2
 pillow
 opacus
+torchvision==0.14.0
+PyYAML

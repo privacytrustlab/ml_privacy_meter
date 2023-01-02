@@ -1,16 +1,12 @@
-from math import ceil
 import numpy as np
 import torch
-from torch import nn, optim, Tensor
-import tensorflow as tf
-from torchvision import models
+from torch import nn, optim
 import argparse
 from privacy_meter.audit import Audit, MetricEnum
 from privacy_meter.audit_report import ROCCurveReport, SignalHistogramReport
 from privacy_meter.constants import InferenceGame
 from privacy_meter.dataset import Dataset
 from privacy_meter.information_source import InformationSource
-from privacy_meter.model import PytorchModel
 import torch
 import yaml
 
@@ -28,7 +24,6 @@ from models import Net
 logging.basicConfig()
 logging.getLogger().setLevel(logging.INFO)
 
-from concurrent import futures
 from pathlib import Path
 
 import pickle
