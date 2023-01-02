@@ -128,7 +128,7 @@ class ROCCurveReport(AuditReport):
         # Check if it is the combined report:
         if not isinstance(metric_result, list):
             metric_result = [metric_result]
-        if not isinstance(metric_result[0],CombinedMetricResult):
+        if not isinstance(metric_result[0],CombinedMetricResult) and not isinstance(metric_result[0][0],CombinedMetricResult):
             # Casts type to a 2D list
             if not isinstance(metric_result[0], list):
                 metric_result = [metric_result]
@@ -164,6 +164,13 @@ class ROCCurveReport(AuditReport):
                     mr = metric_result[0]
                     fpr = mr.fp / (mr.fp + mr.tn)
                     tpr = mr.tp / (mr.tp + mr.fn)
+                    roc_auc = np.trapz(x=fpr, y=tpr)
+            elif inference_game_type  == InferenceGame.AVG_PRIVACY_LOSS_TRAINING_ALGO:
+                if metric_result[0][0].predictions_proba is None:
+                    fpr = [[metric_result[i][j].fp / (metric_result[i][j].fp + metric_result[i][j].tn) for j in range(len(metric_result[0]))] for i in range(len(metric_result))]
+                    tpr = [[metric_result[i][j].tp / (metric_result[i][j].tp + metric_result[i][j].fn) for j in range(len(metric_result[0]))] for i in range(len(metric_result))]
+                    fpr = np.mean(fpr, axis=0).ravel()
+                    tpr = np.mean(tpr, axis=0).ravel()
                     roc_auc = np.trapz(x=fpr, y=tpr)
             else:
                 raise NotImplementedError
@@ -285,16 +292,23 @@ class SignalHistogramReport(AuditReport):
             save: Boolean specifying if the plot should be saved as a file.
             filename: File name to be used if the plot is saved as a file.
         """
-
+        
         if inference_game_type == InferenceGame.PRIVACY_LOSS_MODEL:
             values = np.array(metric_result.signal_values).ravel()
             labels = np.array(metric_result.true_labels).ravel()
             threshold = metric_result.threshold
-        elif inference_game_type == InferenceGame.AVG_PRIVACY_LOSS_TRAINING_ALGO:
-            values = np.concatenate([mr.signal_values for mr in metric_result]).ravel()
-            labels = np.concatenate([mr.true_labels for mr in metric_result]).ravel()
-            threshold_list = [mr.threshold for mr in metric_result]
-            threshold = None if None in threshold_list else np.mean(threshold_list)
+        elif inference_game_type == InferenceGame.AVG_PRIVACY_LOSS_TRAINING_ALGO: 
+            if not isinstance(metric_result[0],list):
+                values = np.concatenate([mr.signal_values for mr in metric_result]).ravel()
+                labels = np.concatenate([mr.true_labels for mr in metric_result]).ravel()
+                threshold_list = [mr.threshold for mr in metric_result]
+                threshold = None if None in threshold_list else np.mean(threshold_list)
+            else:
+                values = np.array([[metric_result[i][j].signal_values  for j in range(len(metric_result[0]))] for i in range(len(metric_result))]).ravel()
+                labels = np.array([[metric_result[i][j].true_labels  for j in range(len(metric_result[0]))] for i in range(len(metric_result))]).ravel()
+                threshold_list = None
+                threshold = None 
+            
         else:
             raise NotImplementedError
 
@@ -308,8 +322,8 @@ class SignalHistogramReport(AuditReport):
             element='step',
             kde=True
         )
-
-        if threshold is not None:
+        
+        if threshold is not None and type(threshold) == float:
             histogram.axvline(
                 x=threshold,
                 linestyle='--',
