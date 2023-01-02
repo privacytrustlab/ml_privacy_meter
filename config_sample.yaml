@@ -3,11 +3,11 @@ run: # the configurations for the running setup
   log_dir: demo # where to save all the information, including models and computed signals 
 
 audit: # the configurations for the MIA
-  privacy_game: avg_privacy_loss_training_algo #privacy_loss_model #avg_privacy_loss_training_algo # the configuarations for the privacy loss game
+  privacy_game: privacy_loss_sample #privacy_loss_model #avg_privacy_loss_training_algo # the configuarations for the privacy loss game
   device: cuda:0 # indicate on which device we conduct the MIA
   audit_batch_size: 1000 # the batch size for computing signals for inferring membership information
   algorithm: reference # the algorithm used for inferring membership information
-  num_reference_models: 10 # if reference attack is used, this indicates the number of reference models we train.
+  num_reference_models: 2 # if reference attack is used, this indicates the number of reference models we train.
   batch_size: 64 # it indicates the batch size for training reference models
   f_reference_dataset: 1 # this indicates the ratio between the reference train dataset and the target train dataset
   optimizer: Adam # the following arguments indicating the optimizers setting
@@ -17,8 +17,9 @@ audit: # the configurations for the MIA
   epochs: 30  # training epochs for training reference models
   report_log: report_reference # where to save the auditing results
   split_method: uniform # spliting methods among reference datasets
-  key: none # we support data_idx and none for reusing existing reference models. data_idx search for models which include or exclude the data point indicated using idx. Otherwise, the reference models are the ones which have the same training setting as indicated above.
-
+  key: data_idx # we support data_idx and none for reusing existing reference models. data_idx search for models which include or exclude the data point indicated using idx. Otherwise, the reference models are the ones which have the same training setting as indicated above.
+  idx: 1
+  type: exclude
 
 train: # the configuarations for the training
   type: pytorch
@@ -30,9 +31,13 @@ train: # the configuarations for the training
   wd: 0
   model_name: CNN
   device: cuda:0
-  key: none # we support data_idx, model_idx or none for reusing existing target models.
-  num_target_model: 10 #indicate how many target models we want to audit for the privacy game
-  
+  key: model_idx # we support data_idx, model_idx or none for reusing existing target models.
+  idx: 0
+  type: include
+  num_target_model: 2 #indicate how many target models we want to audit for the privacy game
+  key: data_idx # we support data_idx and none for reusing existing reference models. data_idx search for models which include or exclude the data point indicated using idx. Otherwise, the reference models are the ones which have the same training setting as indicated above.
+  idx: 1
+  type: include
 
 data:  # the configuarations for the dataset
   dataset: cifar10
