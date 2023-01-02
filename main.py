@@ -503,11 +503,10 @@ if __name__ == '__main__':
         logging.info(100*"#")
 
     
-    elif configs['audit']['privacy_game'] == 'privacy_loss_sample':
+    # elif configs['audit']['privacy_game'] == 'privacy_loss_sample':
         # TODO: load the references information source and target information source 
         # TODO: given a set of target models (trained with data_idx) and reference models (trained without data_idx), infer the membership information from 
         
-        
-        
+    
         # target_info_source['models'].get_signal()
         
