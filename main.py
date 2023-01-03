@@ -175,14 +175,16 @@ def prepare_models(dataset,data_split,configs,model_metadata_list,matched_idx=No
         meta_data['lr'] = configs['lr']
         meta_data['wd'] = configs['wd']
         meta_data['model_path'] = f'{log_dir}/model_{model_idx}.pkl'
-        if split < len(data_split['associated_models']):
-                meta_data['associated_models'] = {'remove_from':data_split['associated_models'][split]}
+        if 'associated_models' in data_split:
+            if split < len(data_split['associated_models']):
+                    meta_data['associated_models'] = {'remove_from':data_split['associated_models'][split]}
         model_metadata_list['model_metadata'][model_idx] = meta_data
         
         with open(f'{log_dir}/models_metadata.pkl','wb') as f:
             pickle.dump(model_metadata_list,f)
-            
-        matched_idx.append(model_idx)
+        
+        if matched_idx is not None:
+            matched_idx.append(model_idx)
     return model_list,model_metadata_list, matched_idx
 
 
@@ -260,7 +262,7 @@ def get_info_source_reference_attack(dataset,data_split,model,configs,model_meta
         logging.info(f'Training  {reference_idx}-th reference model')
         start_time = time.time()
         reference_loader = torch.utils.data.DataLoader(get_cifar10_subset(dataset,reference_dataset_list[reference_idx]), batch_size=configs['batch_size'],
-                                                    shuffle=False, num_workers=2)
+                                                    shuffle=True, num_workers=2) 
     
         reference_model = get_model(configs['model_name'])
         reference_model = train(reference_model,reference_loader,configs,None)
@@ -590,7 +592,7 @@ if __name__ == '__main__':
         # # obatin the loss
         in_signal = np.array([model.get_loss(target_data.data,target_data.targets).item() for model in in_model_list_pm])
         out_signal = np.array([model.get_loss(target_data.data,target_data.targets).item() for model in out_model_list_pm])
-        
+        print(in_signal.mean(),out_signal.mean())
         # get the prediction confidence score
         # in_signal = in_signal+0.000001 # avoid nan
         # in_signal = np.log(np.divide(np.exp(- in_signal), (1 - np.exp(- in_signal))))
