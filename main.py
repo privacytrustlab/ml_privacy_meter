@@ -9,9 +9,10 @@ from privacy_meter.dataset import Dataset
 from privacy_meter.information_source import InformationSource
 import torch
 import yaml
-
+import seaborn as sns
 import torch
 import torchvision
+import pandas as pd
 import torchvision.transforms as transforms
 import logging
 from sklearn.model_selection import train_test_split
@@ -32,7 +33,7 @@ from privacy_meter.model import PytorchModelTensor
 from privacy_meter import audit_report
 from util import get_cifar10_subset,get_model,get_optimizer,get_dataset
 from train import train
-
+import matplotlib.pyplot as plt
 
 
 def prepare_datasets(dataset_size,num_target_model,configs,model_metadata_list,matched_idx=None):         
@@ -176,7 +177,7 @@ def prepare_models(dataset,data_split,configs,model_metadata_list,matched_idx=No
         meta_data['model_path'] = f'{log_dir}/model_{model_idx}.pkl'
         if split < len(data_split['associated_models']):
                 meta_data['associated_models'] = {'remove_from':data_split['associated_models'][split]}
-        model_metadata_list['model_metadata'].append(meta_data)
+        model_metadata_list['model_metadata'][model_idx] = meta_data
         
         with open(f'{log_dir}/models_metadata.pkl','wb') as f:
             pickle.dump(model_metadata_list,f)
@@ -283,7 +284,7 @@ def get_info_source_reference_attack(dataset,data_split,model,configs,model_meta
         meta_data['wd'] = configs['wd']
         meta_data['model_name'] = configs['model_name']
         meta_data['model_path'] = f'{log_dir}/model_{model_idx}.pkl'
-        model_metadata_list['model_metadata'].append(meta_data)
+        model_metadata_list['model_metadata'][model_idx] = meta_data
         with open(f'{log_dir}/models_metadata.pkl','wb') as f:
             pickle.dump(model_metadata_list,f)
         
@@ -388,7 +389,8 @@ def prepare_priavcy_risk_report(audit_results,configs,save_path=None):
 def load_existing_target_model(N, model_metadata_list,configs):
     matched_idx = []
     matching_key = ['optimizer','batch_size','epochs','lr','wd']
-    for meta_idx,meta_data in enumerate(model_metadata_list['model_metadata']):
+    for meta_idx in model_metadata_list['model_metadata']:
+        meta_data = model_metadata_list['model_metadata'][meta_idx]
         if len(meta_data['train_split']) == int(N*configs['data']['f_train']) and np.mean([meta_data[key] == configs['train'][key] for key in matching_key]) ==1:
             if configs['train']['key'] == 'none':
                 matched_idx.append(meta_idx)
@@ -416,15 +418,16 @@ def load_existing_reference_models(N, model_metadata_list,configs,matched_target
     
     for target_idx in matched_target_idx:
         reference_matched_idx = []
-        for meta_idx,meta_data in enumerate(model_metadata_list['model_metadata']):
+        for meta_idx in model_metadata_list['model_metadata']:
+            meta_data = model_metadata_list['model_metadata'][meta_idx]
             if meta_idx != target_idx and len(meta_data['train_split']) == int(N*configs['data']['f_audit']) and np.mean([meta_data[key] == configs['audit'][key] for key in matching_key]) == 1:
                 if configs['audit']['key'] == 'none':
                     # load the models based on the training configuration: trained in the same way but different datasets
                     if configs['data']['split_method'] == 'no_overlapping':
-                        if len(set(model_metadata_list['model_metadata'][meta_idx]['train_split']) - set(model_metadata_list['model_metadata'][target_idx]['train_split'])) == len(set(model_metadata_list['model_metadata'][meta_idx]['train_split'])):
+                        if len(set(meta_data['train_split']) - set(model_metadata_list['model_metadata'][target_idx]['train_split'])) == len(set(meta_data['train_split'])):
                             reference_matched_idx.append(meta_idx)    
                     elif configs['data']['split_method'] == 'uniform':
-                        if collections.Counter(model_metadata_list['model_metadata'][meta_idx]['train_split']) != collections.Counter(model_metadata_list['model_metadata'][target_idx]['train_split']):
+                        if collections.Counter(meta_data['train_split']) != collections.Counter(model_metadata_list['model_metadata'][target_idx]['train_split']):
                             reference_matched_idx.append(meta_idx)    
                             
                 elif configs['audit']['key'] == 'data_idx':
@@ -475,7 +478,7 @@ if __name__ == '__main__':
         with open(f'{log_dir}/models_metadata.pkl','rb') as f:
             model_metadata_list = pickle.load(f)
     else: 
-        model_metadata_list = {'model_metadata':[],'current_idx':0} # model_meta_list saved all the trained models information
+        model_metadata_list = {'model_metadata':{},'current_idx':0} # model_meta_list saved all the trained models information
 
     
     # construct the dataset
@@ -550,39 +553,67 @@ if __name__ == '__main__':
 
     
     elif configs['audit']['privacy_game'] == 'privacy_loss_sample':
+        # 1. construct the models trained on data indicated by train.idx and not trained on it
         in_configs = copy.deepcopy(configs)
         in_configs['train']['type'] = 'include'
-        in_configs['train']['num_target_model'] = configs['audit']['num_in_models']
+        in_configs['train']['num_target_model'] = configs['train']['num_in_models']
         
         out_configs = copy.deepcopy(configs)
         out_configs['train']['type'] = 'exclude'
-        out_configs['train']['num_target_model']  = configs['audit']['num_out_models']
+        out_configs['train']['num_target_model']  = configs['train']['num_out_models']
         
         matched_in_idx = load_existing_target_model(len(dataset),model_metadata_list,in_configs)
         matched_out_idx = load_existing_target_model(len(dataset),model_metadata_list,out_configs)
         
-        if len(matched_in_idx) <  configs['audit']['num_in_models']:
-            data_split_info_in = prepare_datasets_for_sample_privacy_risk(len(dataset), configs['audit']['num_in_models'],configs['audit']['num_in_models']- len(matched_in_idx),configs['audit']['idx'],configs['data'],'in',model_metadata_list)
+        if len(matched_in_idx) <  configs['train']['num_in_models']:
+            data_split_info_in = prepare_datasets_for_sample_privacy_risk(len(dataset), configs['train']['num_in_models'],configs['train']['num_in_models']- len(matched_in_idx),configs['train']['idx'],configs['data'],'in',model_metadata_list)
             in_model_list, model_metadata_list,matched_in_idx = prepare_models(dataset,data_split_info_in,configs['train'],model_metadata_list,matched_in_idx)
         else:
-            in_model_list, model_metadata_list,matched_in_idx = prepare_models(dataset,{'split':[]},configs['train'],model_metadata_list,matched_in_idx[:configs['audit']['num_in_models']])
+            in_model_list, model_metadata_list,matched_in_idx = prepare_models(dataset,{'split':[]},configs['train'],model_metadata_list,matched_in_idx[:configs['train']['num_in_models']])
 
             
-        if len(matched_out_idx) <  configs['audit']['num_out_models']:
-            data_split_info_out = prepare_datasets_for_sample_privacy_risk(len(dataset),configs['audit']['num_out_models'], configs['audit']['num_out_models']- len(matched_out_idx),configs['audit']['idx'],configs['data'],'out',model_metadata_list)
+        if len(matched_out_idx) <  configs['train']['num_out_models']:
+            data_split_info_out = prepare_datasets_for_sample_privacy_risk(len(dataset),configs['train']['num_out_models'], configs['train']['num_out_models']- len(matched_out_idx),configs['train']['idx'],configs['data'],'out',model_metadata_list)
             out_model_list, model_metadata_list,matched_out_idx = prepare_models(dataset,data_split_info_out,configs['train'],model_metadata_list,matched_out_idx)
         else:
-            out_model_list, model_metadata_list,matched_out_idx = prepare_models(dataset,{'split':[]},configs['train'],model_metadata_list,matched_out_idx[:configs['audit']['num_out_models']])
+            out_model_list, model_metadata_list,matched_out_idx = prepare_models(dataset,{'split':[]},configs['train'],model_metadata_list,matched_out_idx[:configs['train']['num_out_models']])
 
 
+        # 2. test the model performance on the data indicated by the audit.idx
+        
         target_data = get_cifar10_subset(dataset,[configs['audit']['idx']],is_tensor=True)
         # construct the in signals
         in_model_list_pm = [PytorchModelTensor(model_obj=model, loss_fn=nn.CrossEntropyLoss(), batch_size=1000) for model in in_model_list]
-        in_signal = [model.get_loss(target_data.data,target_data.targets).item() for model in in_model_list_pm]
-        
         out_model_list_pm = [PytorchModelTensor(model_obj=model, loss_fn=nn.CrossEntropyLoss(), batch_size=1000) for model in out_model_list]
-        out_signal = [model.get_loss(target_data.data,target_data.targets).item() for model in out_model_list_pm]
+
+
+        # # obatin the loss
+        in_signal = np.array([model.get_loss(target_data.data,target_data.targets).item() for model in in_model_list_pm])
+        out_signal = np.array([model.get_loss(target_data.data,target_data.targets).item() for model in out_model_list_pm])
         
-        #TODO: given the in_signals and out_signals, infer the membership information (linear sweep)
-       
+        # get the prediction confidence score
+        # in_signal = in_signal+0.000001 # avoid nan
+        # in_signal = np.log(np.divide(np.exp(- in_signal), (1 - np.exp(- in_signal))))
+        # out_signal = out_signal+0.000001 # avoid nan
+        # out_signal = np.log(np.divide(np.exp(- out_signal), (1 - np.exp(- out_signal))))
+        
+        labels = np.concatenate([np.ones(in_signal.shape[0]),np.zeros(out_signal.shape[0])])
+        histogram = sns.histplot(
+            data=pd.DataFrame({
+                'Signal': np.concatenate([in_signal,out_signal]),
+                'Membership': [f"In ({configs['train']['idx']})" if y == 1 else f"Out ({configs['train']['idx']})"  for y in labels]
+            }),
+            x='Signal',
+            hue='Membership',
+            element='step',
+            kde=True
+        )
+
+        plt.grid()
+        plt.xlabel(f"Signal value")
+        plt.ylabel('Number of Models')
+        plt.title(f"Signal histogram for data point {configs['audit']['idx']}")
+        plt.savefig(f"test_{configs['train']['idx']}_{configs['audit']['idx']}.png")
+        
+        
         

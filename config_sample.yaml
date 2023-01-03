@@ -4,7 +4,7 @@ run: # the configurations for the running setup
 
 audit: # the configurations for the MIA
   privacy_game: privacy_loss_sample #privacy_loss_model #avg_privacy_loss_training_algo # the configuarations for the privacy loss game
-  device: cpu # indicate on which device we conduct the MIA
+  device: cuda:1 # indicate on which device we conduct the MIA
   audit_batch_size: 1000 # the batch size for computing signals for inferring membership information
   algorithm: reference # the algorithm used for inferring membership information
   num_reference_models: 2 # if reference attack is used, this indicates the number of reference models we train.
@@ -14,31 +14,27 @@ audit: # the configurations for the MIA
   lr: 0.001
   wd: 0
   model_name: CNN # the model name for reference models 
-  epochs: 0  # training epochs for training reference models
-  report_log: report_reference # where to save the auditing results
+  epochs: 30  # training epochs for training reference models
+  report_log: report_sample # where to save the auditing results
   split_method: uniform # spliting methods among reference datasets
-  key: data_idx # we support data_idx and none for reusing existing reference models. data_idx search for models which include or exclude the data point indicated using idx. Otherwise, the reference models are the ones which have the same training setting as indicated above.
-  type: exclude
-  num_in_models: 20 #indicate how many target models we want to audit for the privacy game
-  idx: 1
-  num_out_models: 20 #indicate how many target models we want to audit for the privacy game
+  idx: 3 # audit which dataset points
 
 
 train: # the configuarations for the training
   type: pytorch
-  epochs: 0
+  epochs: 30
   batch_size: 64
   test_batch_size: 10000
   optimizer: Adam
   lr: 0.001
   wd: 0
   model_name: CNN
-  device: cpu
+  device: cuda:1
   key: data_idx # we support data_idx and none for reusing existing reference models. data_idx search for models which include or exclude the data point indicated using idx. Otherwise, the reference models are the ones which have the same training setting as indicated above.
-  type: exclude
-  idx: 1
+  idx: 0 # include which data point
+  num_in_models: 50 #indicate how many target models trained on idx 
+  num_out_models: 50 #indicate how many target models not trained on idx 
 
-  
 
 data:  # the configuarations for the dataset
   dataset: cifar10
