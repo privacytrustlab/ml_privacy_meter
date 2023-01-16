@@ -1,42 +1,42 @@
-run: # the configurations for the running setup
-  random_seed: 1234 # random seed for each run
-  log_dir: demo_all # where to save all the information, including models and computed signals 
+run: # Configurations for a specific run
+  random_seed: 1234 # Integer number of specifying random seed 
+  log_dir: demo_all # String for indicating where to save all the information, including models and computed signals. We can reuse the models saved in the same log_dir.
 
-audit: # the configurations for the MIA
-  privacy_game: privacy_loss_model #privacy_loss_model #avg_privacy_loss_training_algo # the configuarations for the privacy loss game
-  device: cuda:0 # indicate on which device we conduct the MIA
-  audit_batch_size: 1000 # the batch size for computing signals for inferring membership information
-  algorithm: population # the algorithm used for inferring membership information
-  num_reference_models: 10 # if reference attack is used, this indicates the number of reference models we train.
-  batch_size: 64 # it indicates the batch size for training reference models
-  f_reference_dataset: 1 # this indicates the ratio between the reference train dataset and the target train dataset
-  optimizer: Adam # the following arguments indicating the optimizers setting
-  lr: 0.001
-  wd: 0
-  model_name: CNN # the model name for reference models 
-  epochs: 30  # training epochs for training reference models
-  report_log: report_test_population # where to save the auditing results
-  split_method: uniform # spliting methods among reference datasets
-  key: none # we support data_idx and none for reusing existing reference models. data_idx search for models which include or exclude the data point indicated using idx. Otherwise, the reference models are the ones which have the same training setting as indicated above.
-
-train: # the configuarations for the training
-  type: pytorch
-  epochs: 30
-  batch_size: 64
-  test_batch_size: 10000
-  optimizer: Adam
-  lr: 0.001
-  wd: 0
-  model_name: CNN
-  device: cuda:0
-  key: model_idx # we support data_idx, model_idx or none for reusing existing target models.
-  idx: 0
-  num_target_model: 1 #indicate how many target models we want to audit for the privacy game
+audit: # Configurations for auditing
+  privacy_game: privacy_loss_model # Indicate the privacy game from privacy_loss_model, avg_privacy_loss_training_algo, privacy_loss_sample
+  device: cuda:0 # String for indicating on which device we conduct the membership inference attack and train reference models.
+  audit_batch_size: 1000 # Integer number for indicating the batch size for computing signals in the privacy meter.
+  algorithm: reference # String for indicating the membership inference attack. We currently support population, reference.
+  num_reference_models: 10 # Integer number for indicating how many reference models we need to train for auditing, if the reference attack is used.
+  batch_size: 64 # Integer number for indicating the batch size of training the reference models if reference attack is used.
+  f_reference_dataset: 1 # Float number for indicating the ratio between the reference train dataset and the target train dataset.
+  optimizer: Adam # String which indicates the optimizer for training reference models. We support Adam and SGD.
+  lr: 0.001 # Float number for indicating learning rate for training the reference model.
+  wd: 0 # Float number for indicating weight decay for training the reference model.
+  model_name: CNN # String for indicating the model type. We support CNN. More model type can be added in model.py.
+  epochs: 30  # Integer number for indicating the epochs for training target model.
+  report_log: report_reference # String that indicates the folder where we save the and auditing report.
+  split_method: uniform # String for indicating the splitting methods for reference dataset. We support uniform and leave_one_out.
+  key: none # String for indicating the meaning of the idx. We support data_idx and none for reusing existing reference models. data_idx search for models which include or exclude the data point indicated using idx. Otherwise, the reference models are the ones that have the same training setting as indicated above.
+  idx: none # Integer number for the model index or data index.
+ 
+train: # Configuration for training
+  type: pytorch # Training framework (we only support pytorch now).
+  epochs: 30 # Integer number for indicating the epochs for training target model.
+  batch_size: 64 # Integer number for indicating batch size for training the target model.
+  test_batch_size: 10000 # Integer number for indicating batch size for evaluating the target model.
+  optimizer: Adam # String which indicates the optimizer. We support Adam and SGD.
+  lr: 0.001 # Float number for indicating learning rate for training the target model.
+  wd: 0 # Float number for indicating weight decay for training the target model.
+  model_name: CNN # String for indicating the model type. We support CNN. More model types can be added in model.py.
+  device: cuda:0 # String for indicating the device we want to use for training models.
+  key: model_idx # String for indicating the meaning of the idx. We support data_idx, model_idx or none.
+  idx: 1 # Integer number for indicating the model index or data index.
+  num_target_model: 1 #Integer number for indicating how many target models we want to audit for the privacy game
   
-
-data:  # the configuarations for the dataset
-  dataset: cifar10
-  f_train: 0.3
-  f_test: 0.3
-  split_method: no_overlapping # how to sample the auditing dataset 
-  f_audit: 0.3  # when it is uniformly sampled from the dataset 
+data:  # Configuration for data
+  dataset: cifar10 # String indicates the name of the dataset 
+  f_train: 0.3 # Float number from 0 to 1 indicating the fraction of the train dataset
+  f_test: 0.3 # Float number from 0 to 1 indicating the fraction of the test dataset
+  split_method: no_overlapping # String for indicating the methods of splitting the dataset between train, test, and auditing.
+  f_audit: 0.3  # Float from 0 to 1, indicating the fraction of the auditing dataset
