@@ -16,9 +16,16 @@ from util import get_optimizer
 
 
 def train(model, train_loader,configs,test_loader=None):
-    # update the model based on the train_dataset
-    logging.info('training models')
-    # model= nn.DataParallel(model) # add this for ultilizing multiple gpus
+    """Train the model based on on the train loader
+    Args:
+        model: Model for evaluation.
+        train_loader: Data loader for training.
+        configs (dict): Configurations for training.
+        test_loader (optional): Data Loader for evaluating.
+    
+    Return:
+        model: Trained model.
+    """
     device = configs['device']
     model.to(device)
     model.train()
@@ -46,6 +53,14 @@ def train(model, train_loader,configs,test_loader=None):
 
 
 def inference(model,test_loader,device,is_train=False):
+    """Evaluate the model performance on the test loader
+
+    Args:
+        model (_type_): Model for evaluation
+        test_loader (_type_): Data Loader for testing
+        device (str): GPU or CPU
+        is_train (bool, optional): Whether test_loader is from the train dataset or test dataset. Defaults to False.
+    """
     model.eval()
     model.to(device)
     loss = 0

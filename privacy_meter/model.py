@@ -561,16 +561,21 @@ class PytorchModelTensor(Model):
         batched_samples = torch.split(batch_samples,self.batch_size)
         batched_labels = torch.split(batch_labels,self.batch_size)
         self.grad_sampler_model.zero_grad()
+        grad_list = []
         for x, y in zip(batched_samples,batched_labels):
-            batch_samples = batch_samples.to(self.device)
-            batched_labels = batched_labels.to(self.device)
+            x = x.to(self.device)
+            y = y.to(self.device)
             loss = self.loss_fn(self.grad_sampler_model(x), y).sum()
             loss.backward()
             
-        grade = torch.cat([p.grad_sample.view(-1) for p in self.grad_sampler_model.parameters()]).detach().cpu().numpy()
+            grad = torch.cat([p.grad_sample.reshape(len(y),-1) for p in self.grad_sampler_model.parameters()],axis=1).detach()
+            # grad = self.grad_sampler_model.conv1.weight.grad_sample.reshape(len(y),-1)
+            grad_list.append(grad)
+            self.grad_sampler_model.zero_grad()
+            
         self.model_obj.to('cpu')
-        return grade
-
+        grad_list = torch.cat(grad_list).detach().cpu().numpy()
+        return grad_list
     
     def get_gradnorm(self, batch_samples, batch_labels,is_features=True,layer_number=1):
         """Function to get the gradient of the model loss with respect to the model parameters, on a given input and an

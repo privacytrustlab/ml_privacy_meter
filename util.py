@@ -1,81 +1,56 @@
 import numpy as np
-import torch
-from torch import optim
-import torch
+import torch.optim as optim
 
-import torch
-import torchvision
-import torchvision.transforms as transforms
-import logging
-import copy
-from models import Net
-#todo: In this code, we provide the tutorials about auditing privacy risk for different types of games
-
-logging.basicConfig()
-logging.getLogger().setLevel(logging.INFO)
-
-
-import pickle
-import os
-
-
-
-
-def get_dataset(dataset_name,log_dir):
-    # load the dataset 
-    if os.path.exists((f'{log_dir}/data.pkl')):
-        with open(f'{log_dir}/data.pkl','rb') as f:
-            all_data = pickle.load(f)
-    else:
-        if dataset_name == 'cifar10':
-            
-            transform = transforms.Compose(
-                [transforms.ToTensor()]
-            )
-
-            train_data = torchvision.datasets.CIFAR10(root='./data', train=True,download=True, transform=transform)
-            test_data = torchvision.datasets.CIFAR10(root='./data', train=False,download=True, transform=transform)
-            X = np.concatenate([train_data.data,test_data.data],axis=0)
-            Y = np.concatenate([train_data.targets,test_data.targets],axis=0)
-            
-            all_data = copy.deepcopy(train_data)
-            all_data.data = X
-            all_data.targets = Y
-            with open(f'{log_dir}/data.pkl','wb') as f:
-                pickle.dump(all_data,f)
-        else:
-            raise ValueError(f"{dataset_name} is not implemented")
-        
-    
-    N = len(all_data)
-    logging.info(f"the whole dataset size: {N}")   
-    return all_data
-
-
-def get_model(model_type):
-    # init a model 
-    if model_type == 'CNN':
-        return Net()
 
 def get_optimizer(model,configs):
+    """Get the optimizer for the given model
+
+    Args:
+        model: The model we want to optimize
+        configs (dict): Configurations for the optimizer
+
+    Raises:
+        NotImplementedError: Check if the optimizer is implemented.
+
+    Returns:
+        optim: Optimizer for the given model
+    """
     if configs['optimizer'] == 'SGD':
         return optim.SGD(model.parameters(),lr = configs['lr'],momentum=configs['momentum'], weight_decay=configs['wd'])
     elif configs['optimizer'] == 'Adam':
         return optim.Adam(model.parameters(),lr = configs['lr'],weight_decay=configs['wd'])
     
     else:
-        raise AttributeError(f"Optimizer {configs['optimizer']}  has not been implemented. Please choose from SGD or Adam")
+        raise NotImplementedError(f"Optimizer {configs['optimizer']}  has not been implemented. Please choose from SGD or Adam")
 
 
+def get_split(all_index,used_index, size,split_method):
+    """Select points based on the splitting methods
 
-def get_cifar10_subset(dataset, index,is_tensor=False):
-    selected_data = copy.deepcopy(dataset)
-   
-    selected_data.data = selected_data.data[index]
-    selected_data.targets = list(np.array(selected_data.targets)[index])
-    
-    if is_tensor:
-        selected_data.data = torch.from_numpy(selected_data.data).float().permute(0, 3, 1,2)/255 # channel first 
-        selected_data.targets = torch.tensor(selected_data.targets)
-        
-    return selected_data
+    Args:
+        all_index (list): All the possible dataset index list
+        used_index (list): Index list of used points
+        size (int): Size of the points needs to be selected
+        split_method (str): Splitting method
+
+    Raises:
+        NotImplementedError: Check if the splitting the methods are implemented
+        ValueError: Check if there are enough points to select
+    Returns:
+        List: List of index
+    """
+    if split_method == 'no_overlapping':
+        selected_index = np.array([i for i in all_index if i not in used_index])
+        if size <= len(selected_index): 
+            selected_index = np.random.choice(selected_index,size,replace=False)
+        else:
+            raise ValueError("The remaining data points are not enough.")
+    elif split_method == 'uniform':
+        if size <= len(all_index):
+            selected_index =  np.random.choice(all_index,size,replace=False)
+        else:
+            raise ValueError("The remaining data points are not enough.")
+    else:
+        raise NotImplementedError(f"{split_method} is not implemented. We only support uniform and no_overlapping.")
+
+    return selected_index 

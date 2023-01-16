@@ -1,6 +1,6 @@
 run: # the configurations for the running setup
   random_seed: 1234 # random seed for each run
-  log_dir: demo # where to save all the information, including models and computed signals 
+  log_dir: demo_all # where to save all the information, including models and computed signals 
 
 audit: # the configurations for the MIA
   privacy_game: avg_privacy_loss_training_algo #privacy_loss_model #avg_privacy_loss_training_algo # the configuarations for the privacy loss game
@@ -19,7 +19,6 @@ audit: # the configurations for the MIA
   split_method: uniform # spliting methods among reference datasets
   key: none # we support data_idx and none for reusing existing reference models. data_idx search for models which include or exclude the data point indicated using idx. Otherwise, the reference models are the ones which have the same training setting as indicated above.
 
-
 train: # the configuarations for the training
   type: pytorch
   epochs: 30
@@ -33,10 +32,9 @@ train: # the configuarations for the training
   key: none # we support data_idx, model_idx or none for reusing existing target models.
   num_target_model: 10 #indicate how many target models we want to audit for the privacy game
   
-
 data:  # the configuarations for the dataset
   dataset: cifar10
   f_train: 0.3
   f_test: 0.3
-  split_method: uniform # how to sample the auditing dataset 
+  split_method: no_overlapping # how to sample the auditing dataset 
   f_audit: 0.3  # when it is uniformly sampled from the dataset 

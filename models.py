@@ -20,3 +20,17 @@ class Net(nn.Module):
         x = F.relu(self.fc2(x))
         x = self.fc3(x)
         return x
+    
+    
+
+def get_model(model_type):
+    """Instantiate the model based on the model_type
+
+    Args:
+        model_type (str): Name of the model
+
+    Returns:
+        Model: A model
+    """
+    if model_type == 'CNN':
+        return Net()

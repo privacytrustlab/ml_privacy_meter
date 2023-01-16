@@ -1,6 +1,6 @@
 run: # the configurations for the running setup
   random_seed: 1234 # random seed for each run
-  log_dir: demo # where to save all the information, including models and computed signals 
+  log_dir: demo_all # where to save all the information, including models and computed signals 
 
 audit: # the configurations for the MIA
   privacy_game: privacy_loss_sample #privacy_loss_model #avg_privacy_loss_training_algo # the configuarations for the privacy loss game
@@ -17,7 +17,7 @@ audit: # the configurations for the MIA
   epochs: 30  # training epochs for training reference models
   report_log: report_sample # where to save the auditing results
   split_method: uniform # spliting methods among reference datasets
-  idx: 3 # audit which dataset points
+  idx: 1 # audit which dataset points
 
 
 train: # the configuarations for the training
@@ -31,9 +31,9 @@ train: # the configuarations for the training
   model_name: CNN
   device: cuda:1
   key: data_idx # we support data_idx and none for reusing existing reference models. data_idx search for models which include or exclude the data point indicated using idx. Otherwise, the reference models are the ones which have the same training setting as indicated above.
-  idx: 0 # include which data point
-  num_in_models: 50 #indicate how many target models trained on idx 
-  num_out_models: 50 #indicate how many target models not trained on idx 
+  idx: 1 # include which data point
+  num_in_models: 40 #indicate how many target models trained on idx 
+  num_out_models: 40 #indicate how many target models not trained on idx 
 
 
 data:  # the configuarations for the dataset
