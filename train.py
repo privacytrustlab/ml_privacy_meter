@@ -29,6 +29,7 @@ def train(model, train_loader,configs,test_loader=None):
     device = configs['device']
     model.to(device)
     model.train()
+    criterion = nn.CrossEntropyLoss()
     optimizer = get_optimizer(model,configs)
     for epoch_idx in range(configs['epochs']):
         train_loss = 0
@@ -37,8 +38,7 @@ def train(model, train_loader,configs,test_loader=None):
             target = target.to(device)
             optimizer.zero_grad()
             output = model(data)
-            ceiterion = nn.CrossEntropyLoss()
-            loss = ceiterion(output,target)
+            loss = criterion(output,target)
             loss.backward()
             optimizer.step()
             train_loss += loss.item()
@@ -65,13 +65,14 @@ def inference(model,test_loader,device,is_train=False):
     model.to(device)
     loss = 0
     acc = 0
+    criterion = nn.CrossEntropyLoss()
+    
     with torch.no_grad():
         for batch_idx, (data,target) in enumerate(test_loader):
             data = data.to(device)
             target = target.to(device)
             output = model(data)
-            ceiterion = nn.CrossEntropyLoss()
-            loss += ceiterion(output,target).item()
+            loss += criterion(output,target).item()
             pred = output.data.max(1,keepdim=True)[1]
             acc += pred.eq(target.data.view_as(pred)).sum()
 

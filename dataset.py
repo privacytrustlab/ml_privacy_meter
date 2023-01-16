@@ -31,8 +31,8 @@ def get_dataset(dataset_name,log_dir):
                 [transforms.ToTensor()]
             )
 
-            train_data = torchvision.datasets.CIFAR10(root='./data', train=True,download=True, transform=transform)
-            test_data = torchvision.datasets.CIFAR10(root='./data', train=False,download=True, transform=transform)
+            train_data = torchvision.datasets.CIFAR10(root=f'{log_dir}/data', train=True,download=True, transform=transform)
+            test_data = torchvision.datasets.CIFAR10(root=f'{log_dir}/data', train=False,download=True, transform=transform)
             X = np.concatenate([train_data.data,test_data.data],axis=0)
             Y = np.concatenate([train_data.targets,test_data.targets],axis=0)
             
