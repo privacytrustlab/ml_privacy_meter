@@ -335,8 +335,8 @@ class PopulationMetric(Metric):
         num_threshold = len(self.quantiles)
         member_signals = self.member_signals.reshape(-1,1).repeat(num_threshold,1).T
         non_member_signals = self.non_member_signals.reshape(-1,1).repeat(num_threshold,1).T
-        member_preds = np.less_equal(member_signals,thresholds)
-        non_member_preds = np.less_equal(non_member_signals,thresholds)
+        member_preds = np.less(member_signals,thresholds)
+        non_member_preds = np.less(non_member_signals,thresholds)
         
         predictions = np.concatenate([member_preds, non_member_preds],axis=1)
         true_labels = np.concatenate([np.ones(len(self.member_signals)),np.zeros(len(self.non_member_signals))])
@@ -600,8 +600,8 @@ class ReferenceMetric(Metric):
         num_threshold = len(self.quantiles)
         member_signals = self.member_signals.reshape(-1,1).repeat(num_threshold,1).T
         non_member_signals = self.non_member_signals.reshape(-1,1).repeat(num_threshold,1).T
-        member_preds = np.less_equal(member_signals,reference_member_threshold)
-        non_member_preds = np.less_equal(non_member_signals,reference_non_member_threshold)
+        member_preds = np.less(member_signals,reference_member_threshold)
+        non_member_preds = np.less(non_member_signals,reference_non_member_threshold)
 
         predictions = np.concatenate([member_preds, non_member_preds],axis=1)
         true_labels = np.concatenate([np.ones(len(self.member_signals)),np.zeros(len(self.non_member_signals))])
@@ -759,8 +759,8 @@ class GroupPopulationMetric(Metric):
             
             
             non_member_signals = self.non_member_signals[self.non_member_groups ==g].reshape(-1,1).repeat(num_threshold,1).T
-            member_pred = np.less_equal(member_signals,thresholds)
-            non_member_pred = np.less_equal(non_member_signals,thresholds)
+            member_pred = np.less(member_signals,thresholds)
+            non_member_pred = np.less(non_member_signals,thresholds)
 
             member_signal_list.append(self.member_signals[self.member_groups ==g])
             non_member_signal_list.append(self.non_member_signals[self.member_groups ==g])

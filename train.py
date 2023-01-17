@@ -19,7 +19,7 @@ def train(model, train_loader,configs,test_loader=None):
     Return:
         model: Trained model.
     """
-    assert all(name in configs for name in ['device','epochs','lr','optimizer','wd','momentum']), "Specify 'device','epochs','lr','optimizer','wd','momentum' for training models"
+    assert all(name in configs for name in ['device','epochs','lr','optimizer','wd']), "Specify 'device','epochs','lr','optimizer','wd' for training models"
     assert type(train_loader)== torch.utils.data.DataLoader, "Input the correct data loader for training"
     
     device = configs['device']
@@ -41,14 +41,14 @@ def train(model, train_loader,configs,test_loader=None):
         
         print(f'epoch:{epoch_idx}')
         if test_loader is not None:
-            inference(model,test_loader,device,is_train=False)
-        inference(model,train_loader,device,is_train=True)
+            inference(model,test_loader,device,is_train=False,is_back_cpu=False)
+        inference(model,train_loader,device,is_train=True,is_back_cpu=False)
     model.to('cpu')
     
     return model
 
 
-def inference(model,test_loader,device,is_train=False):
+def inference(model,test_loader,device,is_train=False,is_back_cpu=True):
     """Evaluate the model performance on the test loader
 
     Args:
@@ -56,6 +56,7 @@ def inference(model,test_loader,device,is_train=False):
         test_loader (_type_): Data Loader for testing
         device (str): GPU or CPU
         is_train (bool, optional): Whether test_loader is from the train dataset or test dataset. Defaults to False.
+        is_back_cpu (bool, optional): Whether to put the model back to cpu.
     Return:
         loss (float): Loss for the given model on the test dataset.
         acc (float): Accuracy for the given model on the test dataset.
@@ -81,7 +82,8 @@ def inference(model,test_loader,device,is_train=False):
         acc = float(acc)/len(test_loader.dataset)
         
     print(f"{'Train' if is_train else 'Test'} accuracy {acc}, loss {loss}")
-    model.to("cpu")
+    if is_back_cpu:
+        model.to("cpu")
     return loss,acc
 
 
