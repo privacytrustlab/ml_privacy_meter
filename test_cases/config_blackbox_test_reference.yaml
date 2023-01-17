@@ -6,10 +6,10 @@
 # test acc: 40.9±0.029
 # auc of the reference attack: 0.874±0.018
 
-# Outcome (with 30 reference models):
+# Outcome (with 50 reference models):
 # train acc: 0.992
 # test acc: 0.4316
-# auc of the reference attack: 0.878
+# auc of the reference attack: 0.879
 
 
 run: # Configurations for a specific run
