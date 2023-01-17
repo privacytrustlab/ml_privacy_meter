@@ -34,3 +34,6 @@ def get_model(model_type):
     """
     if model_type == 'CNN':
         return Net()
+
+    else:
+        raise NotImplementedError(f"{model_type} is not implemented")

@@ -1,0 +1,16 @@
+2023-01-17 10:13:32 INFO     Prepare the datasets costs 0.9988975524902344 seconds
+2023-01-17 10:13:32 INFO     Prepare the target model costs 0.023284196853637695 seconds
+2023-01-17 10:14:48 INFO     Prepare 0-th reference model costs 76.22236514091492 seconds
+2023-01-17 10:16:02 INFO     Prepare 1-th reference model costs 73.91456937789917 seconds
+2023-01-17 10:17:16 INFO     Prepare 2-th reference model costs 73.89841747283936 seconds
+2023-01-17 10:18:31 INFO     Prepare 3-th reference model costs 74.87517189979553 seconds
+2023-01-17 10:19:45 INFO     Prepare 4-th reference model costs 74.05716896057129 seconds
+2023-01-17 10:20:59 INFO     Prepare 5-th reference model costs 74.34787225723267 seconds
+2023-01-17 10:22:14 INFO     Prepare 6-th reference model costs 74.46646118164062 seconds
+2023-01-17 10:23:28 INFO     Prepare 7-th reference model costs 73.7642707824707 seconds
+2023-01-17 10:24:42 INFO     Prepare 8-th reference model costs 74.0409369468689 seconds
+2023-01-17 10:25:55 INFO     Prepare 9-th reference model costs 73.4809672832489 seconds
+2023-01-17 10:25:55 INFO     Prepare the information source costs 743.3211183547974 seconds
+2023-01-17 10:25:56 INFO     Prepare privacy meter results costs 1.1587412357330322 seconds
+2023-01-17 10:25:59 INFO     Prepare the plot for the privacy risk report costs 3.1818244457244873 seconds
+2023-01-17 10:25:59 INFO     Run the priavcy meter for the all steps costs 748.7914814949036 seconds

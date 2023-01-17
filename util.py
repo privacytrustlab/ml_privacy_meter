@@ -19,7 +19,6 @@ def get_optimizer(model,configs):
         return optim.SGD(model.parameters(),lr = configs['lr'],momentum=configs['momentum'], weight_decay=configs['wd'])
     elif configs['optimizer'] == 'Adam':
         return optim.Adam(model.parameters(),lr = configs['lr'],weight_decay=configs['wd'])
-    
     else:
         raise NotImplementedError(f"Optimizer {configs['optimizer']}  has not been implemented. Please choose from SGD or Adam")
 
@@ -37,7 +36,7 @@ def get_split(all_index,used_index, size,split_method):
         NotImplementedError: Check if the splitting the methods are implemented
         ValueError: Check if there are enough points to select
     Returns:
-        List: List of index
+        np.ndarray: List of index
     """
     if split_method == 'no_overlapping':
         selected_index = np.array([i for i in all_index if i not in used_index])

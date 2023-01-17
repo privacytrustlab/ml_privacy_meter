@@ -3,13 +3,6 @@ from torch import nn
 import torch
 
 import torch
-import logging
-#todo: In this code, we provide the tutorials about auditing privacy risk for different types of games
-
-logging.basicConfig()
-logging.getLogger().setLevel(logging.INFO)
-
-
 from util import get_optimizer
 
 
@@ -26,6 +19,9 @@ def train(model, train_loader,configs,test_loader=None):
     Return:
         model: Trained model.
     """
+    assert all(name in configs for name in ['device','epochs','lr','optimizer','wd','momentum']), "Specify 'device','epochs','lr','optimizer','wd','momentum' for training models"
+    assert type(train_loader)== torch.utils.data.DataLoader, "Input the correct data loader for training"
+    
     device = configs['device']
     model.to(device)
     model.train()
@@ -60,7 +56,12 @@ def inference(model,test_loader,device,is_train=False):
         test_loader (_type_): Data Loader for testing
         device (str): GPU or CPU
         is_train (bool, optional): Whether test_loader is from the train dataset or test dataset. Defaults to False.
+    Return:
+        loss (float): Loss for the given model on the test dataset.
+        acc (float): Accuracy for the given model on the test dataset.
     """
+    assert type(test_loader)== torch.utils.data.DataLoader, "Input the correct data loader for evaluating"
+    
     model.eval()
     model.to(device)
     loss = 0
@@ -80,4 +81,7 @@ def inference(model,test_loader,device,is_train=False):
         acc = float(acc)/len(test_loader.dataset)
         
     print(f"{'Train' if is_train else 'Test'} accuracy {acc}, loss {loss}")
-    
+    model.to("cpu")
+    return loss,acc
+
+
