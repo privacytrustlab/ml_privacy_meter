@@ -427,7 +427,7 @@ def get_info_source_reference_attack(log_dir,dataset,data_split,model,configs,mo
         train_loss,train_acc = inference(model,reference_loader,configs['device'],is_train=False)
         
     
-        logging.info(f'Prepare {reference_idx}-th reference model costs {time.time()-start_time} seconds: Train accuracy (on auditing dataset) {train_loss}, Train Loss {train_acc}')
+        logging.info(f'Prepare {reference_idx}-th reference model costs {time.time()-start_time} seconds: Train accuracy (on auditing dataset) {train_acc}, Train Loss {train_loss}')
         
         
         model_idx = model_metadata_list['current_idx']

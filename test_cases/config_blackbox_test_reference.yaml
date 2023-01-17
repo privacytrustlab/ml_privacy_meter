@@ -1,8 +1,16 @@
 # This is for reproducing the results for Experimental Setup I on cifar10 in "Enhanced Membership Inference Attacks against Machine Learning Models" (https://arxiv.org/abs/2111.09679)
 # The results are provided in Table 4 of the appendix.
+
+# Expected:
 # train acc: 96.2±0.046
 # test acc: 40.9±0.029
 # auc of the reference attack: 0.874±0.018
+
+# Outcome (with 30 reference models):
+# train acc: 0.992
+# test acc: 0.4316
+# auc of the reference attack: 0.878
+
 
 run: # Configurations for a specific run
   random_seed: 12345 # Integer number of specifying random seed 

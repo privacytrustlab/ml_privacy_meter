@@ -8,7 +8,8 @@ from models import *
 from train import *
 from util import get_split
 
-# This test is for testing all the functions outside the core.py.
+# This test is for testing all the underlying functions.
+# All the data and models used for testing will be saved in log_dir.
 
 log_dir = 'test_cases'
 
