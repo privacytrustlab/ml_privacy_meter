@@ -25,6 +25,28 @@ from privacy_meter.model import PytorchModelTensor
 import matplotlib.pyplot as plt
 from core import *
 
+def set_default(configs):
+    """Set the default value for the config files
+
+    Args:
+        configs (dict): All the configuration information.
+    """
+    # Set the run configuration.
+    with open('default.yaml', 'r') as f:
+        default_configs = yaml.load(f,Loader=yaml.Loader) 
+    
+    for key in ['run','data','audit','train']:
+        if key not in configs:
+            print(f'Warning: configurations in {key} is not specified. Set those to default value.')
+            configs[key] = {}
+        for var in default_configs[key]: 
+            if var not in configs[key]:
+                configs[key][var] = default_configs[key][var]
+                print(f'Warning: {key}.{var} is not specified. Set it to default value {default_configs[key][var]}.')
+    
+    return configs
+    
+    
 
 if __name__ == '__main__':
 
@@ -33,9 +55,10 @@ if __name__ == '__main__':
     
     # Load the parameters 
     args = parser.parse_args()
-    config_file = open(args.cf, 'r')
-    configs = yaml.load(config_file,Loader=yaml.Loader) 
-    
+    with open(args.cf, 'r') as f:
+        configs = yaml.load(f,Loader=yaml.Loader) 
+    configs = set_default(configs)
+
     # Set the random seed, log_dir and inference_game
     torch.manual_seed(configs['run']['random_seed']) 
     global log_dir
