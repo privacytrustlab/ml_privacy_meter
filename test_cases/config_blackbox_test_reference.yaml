@@ -14,7 +14,7 @@ audit: # Configurations for auditing
   audit_batch_size: 1000 # Integer number for indicating the batch size for computing signals in the privacy meter.
   algorithm: reference # String for indicating the membership inference attack. We currently support population, reference.
   report_log: report_reference # String that indicates the folder where we save the and auditing report.
-  num_reference_models: 10 # Integer number for indicating how many reference models we need to train for auditing, if the reference attack is used.
+  num_reference_models: 399 # Integer number for indicating how many reference models we need to train for auditing, if the reference attack is used.
   batch_size: 16 # Integer number for indicating the batch size of training the reference models if reference attack is used.
   f_reference_dataset: 1 # Float number for indicating the ratio between the reference train dataset and the target train dataset.
   optimizer: Adam # String which indicates the optimizer for training reference models. We support Adam and SGD.
