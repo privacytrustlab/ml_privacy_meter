@@ -94,9 +94,6 @@ if __name__ == '__main__':
         model_list, model_metadata_list,matched_idx = prepare_models(log_dir,dataset,data_split_info,configs['train'],model_metadata_list,matched_idx)
         logging.info(f'Prepare the target model costs {time.time()-baseline_time} seconds')
         
-        # Save the updated metadata
-        with open(f'{log_dir}/models_metadata.pkl','wb') as f:
-            pickle.dump(model_metadata_list,f)
             
         # Prepare the information sources
         print(25*">"+"Prepare the information source, including attack models")

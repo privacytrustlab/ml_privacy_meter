@@ -443,6 +443,10 @@ def get_info_source_reference_attack(log_dir,dataset,data_split,model,configs,mo
         model_metadata_list['model_metadata'][model_idx] = meta_data
         reference_models.append(PytorchModelTensor(model_obj=reference_model, loss_fn=nn.CrossEntropyLoss(),device=configs['device'], batch_size=configs['audit_batch_size']))
         
+        # Save the updated metadata
+        with open(f'{log_dir}/models_metadata.pkl','wb') as f:
+            pickle.dump(model_metadata_list,f)
+        
     return [target_dataset], [target_dataset], [target_model], reference_models,model_metadata_list
 
 
@@ -495,6 +499,7 @@ def prepare_information_source(log_dir,dataset,data_split,model_list,configs,mod
         log_dir_path = f"{log_dir}/{configs['report_log']}/signal_{split}"
         Path(log_dir_path).mkdir(parents=True, exist_ok=True)
         log_dir_list.append(log_dir_path)
+        
     
     
     return target_info_source_list, reference_info_source_list,metric_list,log_dir_list, model_metadata_list
