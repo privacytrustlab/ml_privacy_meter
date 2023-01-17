@@ -167,14 +167,14 @@ if __name__ == '__main__':
         
         # Train additional models if the existing models are not enough
         if len(matched_in_idx) <  configs['train']['num_in_models']:
-            data_split_info_in = prepare_datasets_for_sample_privacy_risk(len(dataset), configs['train']['num_in_models'],configs['train']['num_in_models']- len(matched_in_idx),configs['train']['idx'],configs['data'],'in',model_metadata_list)
+            data_split_info_in = prepare_datasets_for_sample_privacy_risk(len(dataset), configs['train']['num_in_models'],configs['train']['num_in_models']- len(matched_in_idx),configs['train']['idx'],configs['data'],'include',model_metadata_list)
             in_model_list, model_metadata_list,matched_in_idx = prepare_models(log_dir,dataset,data_split_info_in,configs['train'],model_metadata_list,matched_in_idx)
         else:
             in_model_list, model_metadata_list,matched_in_idx = prepare_models(log_dir,dataset,{'split':[]},configs['train'],model_metadata_list,matched_in_idx[:configs['train']['num_in_models']])
             
             
         if len(matched_out_idx) <  configs['train']['num_out_models']:
-            data_split_info_out = prepare_datasets_for_sample_privacy_risk(len(dataset),configs['train']['num_out_models'], configs['train']['num_out_models']- len(matched_out_idx),configs['train']['idx'],configs['data'],'out',model_metadata_list)
+            data_split_info_out = prepare_datasets_for_sample_privacy_risk(len(dataset),configs['train']['num_out_models'], configs['train']['num_out_models']- len(matched_out_idx),configs['train']['idx'],configs['data'],'exclude',model_metadata_list)
             out_model_list, model_metadata_list,matched_out_idx = prepare_models(log_dir,dataset,data_split_info_out,configs['train'],model_metadata_list,matched_out_idx)
         else:
             out_model_list, model_metadata_list,matched_out_idx = prepare_models(log_dir,dataset,{'split':[]},configs['train'],model_metadata_list,matched_out_idx[:configs['train']['num_out_models']])
