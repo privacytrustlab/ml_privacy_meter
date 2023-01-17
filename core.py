@@ -97,7 +97,7 @@ def load_existing_reference_models(N, model_metadata_list,configs,matched_target
         for meta_idx in model_metadata_list['model_metadata']:
             meta_data = model_metadata_list['model_metadata'][meta_idx]
             # Check if the training configurations are satisfied.
-            if meta_idx != target_idx and len(meta_data['train_split']) == int(N*configs['data']['f_audit']) and np.mean([meta_data[key] == configs['audit'][key] for key in matching_key]) == 1:
+            if meta_idx != target_idx and len(meta_data['train_split']) == int(N*configs['data']['f_train']*configs['audit']['f_reference_dataset']) and np.mean([meta_data[key] == configs['audit'][key] for key in matching_key]) == 1:
                 if configs['audit']['key'] == 'none':
                     # Check if the reference models' training dataset satisfy the conditions
                     if configs['data']['split_method'] == 'no_overlapping':
@@ -405,7 +405,7 @@ def get_info_source_reference_attack(log_dir,dataset,data_split,model,configs,mo
             with open(f"{metadata['model_path']}",'rb') as f:
                 model_weight = pickle.load(f)
             model.load_state_dict(model_weight)
-            reference_models.append(PytorchModelTensor(model_obj=model, loss_fn=nn.CrossEntropyLoss(),device=configs['device'], batch_size=configs['audit_batch_size']))
+            reference_models.append(PytorchModelTensor(model_obj=copy.deepcopy(model), loss_fn=nn.CrossEntropyLoss(),device=configs['device'], batch_size=configs['audit_batch_size']))
     
     print(f"Load existing {len(reference_models)} reference models")
     
@@ -427,7 +427,7 @@ def get_info_source_reference_attack(log_dir,dataset,data_split,model,configs,mo
         model_idx = model_metadata_list['current_idx']
         model_metadata_list['current_idx'] +=1
         with open(f'{log_dir}/model_{model_idx}.pkl','wb') as f:
-            pickle.dump(model.state_dict(),f)
+            pickle.dump(reference_model.state_dict(),f)
         
         meta_data = {}
         meta_data['train_split'] = reference_data_idx
