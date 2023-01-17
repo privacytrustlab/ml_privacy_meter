@@ -57,12 +57,15 @@ def test_get_cifar10_subset_index():
 def test_get_model():
     model = get_model('CNN')
     assert type(model) == Net
+    model = get_model('alexnet')
+    assert type(model) == AlexNet
+    
     with pytest.raises(NotImplementedError):
         get_model('LR')
     
 
 # Test train 
-def test_train_model():
+def test_train_model_cnn():
     dataset =  get_dataset('cifar10',log_dir)
     configs = {
         'epochs':1,
@@ -88,6 +91,35 @@ def test_train_model():
     for key in updated_w:
         assert torch.equal(updated_w[key],o_w[key])==False
     
+
+def test_train_model_alexnet():
+    dataset =  get_dataset('cifar10',log_dir)
+    configs = {
+        'epochs':1,
+        'optimizer': 'Adam',
+        'lr': 0.01,
+        'wd': 0,
+        'momentum': 0,
+    }    
+    model =  get_model('alexnet')
+    o_w = model.state_dict()
+    train_loader = torch.utils.data.DataLoader(dataset, batch_size=1000,shuffle=False, num_workers=2)
+    with pytest.raises(AssertionError):
+        train(model,train_loader,configs,None)
+        configs['device'] = 'cuda:0'
+        train(model,dataset,configs,None)
+        
+    
+    configs['device'] = 'cuda:0'
+    updated_model = train(model,train_loader,configs,None)
+    assert type(updated_model) == AlexNet
+    updated_w = updated_model.state_dict()
+    # Make sure that the original model is updated. Train function returns a different model.
+    for key in updated_w:
+        assert torch.equal(updated_w[key],o_w[key])==False
+    
+
+
 
 # Test inference function and the effect of the training
 def test_infer_model():

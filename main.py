@@ -193,7 +193,7 @@ if __name__ == '__main__':
         plt.xlabel(f"Signal value")
         plt.ylabel('Number of Models')
         plt.title(f"Signal histogram for data point {configs['audit']['idx']}")
-        plt.savefig(f"{log_dir}/individual_pr_{configs['train']['idx']}_{configs['audit']['idx']}.png")
+        plt.savefig(f"{log_dir}/{configs['audit']['report_log']}/individual_pr_{configs['train']['idx']}_{configs['audit']['idx']}.png")
         
         
         
