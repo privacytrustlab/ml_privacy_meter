@@ -78,13 +78,13 @@ def test_train_model_cnn():
     o_w = model.state_dict()
     train_loader = torch.utils.data.DataLoader(dataset, batch_size=1000,shuffle=False, num_workers=2)
     with pytest.raises(AssertionError):
-        train(model,train_loader,configs,None)
+        train(model,train_loader,configs)
         configs['device'] = 'cuda:0'
-        train(model,dataset,configs,None)
+        train(model,dataset,configs)
         
     
     configs['device'] = 'cuda:0'
-    updated_model = train(model,train_loader,configs,None)
+    updated_model = train(model,train_loader,configs)
     assert type(updated_model) == Net
     updated_w = updated_model.state_dict()
     # Make sure that the original model is updated. Train function returns a different model.
@@ -105,13 +105,13 @@ def test_train_model_alexnet():
     o_w = model.state_dict()
     train_loader = torch.utils.data.DataLoader(dataset, batch_size=1000,shuffle=False, num_workers=2)
     with pytest.raises(AssertionError):
-        train(model,train_loader,configs,None)
+        train(model,train_loader,configs)
         configs['device'] = 'cuda:0'
-        train(model,dataset,configs,None)
+        train(model,dataset,configs)
         
     
     configs['device'] = 'cuda:0'
-    updated_model = train(model,train_loader,configs,None)
+    updated_model = train(model,train_loader,configs)
     assert type(updated_model) == AlexNet
     updated_w = updated_model.state_dict()
     # Make sure that the original model is updated. Train function returns a different model.
@@ -145,9 +145,9 @@ def test_infer_model():
         'device': 'cuda:1',
     }    
     
-    updated_model = train(model,data_loader,configs,None)
+    updated_model = train(model,data_loader,configs)
 
-    loss_a,acc_a = inference(model,data_loader,'cuda:1',is_train=False)
+    loss_a,acc_a = inference(updated_model,data_loader,'cuda:1',is_train=False)
     
     assert loss_a< loss_b, acc_a > acc_b
     

@@ -61,14 +61,14 @@ def linear_itp_threshold_func(
     
     if len(distribution.shape)>1:
         # for reference attacks
-        distribution = np.concatenate([distribution,np.repeat(signal_min,distribution.shape[0]).reshape(-1,1)],axis=1)
-        distribution = np.concatenate([distribution,np.repeat(signal_max,distribution.shape[0]).reshape(-1,1)],axis=1)
-        threshold = np.quantile(distribution, q=alpha, method='linear',axis=1,**kwargs)
+        threshold = np.quantile(distribution, q=alpha[1:-1], method='linear',axis=1,**kwargs)
+        threshold = np.concatenate([threshold,np.repeat(signal_max,distribution.shape[0]).reshape(1,-1)],axis=0)
+        threshold = np.concatenate([np.repeat(signal_min,distribution.shape[0]).reshape(1,-1),threshold],axis=0)
 
     else:
-        distribution = np.append(distribution, signal_min)
-        distribution = np.append(distribution, signal_max)
-        threshold = np.quantile(distribution, q=alpha, method='linear',**kwargs)
+        threshold = np.quantile(distribution, q=alpha[1:-1], method='linear',**kwargs)
+        threshold = np.concatenate([np.array(signal_min).reshape(-1),threshold,np.array(signal_max).reshape(-1)],axis =0)
+        
     return threshold
 
 ########################################################################################################################

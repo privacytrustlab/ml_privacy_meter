@@ -8,14 +8,12 @@ from util import get_optimizer
 
 
 
-def train(model, train_loader,configs,test_loader=None):
+def train(model, train_loader,configs):
     """Train the model based on on the train loader
     Args:
         model: Model for evaluation.
         train_loader: Data loader for training.
         configs (dict): Configurations for training.
-        test_loader (optional): Data Loader for evaluating.
-    
     Return:
         model: Trained model.
     """
@@ -40,15 +38,12 @@ def train(model, train_loader,configs,test_loader=None):
             train_loss += loss.item()
         
         print(f'epoch:{epoch_idx}')
-        if test_loader is not None:
-            inference(model,test_loader,device,is_train=False,is_back_cpu=False)
-        inference(model,train_loader,device,is_train=True,is_back_cpu=False)
     model.to('cpu')
     
     return model
 
 
-def inference(model,test_loader,device,is_train=False,is_back_cpu=True):
+def inference(model,test_loader,device,is_train=False):
     """Evaluate the model performance on the test loader
 
     Args:
@@ -82,8 +77,8 @@ def inference(model,test_loader,device,is_train=False,is_back_cpu=True):
         acc = float(acc)/len(test_loader.dataset)
         
     print(f"{'Train' if is_train else 'Test'} accuracy {acc}, loss {loss}")
-    if is_back_cpu:
-        model.to("cpu")
+    model.to("cpu")
+    
     return loss,acc
 
 

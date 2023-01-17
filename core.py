@@ -19,7 +19,7 @@ from pathlib import Path
 import pickle
 from privacy_meter.model import PytorchModelTensor
 from privacy_meter import audit_report
-from train import train
+from train import train,inference
 from util import get_split
 
 
@@ -281,10 +281,13 @@ def prepare_models(log_dir,dataset,data_split,configs,model_metadata_list,matche
         
         # Train the target model based on the configurations.
         model = get_model(configs['model_name'])    
-        model = train(model,train_loader,configs,test_loader)
+        model = train(model,train_loader,configs)
+        # Test performance on the training dataset and test dataset
+        test_loss,test_acc = inference(model,test_loader,configs['device'],is_train=False)
+        train_loss,train_acc = inference(model,train_loader,configs['device'],is_train=True)
         model_list.append(copy.deepcopy(model))
         
-        logging.info(f'Prepare {split}-th target model costs {time.time()-baseline_time} seconds')
+        logging.info(f'Prepare {split}-th target model costs {time.time()-baseline_time} seconds: Train accuracy {train_acc}, Train Loss {train_loss}; Test accuracy {test_acc}, Test Loss {test_loss}')
         print(50*"-")
         
 
@@ -419,9 +422,12 @@ def get_info_source_reference_attack(log_dir,dataset,data_split,model,configs,mo
         
         reference_loader = torch.utils.data.DataLoader(get_cifar10_subset(dataset,reference_data_idx), batch_size=configs['batch_size'],shuffle=True, num_workers=2) 
         reference_model = get_model(configs['model_name'])
-        reference_model = train(reference_model,reference_loader,configs,None)
+        reference_model = train(reference_model,reference_loader,configs)
+        # Test performance on the training dataset and test dataset
+        train_loss,train_acc = inference(model,reference_loader,configs['device'],is_train=False)
+        
     
-        logging.info(f'Prepare {reference_idx}-th reference model costs {time.time()-start_time} seconds')
+        logging.info(f'Prepare {reference_idx}-th reference model costs {time.time()-start_time} seconds: Train accuracy (on auditing dataset) {train_loss}, Train Loss {train_acc}')
         
         
         model_idx = model_metadata_list['current_idx']
