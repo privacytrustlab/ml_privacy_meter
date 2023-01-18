@@ -1,3 +1,4 @@
+from ast import Tuple
 import torch
 from torch import nn
 import torch
@@ -6,78 +7,119 @@ import torch
 from util import get_optimizer
 
 
-def train(model, train_loader, configs):
+# Train Function
+def train(model: torch.nn.Module,
+          train_loader: torch.utils.data.DataLoader,
+          configs: dict) -> torch.nn.Module:
     """Train the model based on on the train loader
     Args:
-        model: Model for evaluation.
-        train_loader: Data loader for training.
+        model(nn.Module): Model for evaluation.
+        train_loader(torch.utils.data.DataLoader): Data loader for training.
         configs (dict): Configurations for training.
     Return:
-        model: Trained model.
+        nn.Module: Trained model.
     """
-    assert all(name in configs for name in ['device', 'epochs', 'lr', 'optimizer', 'wd']
-               ), "Specify 'device','epochs','lr','optimizer','wd' for training models"
-    assert type(
-        train_loader) == torch.utils.data.DataLoader, "Input the correct data loader for training"
+    # Get the device for training
+    device = configs.get('device', torch.device('cpu'))
 
-    device = configs['device']
+    # Set the model to the device
     model.to(device)
     model.train()
+
+    # Set the loss function and optimizer
     criterion = nn.CrossEntropyLoss()
     optimizer = get_optimizer(model, configs)
-    for epoch_idx in range(configs['epochs']):
+
+    # Get the number of epochs for training
+    epochs = configs.get('epochs', 1)
+
+    # Loop over each epoch
+    for epoch_idx in range(epochs):
         train_loss = 0
-        for batch_idx, (data, target) in enumerate(train_loader):
-            data = data.to(device)
-            target = target.to(device)
+        # Loop over the training set
+        for data, target in train_loader:
+
+            # Move data to the device
+            data, target = data.to(device), target.to(device)
+
+            # Set the gradients to zero
             optimizer.zero_grad()
+
+            # Get the model output
             output = model(data)
+
+            # Calculate the loss
             loss = criterion(output, target)
+
+            # Perform the backward pass
             loss.backward()
+
+            # Take a step using optimizer
             optimizer.step()
+
+            # Add the loss to the total loss
             train_loss += loss.item()
 
-        print(f'epoch:{epoch_idx}')
-    model.to('cpu')
+        # Print the epoch and loss summary
+        print(
+            f'Epoch: {epoch_idx+1}/{epochs} | Loss: {train_loss/len(train_loader):.8f}')
 
+    # Move the model back to the CPU
+    model.to("cpu")
+
+    # Return the model
     return model
 
+# Test Function
 
-def inference(model, test_loader, device, is_train=False):
+
+def inference(model: torch.nn.Module,
+              loader: torch.utils.data.DataLoader,
+              device: str,
+              is_train: bool = False) -> Tuple(float, float):
     """Evaluate the model performance on the test loader
-
     Args:
-        model (_type_): Model for evaluation
-        test_loader (_type_): Data Loader for testing
+        model (torch.nn.Module): Model for evaluation
+        loader (torch.utils.data.DataLoader): Data Loader for testing
         device (str): GPU or CPU
         is_train (bool, optional): Whether test_loader is from the train dataset or test dataset. Defaults to False.
-        is_back_cpu (bool, optional): Whether to put the model back to cpu.
     Return:
         loss (float): Loss for the given model on the test dataset.
         acc (float): Accuracy for the given model on the test dataset.
     """
-    assert type(
-        test_loader) == torch.utils.data.DataLoader, "Input the correct data loader for evaluating"
 
+    # Setting model to eval mode and moving to specified device
     model.eval()
     model.to(device)
-    loss = 0
-    acc = 0
-    criterion = nn.CrossEntropyLoss()
 
+    # Assigning variables for computing loss and accuracy
+    loss, acc, criterion = 0, 0, nn.CrossEntropyLoss()
+
+    # Disable gradient calculation to save memory
     with torch.no_grad():
-        for batch_idx, (data, target) in enumerate(test_loader):
-            data = data.to(device)
-            target = target.to(device)
+        for batch_idx, (data, target) in enumerate(loader):
+            # Moving data and target to the device
+            data, target = data.to(device), target.to(device)
+
+            # Computing output and loss
             output = model(data)
             loss += criterion(output, target).item()
+
+            # Computing accuracy
             pred = output.data.max(1, keepdim=True)[1]
             acc += pred.eq(target.data.view_as(pred)).sum()
 
-        loss /= len(test_loader)
-        acc = float(acc)/len(test_loader.dataset)
+        # Averaging the losses
+        loss /= len(loader)
 
-    print(f"{'Train' if is_train else 'Test'} accuracy {acc}, loss {loss}")
-    model.to("cpu")
+        # Calculating accuracy
+        acc = float(acc)/len(loader.dataset)
 
-    return loss, acc
+        # Printing the results
+        print(f"{'Train' if is_train else 'Test'} accuracy {acc}, loss {loss}")
+
+        # Move model back to CPU
+        model.to("cpu")
+
+        # Return loss and accuracy
+        return loss, acc

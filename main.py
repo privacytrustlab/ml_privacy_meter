@@ -23,41 +23,16 @@ logging.basicConfig(filename='log_time.log',
                     datefmt='%Y-%m-%d %H:%M:%S')
 
 
-def set_default(configs):
-    """Set the default value for the config files
-
-    Args:
-        configs (dict): All the configuration information.
-    """
-    # Set the run configuration.
-    with open('default.yaml', 'r') as f:
-        default_configs = yaml.load(f, Loader=yaml.Loader)
-
-    for key in ['run', 'data', 'audit', 'train']:
-        if key not in configs:
-            print(
-                f'Warning: configurations in {key} is not specified. Set those to default value.')
-            configs[key] = {}
-        for var in default_configs[key]:
-            if var not in configs[key]:
-                configs[key][var] = default_configs[key][var]
-                print(
-                    f'Warning: {key}.{var} is not specified. Set it to default value {default_configs[key][var]}.')
-
-    return configs
-
-
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('--cf', type=str, default="config_model.yaml",
+    parser.add_argument('--cf', type=str, default="config_models.yaml",
                         help='Yaml file which contains the configurations')
 
     # Load the parameters
     args = parser.parse_args()
     with open(args.cf, 'r') as f:
         configs = yaml.load(f, Loader=yaml.Loader)
-    configs = set_default(configs)
 
     # Set the random seed, log_dir and inference_game
     torch.manual_seed(configs['run']['random_seed'])
@@ -81,7 +56,7 @@ if __name__ == '__main__':
 
     # Load the dataset
     baseline_time = time.time()
-    dataset = get_dataset(configs['data']['dataset'], log_dir)
+    dataset = get_dataset(configs['data']['dataset'], configs['data']['data_dir'])
 
     # Check the auditing game. If we are interested in auditing the privacy risk for a model or a training algorithm (set of models trained using the same algorithm).
     if configs['audit']['privacy_game'] in ['avg_privacy_loss_training_algo', 'privacy_loss_model']:
