@@ -8,8 +8,7 @@ import pickle
 import os
 
 
-
-def get_dataset(dataset_name,log_dir):
+def get_dataset(dataset_name, log_dir):
     """Load the dataset 
 
     Args:
@@ -23,7 +22,7 @@ def get_dataset(dataset_name,log_dir):
         Pytorch Dataset: Whole dataset.
     """
     if os.path.exists((f'{log_dir}/{dataset_name}.pkl')):
-        with open(f'{log_dir}/{dataset_name}.pkl','rb') as f:
+        with open(f'{log_dir}/{dataset_name}.pkl', 'rb') as f:
             all_data = pickle.load(f)
     else:
         if dataset_name == 'cifar10':
@@ -31,26 +30,27 @@ def get_dataset(dataset_name,log_dir):
                 [transforms.ToTensor()]
             )
 
-            train_data = torchvision.datasets.CIFAR10(root=f'{log_dir}/data', train=True,download=True, transform=transform)
-            test_data = torchvision.datasets.CIFAR10(root=f'{log_dir}/data', train=False,download=True, transform=transform)
-            X = np.concatenate([train_data.data,test_data.data],axis=0)
-            Y = np.concatenate([train_data.targets,test_data.targets],axis=0)
-            
+            train_data = torchvision.datasets.CIFAR10(
+                root=f'{log_dir}/data', train=True, download=True, transform=transform)
+            test_data = torchvision.datasets.CIFAR10(
+                root=f'{log_dir}/data', train=False, download=True, transform=transform)
+            X = np.concatenate([train_data.data, test_data.data], axis=0)
+            Y = np.concatenate([train_data.targets, test_data.targets], axis=0)
+
             all_data = train_data
             all_data.data = X
             all_data.targets = Y
-            with open(f'{log_dir}/{dataset_name}.pkl','wb') as f:
-                pickle.dump(all_data,f)
+            with open(f'{log_dir}/{dataset_name}.pkl', 'wb') as f:
+                pickle.dump(all_data, f)
         else:
             raise NotImplementedError(f"{dataset_name} is not implemented")
-            
-    
+
     N = len(all_data)
-    print(f"the whole dataset size: {N}")   
+    print(f"the whole dataset size: {N}")
     return all_data
 
 
-def get_cifar10_subset(dataset, index,is_tensor=False):
+def get_cifar10_subset(dataset, index, is_tensor=False):
     """Get a subset of the cifar10 dataset
 
     Args:
@@ -61,15 +61,18 @@ def get_cifar10_subset(dataset, index,is_tensor=False):
     Returns:
         selected_data: Dataset which only contains the data indicated by the index
     """
-    assert type(dataset) == torchvision.datasets.cifar.CIFAR10, ValueError("Input the correct dataset")
-    assert max(index) < 60000 and min(index) >=0, ValueError("Input the correct index")
+    assert type(dataset) == torchvision.datasets.cifar.CIFAR10, ValueError(
+        "Input the correct dataset")
+    assert max(index) < 60000 and min(
+        index) >= 0, ValueError("Input the correct index")
 
-    selected_data = copy.deepcopy(dataset)   
+    selected_data = copy.deepcopy(dataset)
     selected_data.data = selected_data.data[index]
     selected_data.targets = list(np.array(selected_data.targets)[index])
-    
+
     if is_tensor:
-        selected_data.data = torch.from_numpy(selected_data.data).float().permute(0, 3, 1,2)/255 # channel first 
+        selected_data.data = torch.from_numpy(
+            selected_data.data).float().permute(0, 3, 1, 2)/255  # channel first
         selected_data.targets = torch.tensor(selected_data.targets)
-        
+
     return selected_data
