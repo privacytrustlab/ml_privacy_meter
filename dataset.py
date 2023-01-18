@@ -24,6 +24,7 @@ def get_dataset(dataset_name, log_dir):
     if os.path.exists((f'{log_dir}/{dataset_name}.pkl')):
         with open(f'{log_dir}/{dataset_name}.pkl', 'rb') as f:
             all_data = pickle.load(f)
+        print(f"Load data from {log_dir}/{dataset_name}.pkl")
     else:
         if dataset_name == 'cifar10':
             transform = transforms.Compose(
@@ -31,9 +32,9 @@ def get_dataset(dataset_name, log_dir):
             )
 
             train_data = torchvision.datasets.CIFAR10(
-                root=f'{log_dir}/data', train=True, download=True, transform=transform)
+                root=f'{log_dir}/{dataset_name}', train=True, download=True, transform=transform)
             test_data = torchvision.datasets.CIFAR10(
-                root=f'{log_dir}/data', train=False, download=True, transform=transform)
+                root=f'{log_dir}/{dataset_name}', train=False, download=True, transform=transform)
             X = np.concatenate([train_data.data, test_data.data], axis=0)
             Y = np.concatenate([train_data.targets, test_data.targets], axis=0)
 
@@ -42,6 +43,7 @@ def get_dataset(dataset_name, log_dir):
             all_data.targets = Y
             with open(f'{log_dir}/{dataset_name}.pkl', 'wb') as f:
                 pickle.dump(all_data, f)
+            print(f"Save data to {log_dir}/{dataset_name}.pkl")
         else:
             raise NotImplementedError(f"{dataset_name} is not implemented")
 
