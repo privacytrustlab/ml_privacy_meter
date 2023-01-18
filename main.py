@@ -53,10 +53,10 @@ if __name__ == '__main__':
             model_metadata_list = pickle.load(f)
     else:
         model_metadata_list = {'model_metadata': {}, 'current_idx': 0}
-
     # Load the dataset
     baseline_time = time.time()
-    dataset = get_dataset(configs['data']['dataset'], configs['data']['data_dir'])
+    dataset = get_dataset(configs['data']['dataset'],
+                          configs['data']['data_dir'])
 
     # Check the auditing game. If we are interested in auditing the privacy risk for a model or a training algorithm (set of models trained using the same algorithm).
     if configs['audit']['privacy_game'] in ['avg_privacy_loss_training_algo', 'privacy_loss_model']:
@@ -182,10 +182,10 @@ if __name__ == '__main__':
             target_data.data, target_data.targets).item() for model in out_model_list_pm])
 
         # Rescale the loss
-        in_signal = in_signal+0.000001  # avoid nan
+        in_signal = in_signal+1e-17  # avoid nan
         in_signal = np.log(
             np.divide(np.exp(- in_signal), (1 - np.exp(- in_signal))))
-        out_signal = out_signal+0.000001  # avoid nan
+        out_signal = out_signal+1e-17  # avoid nan
         out_signal = np.log(np.divide(np.exp(- out_signal),
                             (1 - np.exp(- out_signal))))
 

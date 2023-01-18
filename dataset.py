@@ -1,58 +1,58 @@
+from ast import List
 import numpy as np
 import torch
 import torchvision
 import torchvision.transforms as transforms
-import logging
 import copy
 import pickle
 import os
 
 
-def get_dataset(dataset_name, log_dir):
+def get_dataset(dataset_name: str, data_dir: str) -> torchvision.datasets:
     """Load the dataset 
 
     Args:
         dataset_name (str): Dataset name
-        log_dir (str): Indicate the log directory for loading the dataset
+        data_dir (str): Indicate the log directory for loading the dataset
 
     Raises:
         NotImplementedError: Check if the dataset has been implemented.
 
     Returns:
-        Pytorch Dataset: Whole dataset.
+        torchvision.datasets: Whole dataset.
     """
-    if os.path.exists((f'{log_dir}/{dataset_name}.pkl')):
-        with open(f'{log_dir}/{dataset_name}.pkl', 'rb') as f:
+    path = f'{data_dir}/{dataset_name}.pkl'
+    if os.path.exists(path):
+        with open(path, 'rb') as f:
             all_data = pickle.load(f)
-        print(f"Load data from {log_dir}/{dataset_name}.pkl")
+        print(f"Load data from {path}")
+
     else:
         if dataset_name == 'cifar10':
             transform = transforms.Compose(
                 [transforms.ToTensor()]
             )
-
-            train_data = torchvision.datasets.CIFAR10(
-                root=f'{log_dir}/{dataset_name}', train=True, download=True, transform=transform)
+            all_data = torchvision.datasets.CIFAR10(
+                root=f'{data_dir}/{dataset_name}', train=True, download=True, transform=transform)
             test_data = torchvision.datasets.CIFAR10(
-                root=f'{log_dir}/{dataset_name}', train=False, download=True, transform=transform)
-            X = np.concatenate([train_data.data, test_data.data], axis=0)
-            Y = np.concatenate([train_data.targets, test_data.targets], axis=0)
+                root=f'{data_dir}/{dataset_name}', train=False, download=True, transform=transform)
+            X = np.concatenate([all_data.data, test_data.data], axis=0)
+            Y = np.concatenate([all_data.targets, test_data.targets], axis=0)
 
-            all_data = train_data
             all_data.data = X
             all_data.targets = Y
-            with open(f'{log_dir}/{dataset_name}.pkl', 'wb') as f:
+            with open(f'{path}', 'wb') as f:
                 pickle.dump(all_data, f)
-            print(f"Save data to {log_dir}/{dataset_name}.pkl")
+            print(f"Save data to {path}")
         else:
             raise NotImplementedError(f"{dataset_name} is not implemented")
 
-    N = len(all_data)
-    print(f"the whole dataset size: {N}")
+    print(f"the whole dataset size: {len(all_data)}")
     return all_data
 
 
-def get_cifar10_subset(dataset, index, is_tensor=False):
+def get_cifar10_subset(dataset: torchvision.datasets.cifar.CIFAR10, index: List(int), is_tensor: bool = False) -> torchvision.datasets.cifar.CIFAR10:
+    # TODO: add the sampler instead of creating copies of the dataset
     """Get a subset of the cifar10 dataset
 
     Args:

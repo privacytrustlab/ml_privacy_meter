@@ -117,6 +117,8 @@ def load_existing_reference_models(N, model_metadata_list, configs, matched_targ
             # Check if the existing referencce models already satisfy the constraints
             if len(reference_matched_idx) == configs['audit']['num_reference_models']:
                 break
+        print(
+            f"Load {len(reference_matched_idx)} reference models for attacking target model {target_idx}")
         reference_matched_idx_list.append(reference_matched_idx)
 
     return reference_matched_idx_list
@@ -515,7 +517,7 @@ def prepare_information_source(log_dir, dataset, data_split, model_list, configs
 
     # Prepare the information source for each target model
     for split in range(len(model_list)):
-        print(f'preparing information sources for {split}-th target model')
+        print(f"preparing information sources for {split}-th target model")
         if configs['algorithm'] == 'population':
             target_dataset, audit_dataset, target_model, audit_models = get_info_source_population_attack(
                 dataset, data_split['split'][split], model_list[split], configs)

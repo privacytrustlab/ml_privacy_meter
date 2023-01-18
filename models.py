@@ -58,14 +58,14 @@ class AlexNet(nn.Module):
         return x
 
 
-def get_model(model_type):
+def get_model(model_type: str) -> torch.nn.Module:
     """Instantiate the model based on the model_type
 
     Args:
         model_type (str): Name of the model
 
     Returns:
-        Model: A model
+        torch.nn.Module: A model
     """
     if model_type == 'CNN':
         return Net()
