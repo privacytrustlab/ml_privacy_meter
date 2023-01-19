@@ -74,8 +74,8 @@ def get_model(model_type: str) -> nn.Module:
     Returns:
         torch.nn.Module: A model
     """
-    if model_type == 'CNN':
+    if model_type == "CNN":
         return Net()
-    if model_type == 'alexnet':
+    if model_type == "alexnet":
         return AlexNet()
     raise NotImplementedError(f"{model_type} is not implemented")

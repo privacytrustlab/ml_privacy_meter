@@ -8,9 +8,9 @@ from util import get_optimizer
 
 
 # Train Function
-def train(model: torch.nn.Module,
-          train_loader: torch.utils.data.DataLoader,
-          configs: dict) -> torch.nn.Module:
+def train(
+    model: torch.nn.Module, train_loader: torch.utils.data.DataLoader, configs: dict
+) -> torch.nn.Module:
     """Train the model based on on the train loader
     Args:
         model(nn.Module): Model for evaluation.
@@ -20,7 +20,7 @@ def train(model: torch.nn.Module,
         nn.Module: Trained model.
     """
     # Get the device for training
-    device = configs.get('device', 'cpu')
+    device = configs.get("device", "cpu")
 
     # Set the model to the device
     model.to(device)
@@ -31,7 +31,7 @@ def train(model: torch.nn.Module,
     optimizer = get_optimizer(model, configs)
 
     # Get the number of epochs for training
-    epochs = configs.get('epochs', 1)
+    epochs = configs.get("epochs", 1)
 
     # Loop over each epoch
     for epoch_idx in range(epochs):
@@ -64,7 +64,7 @@ def train(model: torch.nn.Module,
 
         # Print the epoch and loss summary
         print(f"Epoch: {epoch_idx+1}/{epochs} |", end=" ")
-        print(f'Loss: {train_loss/len(train_loader):.8f}')
+        print(f"Loss: {train_loss/len(train_loader):.8f}")
 
     # Move the model back to the CPU
     model.to("cpu")
@@ -74,9 +74,9 @@ def train(model: torch.nn.Module,
 
 
 # Test Function
-def inference(model: torch.nn.Module,
-              loader: torch.utils.data.DataLoader,
-              device: str) -> Tuple(float, float):
+def inference(
+    model: torch.nn.Module, loader: torch.utils.data.DataLoader, device: str
+) -> Tuple(float, float):
     """Evaluate the model performance on the test loader
     Args:
         model (torch.nn.Module): Model for evaluation
@@ -114,7 +114,7 @@ def inference(model: torch.nn.Module,
         loss /= len(loader)
 
         # Calculating accuracy
-        acc = float(acc)/len(loader.dataset)
+        acc = float(acc) / len(loader.dataset)
 
         # Move model back to CPU
         model.to("cpu")
