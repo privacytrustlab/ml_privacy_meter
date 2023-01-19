@@ -1,44 +1,57 @@
-from dataset import get_dataset, get_cifar10_subset
-from core import *
-import matplotlib.pyplot as plt
-from privacy_meter.model import PytorchModelTensor
+"""This file is the main entry point for running the priavcy auditing."""
+import argparse
+import copy
+import logging
 import os
 import pickle
-from pathlib import Path
-import copy
 import time
+from pathlib import Path
+
+import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
 import seaborn as sns
-import yaml
-from privacy_meter.audit import Audit
-import argparse
-from torch import nn
 import torch
-import numpy as np
-import logging
+import yaml
+from torch import nn
+
+from core import (load_existing_reference_models, load_existing_target_model,
+                  prepare_datasets, prepare_datasets_for_sample_privacy_risk,
+                  prepare_information_source, prepare_models,
+                  prepare_priavcy_risk_report)
+from dataset import get_dataset_subset, get_dataset
+from privacy_meter.audit import Audit
+from privacy_meter.model import PytorchModelTensor
 
 
-def setup_log(name):
-    logger = logging.getLogger(name)
-    logger.setLevel(logging.INFO)
+def setup_log(name: str) -> logging.Logger:
+    """Generate the logger for the current run.
+    Args:
+        name (str): Logging file name.
+
+    Returns:
+        logging.Logger: Logger object for the current run.
+    """
+    my_logger = logging.getLogger(name)
+    my_logger.setLevel(logging.INFO)
     log_format = logging.Formatter('%(asctime)s %(levelname)-8s %(message)s')
     filename = f"log_{name}.log"
-    log_handler = logging.FileHandler(filename)
+    log_handler = logging.FileHandler(filename, mode='w')
     log_handler.setLevel(logging.INFO)
     log_handler.setFormatter(log_format)
-    logger.addHandler(log_handler)
-    return logger
+    my_logger.addHandler(log_handler)
+    return my_logger
 
 
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('--cf', type=str, default="config_models.yaml",
+    parser.add_argument("--cf", type=str, default="config_models.yaml",
                         help='Yaml file which contains the configurations')
 
     # Load the parameters
     args = parser.parse_args()
-    with open(args.cf, 'r') as f:
+    with open(args.cf, "rb") as f:
         configs = yaml.load(f, Loader=yaml.Loader)
 
     # Set the random seed, log_dir and inference_game
@@ -50,7 +63,7 @@ if __name__ == '__main__':
 
     # Set up the logger
     logger = setup_log('time_analysis')
-    
+
     # Create folders for saving the logs if they do not exist
     Path(log_dir).mkdir(parents=True, exist_ok=True)
     Path(
@@ -59,8 +72,8 @@ if __name__ == '__main__':
     start_time = time.time()
 
     # Load or initialize models based on metadata
-    if os.path.exists((f'{log_dir}/models_metadata.pkl')):
-        with open(f'{log_dir}/models_metadata.pkl', 'rb') as f:
+    if os.path.exists((f"{log_dir}/models_metadata.pkl")):
+        with open(f"{log_dir}/models_metadata.pkl", "rb") as f:
             model_metadata_list = pickle.load(f)
     else:
         model_metadata_list = {'model_metadata': {}, 'current_idx': 0}
@@ -95,24 +108,24 @@ if __name__ == '__main__':
         print(25*">"+"Prepare the the datasets")
         data_split_info = prepare_datasets(len(
             dataset), configs['train']['num_target_model'], configs['data'], model_metadata_list, matched_idx)
-        logger.info(
-            f'Prepare the datasets costs {time.time()-baseline_time} seconds')
+        logger.info("Prepare the datasets costs %0.5f seconds",
+                    time.time()-baseline_time)
 
         # Prepare the target models
         print(25*">"+"Prepare the the target models")
         baseline_time = time.time()
         model_list, model_metadata_list, matched_idx = prepare_models(
             log_dir, dataset, data_split_info, configs['train'], model_metadata_list, matched_idx)
-        logger.info(
-            f'Prepare the target model costs {time.time()-baseline_time} seconds')
+        logger.info("Prepare the target model costs %0.5f seconds",
+                    time.time()-baseline_time)
 
         # Prepare the information sources
         print(25*">"+"Prepare the information source, including attack models")
         baseline_time = time.time()
         target_info_source, reference_info_source, metrics, log_dir_list, model_metadata_list = prepare_information_source(
             log_dir, dataset, data_split_info, model_list, configs['audit'], model_metadata_list, matched_reference_idx)
-        logger.info(
-            f'Prepare the information source costs {time.time()-baseline_time} seconds')
+        logger.info("Prepare the information source costs %0.5f seconds",
+                    time.time()-baseline_time)
 
         # Call core of privacy meter
         print(25*">"+"Auditing the privacy risk")
@@ -127,8 +140,8 @@ if __name__ == '__main__':
         )
         audit_obj.prepare()
         audit_results = audit_obj.run()
-        logger.info(
-            f'Prepare privacy meter results costs {time.time()-baseline_time} seconds')
+        logger.info("Prepare the privacy meter result costs %0.5f seconds",
+                    time.time()-baseline_time)
 
         # Generate the privacy risk report
         print(25*">"+"Generating privacy risk report")
@@ -137,10 +150,11 @@ if __name__ == '__main__':
             log_dir, audit_results, configs['audit'], save_path=f"{log_dir}/{configs['audit']['report_log']}")
         print(100*"#")
 
-        logger.info(
-            f'Prepare the plot for the privacy risk report costs {time.time()-baseline_time} seconds')
-        logger.info(
-            f'Run the priavcy meter for the all steps costs {time.time()-start_time} seconds')
+        logger.info("Prepare the plot for the privacy risk report costs %0.5f seconds",
+                    time.time()-baseline_time)
+
+        logger.info("Run the priavcy meter for the all steps costs %0.5f seconds",
+                    time.time()-start_time)
 
     # Auditing the priavcy risk for an individual data point
     elif configs['audit']['privacy_game'] == 'privacy_loss_sample':
@@ -185,12 +199,11 @@ if __name__ == '__main__':
         ), batch_size=1000) for model in out_model_list]
 
         # Test the models' performance on the data indicated by the audit.idx
-        target_data = get_cifar10_subset(
-            dataset, [configs['audit']['idx']], is_tensor=True)
+        data, targets = get_dataset_subset(dataset, [configs['audit']['idx']])
         in_signal = np.array([model.get_loss(
-            target_data.data, target_data.targets).item() for model in in_model_list_pm])
+            data, targets).item() for model in in_model_list_pm])
         out_signal = np.array([model.get_loss(
-            target_data.data, target_data.targets).item() for model in out_model_list_pm])
+            data, targets).item() for model in out_model_list_pm])
 
         # Rescale the loss
         in_signal = in_signal+1e-17  # avoid nan
@@ -214,7 +227,7 @@ if __name__ == '__main__':
             kde=True
         )
         plt.grid()
-        plt.xlabel(f"Signal value")
+        plt.xlabel("Signal value")
         plt.ylabel('Number of Models')
         plt.title(f"Signal histogram for data point {configs['audit']['idx']}")
         plt.savefig(

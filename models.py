@@ -1,9 +1,11 @@
-import torch.nn as nn
+"""This file contains the definition of models"""
+from torch import nn
 import torch.nn.functional as F
-import torch
 
 
 class Net(nn.Module):
+    """Simple CNN for CIFAR10 dataset."""
+
     def __init__(self):
         super().__init__()
         self.conv1 = nn.Conv2d(3, 6, 5)
@@ -13,17 +15,21 @@ class Net(nn.Module):
         self.fc2 = nn.Linear(120, 84)
         self.fc3 = nn.Linear(84, 10)
 
-    def forward(self, x):
-        x = self.pool(F.relu(self.conv1(x)))
-        x = self.pool(F.relu(self.conv2(x)))
-        x = torch.flatten(x, 1)  # flatten all dimensions except batch
-        x = F.relu(self.fc1(x))
-        x = F.relu(self.fc2(x))
-        x = self.fc3(x)
-        return x
+    def forward(self, inputs):
+        """Forward pass of the model."""
+        inputs = self.pool(F.relu(self.conv1(inputs)))
+        inputs = self.pool(F.relu(self.conv2(inputs)))
+        # flatten all dimensions except batch
+        inputs = inputs.reshape(-1, 16 * 5 * 5)
+        inputs = F.relu(self.fc1(inputs))
+        inputs = F.relu(self.fc2(inputs))
+        outputs = self.fc3(inputs)
+        return outputs
 
 
 class AlexNet(nn.Module):
+    """AlexNet model for CIFAR10 dataset."""
+
     def __init__(self, num_classes=10):
         super(AlexNet, self).__init__()
         self.features = nn.Sequential(
@@ -51,14 +57,15 @@ class AlexNet(nn.Module):
             nn.Linear(4096, num_classes),
         )
 
-    def forward(self, x):
-        x = self.features(x)
-        x = x.reshape(x.size(0), 256 * 2 * 2)
-        x = self.classifier(x)
-        return x
+    def forward(self, inputs):
+        """Forward pass of the model."""
+        inputs = self.features(inputs)
+        inputs = inputs.reshape(inputs.size(0), 256 * 2 * 2)
+        outputs = self.classifier(inputs)
+        return outputs
 
 
-def get_model(model_type: str) -> torch.nn.Module:
+def get_model(model_type: str) -> nn.Module:
     """Instantiate the model based on the model_type
 
     Args:
@@ -69,8 +76,6 @@ def get_model(model_type: str) -> torch.nn.Module:
     """
     if model_type == 'CNN':
         return Net()
-
-    elif model_type == 'alexnet':
+    if model_type == 'alexnet':
         return AlexNet()
-    else:
-        raise NotImplementedError(f"{model_type} is not implemented")
+    raise NotImplementedError(f"{model_type} is not implemented")

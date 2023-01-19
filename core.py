@@ -1,26 +1,27 @@
+import collections
+import copy
+import logging
+import pickle
+import time
+from pathlib import Path
+
 import numpy as np
 import torch
+from sklearn.model_selection import train_test_split
 from torch import nn
+
+from dataset import get_dataset_subset
+from models import get_model
+from privacy_meter import audit_report
 from privacy_meter.audit import MetricEnum
 from privacy_meter.audit_report import ROCCurveReport, SignalHistogramReport
 from privacy_meter.constants import InferenceGame
 from privacy_meter.dataset import Dataset
 from privacy_meter.information_source import InformationSource
-import torch
-import torch
-import logging
-from sklearn.model_selection import train_test_split
-import time
-import copy
-from models import get_model
-import collections
-from dataset import get_cifar10_subset
-from pathlib import Path
-import pickle
 from privacy_meter.model import PytorchModelTensor
-from privacy_meter import audit_report
-from train import train, inference
+from train import inference, train
 from util import get_split
+
 
 
 def load_existing_target_model(N, model_metadata_list, configs):
@@ -45,7 +46,11 @@ def load_existing_target_model(N, model_metadata_list, configs):
     assert 'model_metadata' in model_metadata_list, "Input the correct model_metedata_list"
 
     # Specify the conditions.
-    matching_key = ['optimizer', 'batch_size', 'epochs', 'learning_rate', 'weight_decay']
+
+    # matched_idx_a = get_matched_model_index(model_metadata_list,matching_key)
+
+    matching_key = ['optimizer', 'batch_size',
+                    'epochs', 'learning_rate', 'weight_decay']
     for meta_idx in model_metadata_list['model_metadata']:
         meta_data = model_metadata_list['model_metadata'][meta_idx]
         # Check if conditions are satisfied.
@@ -56,19 +61,21 @@ def load_existing_target_model(N, model_metadata_list, configs):
             elif configs['train']['key'] == 'data_idx':
                 # Check if the data is included or excluded from the training dataset of the target model
                 # check if the idx is in the training dataset size.
-                if (configs['train']['type'] == 'include' and configs['train']['idx'] in meta_data['train_split']) or (configs['train']['type'] == 'exclude' and configs['train']['idx'] not in meta_data['train_split']):
+                if (configs['train']['type'] == 'include' and configs['train']['model_idx'] in meta_data['train_split']) or (configs['train']['type'] == 'exclude' and configs['train']['model_idx'] not in meta_data['train_split']):
                     matched_idx.append(meta_idx)
             elif configs['train']['key'] == 'model_idx':
                 # Check if the model id equals to what is specified.
-                if meta_data['idx'] == configs['train']['idx']:
+                if meta_data['model_idx'] == configs['train']['model_idx']:
                     matched_idx.append(meta_idx)
                     return matched_idx
             else:
-                raise ValueError(f'Key can only be model_idx or data_idx')
+                raise ValueError('Key can only be model_idx or data_idx')
 
         # Check if we have load enough train models
         if len(matched_idx) == configs['train']['num_target_model']:
             break
+
+    # assert matched_idx == matched_idx_a, "The two methods of getting matched_idx are different"
     return matched_idx
 
 
@@ -76,7 +83,7 @@ def load_existing_reference_models(N, model_metadata_list, configs, matched_targ
     """Check if there are trained models that matches the training configuration.
 
     Args:
-        N (int): Size of the whole training dataset. 
+        N (int): Size of the whole training dataset.
         model_metadata_list (dict): Model metedata dict.
         configs (dict): Training target models configuration.
         matched_target_idx (List): List of existing target model index.
@@ -89,7 +96,8 @@ def load_existing_reference_models(N, model_metadata_list, configs, matched_targ
     """
 
     reference_matched_idx_list = []
-    matching_key = ['optimizer', 'batch_size', 'epochs', 'learning_rate', 'weight_decay']
+    matching_key = ['optimizer', 'batch_size',
+                    'epochs', 'learning_rate', 'weight_decay']
 
     for target_idx in matched_target_idx:
         reference_matched_idx = []
@@ -109,11 +117,11 @@ def load_existing_reference_models(N, model_metadata_list, configs, matched_targ
                 elif configs['audit']['key'] == 'data_idx':
                     # Check if the reference models are trained with or without the points indicated by idx
                     # check if the idx is in the training dataset size.
-                    if (configs['audit']['type'] == 'include' and configs['audit']['idx'] in meta_data['train_split']) or (configs['audit']['type'] == 'exclude' and configs['audit']['idx'] not in meta_data['train_split']):
+                    if (configs['audit']['type'] == 'include' and configs['audit']['model_idx'] in meta_data['train_split']) or (configs['audit']['type'] == 'exclude' and configs['audit']['model_idx'] not in meta_data['train_split']):
                         reference_matched_idx.append(meta_idx)
                 else:
                     raise ValueError(
-                        f'key can only be data idx for loading reference models')
+                        'key can only be data idx for loading reference models')
             # Check if the existing referencce models already satisfy the constraints
             if len(reference_matched_idx) == configs['audit']['num_reference_models']:
                 break
@@ -246,7 +254,7 @@ def prepare_datasets_for_sample_privacy_risk(N, num_total, num_models, data_idx,
             # Note: Since we are intested in the individual privacy risk, we consider the whole dataset as the test and audit dataset
             index_list.append({'train': train_index, 'test': [i for i in all_index if i not in train_index and i != data_idx], 'audit': [
                               i for i in all_index if i not in train_index and i != data_idx]})
-            associated_models.append(metadata['idx'])
+            associated_models.append(metadata['model_idx'])
 
     else:
         raise ValueError(
@@ -292,9 +300,11 @@ def prepare_models(log_dir, dataset, data_split, configs, model_metadata_list, m
         meta_data = {}
         baseline_time = time.time()
 
-        train_data = torch.utils.data.Subset(dataset, data_split['split'][split]['train'])
-        test_data = torch.utils.data.Subset(dataset, data_split['split'][split]['test'])
-        #get_cifar10_subset(dataset, data_split['split'][split]['train'])
+        train_data = torch.utils.data.Subset(
+            dataset, data_split['split'][split]['train'])
+        test_data = torch.utils.data.Subset(
+            dataset, data_split['split'][split]['test'])
+        # get_cifar10_subset(dataset, data_split['split'][split]['train'])
         # test_data = get_cifar10_subset(
         #     dataset, data_split['split'][split]['test'])
         train_loader = torch.utils.data.DataLoader(
@@ -311,9 +321,9 @@ def prepare_models(log_dir, dataset, data_split, configs, model_metadata_list, m
         model = train(model, train_loader, configs)
         # Test performance on the training dataset and test dataset
         test_loss, test_acc = inference(
-            model, test_loader, configs['device'], is_train=False)
+            model, test_loader, configs['device'])
         train_loss, train_acc = inference(
-            model, train_loader, configs['device'], is_train=True)
+            model, train_loader, configs['device'])
         model_list.append(copy.deepcopy(model))
 
         logging.info(
@@ -328,12 +338,13 @@ def prepare_models(log_dir, dataset, data_split, configs, model_metadata_list, m
         meta_data['train_split'] = data_split['split'][split]['train']
         meta_data['test_split'] = data_split['split'][split]['test']
         meta_data['audit_split'] = data_split['split'][split]['audit']
+        meta_data['num_train'] = len(data_split['split'][split]['train'])
         meta_data['optimizer'] = configs['optimizer']
         meta_data['batch_size'] = configs['batch_size']
         meta_data['epochs'] = configs['epochs']
         meta_data['model_name'] = configs['model_name']
         meta_data['split_method'] = data_split['split_method']
-        meta_data['idx'] = model_idx
+        meta_data['model_idx'] = model_idx
         meta_data['learning_rate'] = configs['learning_rate']
         meta_data['weight_decay'] = configs['weight_decay']
         meta_data['model_path'] = f'{log_dir}/model_{model_idx}.pkl'
@@ -368,11 +379,11 @@ def get_info_source_population_attack(dataset, data_split, model, configs):
         target_model: List of target models we want to audit 
         reference_model: List of reference models (which is the target model based on population attack)
     """
-    train_data,train_targets = get_cifar10_subset(
-        dataset, data_split['train'], is_tensor=True)
-    test_data,test_targets = get_cifar10_subset(dataset, data_split['test'], is_tensor=True)
-    audit_data,audit_targets = get_cifar10_subset(
-        dataset, data_split['audit'], is_tensor=True)
+    train_data, train_targets = get_dataset_subset(
+        dataset, data_split['train'])
+    test_data, test_targets = get_dataset_subset(dataset, data_split['test'])
+    audit_data, audit_targets = get_dataset_subset(
+        dataset, data_split['audit'])
     target_dataset = Dataset(
         data_dict={
             'train': {'x': train_data, 'y': train_targets},
@@ -399,7 +410,7 @@ def get_info_source_reference_attack(log_dir, dataset, data_split, model, config
 
      Args:
         log_dir: Log directory that saved all the information, including the models.
-        dataset: The whole dataset 
+        dataset: The whole dataset.
         data_split (dict): Data split information. 'split' contains a list of dict, each of which has the train, test and audit information. 'split_method' indicates the how the dataset is generated.
         model (model): Target Model.
         configs (dict): Auditing configuration.
@@ -416,9 +427,9 @@ def get_info_source_reference_attack(log_dir, dataset, data_split, model, config
     """
 
     # Construct the target dataset and target models
-    train_data,train_targets = get_cifar10_subset(
-        dataset, data_split['train'], is_tensor=True)
-    test_data,test_targets = get_cifar10_subset(dataset, data_split['test'], is_tensor=True)
+    train_data, train_targets = get_dataset_subset(
+        dataset, data_split['train'])
+    test_data, test_targets = get_dataset_subset(dataset, data_split['test'])
     target_dataset = Dataset(
         data_dict={
             'train': {'x': train_data, 'y': train_targets},
@@ -455,14 +466,15 @@ def get_info_source_reference_attack(log_dir, dataset, data_split, model, config
         print(f'Training  {reference_idx}-th reference model')
         start_time = time.time()
 
-        reference_loader = torch.utils.data.DataLoader(torch.utils.data.Subset(dataset,reference_data_idx),batch_size=configs['batch_size'], shuffle=True, num_workers=2)
+        reference_loader = torch.utils.data.DataLoader(torch.utils.data.Subset(
+            dataset, reference_data_idx), batch_size=configs['batch_size'], shuffle=True, num_workers=2)
         # reference_loader = torch.utils.data.DataLoader(get_cifar10_subset(
         #     dataset, reference_data_idx), batch_size=configs['batch_size'], shuffle=True, num_workers=2)
         reference_model = get_model(configs['model_name'])
         reference_model = train(reference_model, reference_loader, configs)
         # Test performance on the training dataset and test dataset
         train_loss, train_acc = inference(
-            model, reference_loader, configs['device'], is_train=False)
+            model, reference_loader, configs['device'])
 
         logging.info(
             f'Prepare {reference_idx}-th reference model costs {time.time()-start_time} seconds: Train accuracy (on auditing dataset) {train_acc}, Train Loss {train_loss}')
@@ -474,11 +486,12 @@ def get_info_source_reference_attack(log_dir, dataset, data_split, model, config
 
         meta_data = {}
         meta_data['train_split'] = reference_data_idx
+        meta_data['num_train'] = len(reference_data_idx)
         meta_data['optimizer'] = configs['optimizer']
         meta_data['batch_size'] = configs['batch_size']
         meta_data['epochs'] = configs['epochs']
         meta_data['split_method'] = configs['split_method']
-        meta_data['idx'] = model_idx
+        meta_data['model_idx'] = model_idx
         meta_data['learning_rate'] = configs['learning_rate']
         meta_data['weight_decay'] = configs['weight_decay']
         meta_data['model_name'] = configs['model_name']

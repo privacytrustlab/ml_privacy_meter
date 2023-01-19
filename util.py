@@ -1,10 +1,10 @@
 from ast import List
 import numpy as np
-import torch.optim as optim
 import torch
 
 
-def get_optimizer(model: torch.nn.Module, configs: dict) -> torch.optim.Optimizer:
+def get_optimizer(model: torch.nn.Module,
+                  configs: dict) -> torch.optim.Optimizer:
     """Get the optimizer for the given model
 
     Args:
@@ -69,3 +69,113 @@ def get_split(all_index: List(int), used_index:  List(int), size: int, split_met
             f"{split_method} is not implemented. The only supported methods are uniform and no_overlapping.")
 
     return selected_index
+
+
+def load_models_by_conditions(model_metadata_list: dict,
+                              conditions: dict,
+                              num_models: int,
+                              exclude_idx: List(int) = []) -> List(int):
+    """Load existing models metadata index based on the conditions
+
+    Args:
+        model_metadata_list (dict): Model metadata dict.
+        conditions (dict): Conditions to match.
+        num_models (int): Number of models needed.
+        exclude_idx (List, optional): Metadata index list that are excluded.
+
+    Returns:
+        List: List of metadata index which match the conditions.
+    """
+    assert type(conditions) == dict
+    if len(conditions) == 0:
+        return []
+    matched_idx = []
+    for meta_idx, meta_data in model_metadata_list['model_metadata'].items():
+        if meta_idx in exclude_idx:
+            continue
+        if len(matched_idx) > num_models:
+            return matched_idx
+        for key, item in conditions.items():
+            if key in meta_data:
+                if meta_data[key] != item:
+                    is_matched = False
+                    break
+                else:
+                    is_matched = True
+            else:
+                is_matched = False
+                break
+        if is_matched:
+            matched_idx.append(meta_idx)
+    return matched_idx
+
+
+def load_models_by_model_idx(model_metadata_list: dict,
+                             model_idx_list: List(int)) -> List(int):
+    """Load existing models metadata index based on the model index.
+
+    Args:
+        model_metadata_list (dict): Model metadata dict.
+        model_idx_list (List[int]): Model index list.
+
+    Returns:
+        List[int]: List of metadata index which match the conditions.
+    """
+    assert all(isinstance(index, int) for index in model_idx_list)
+    assert isinstance(model_metadata_list, dict)
+    if not model_idx_list:
+        return []
+    matched_idx = [
+        meta_idx
+        for meta_idx, meta_data in model_metadata_list["model_metadata"].items()
+        if meta_data["model_idx"] in model_idx_list
+    ]
+    return matched_idx
+
+
+def load_models_with_data_idx_list(model_metadata_list: dict,
+                                   data_idx_list: List(int)) -> List(int):
+    """Load existing metadata index of models which are trained on the data index list.
+
+    Args:
+        model_metadata_list (dict): Model metadata dict.
+        data_idx_list (List(int)): Data index list.
+
+    Returns:
+        List(int): List of metadata index which match the conditions.
+    """
+    assert all(isinstance(index, int) for index in data_idx_list)
+    assert isinstance(model_metadata_list, dict)
+    if not data_idx_list:
+        raise ValueError("data_idx_list is empty.")
+    matched_idx = [
+        meta_idx
+        for meta_idx, meta_data in
+        model_metadata_list["model_metadata"].items()
+        if (set(data_idx_list).issubset(set(meta_data['train_split'])))
+    ]
+    return matched_idx
+
+
+def load_models_without_data_idx_list(model_metadata_list: dict,
+                                      data_idx_list: List(int)) -> List(int):
+    """Load existing metadata index of models which are not trained on the data index list.
+
+    Args:
+        model_metadata_list (dict): Model metadata dict.
+        data_idx_list (List(int)): Data index list.
+
+    Returns:
+        List(int): List of metadata index which match the conditions.
+    """
+    assert all(isinstance(index, int) for index in data_idx_list)
+    assert isinstance(model_metadata_list, dict)
+    if not data_idx_list:
+        raise ValueError("data_idx_list is empty.")
+    matched_idx = [
+        meta_idx
+        for meta_idx, meta_data in
+        model_metadata_list['model_metadata'].items()
+        if set(data_idx_list).isdisjoint(meta_data['train_split'])
+    ]
+    return matched_idx
