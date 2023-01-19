@@ -76,8 +76,8 @@ def test_train_on_cnn():
     configs = {
         'epochs': 1,
         'optimizer': 'Adam',
-        'lr': 0.01,
-        'wd': 0,
+        'learning_rate': 0.01,
+        'weight_decay': 0,
         'momentum': 0,
     }
 
@@ -111,8 +111,8 @@ def test_train_on_alexnet():
     configs = {
         'epochs': 1,
         'optimizer': 'Adam',
-        'lr': 0.01,
-        'wd': 0,
+        'learning_rate': 0.01,
+        'weight_decay': 0,
         'momentum': 0,
     }
     model = get_model('alexnet')
@@ -145,8 +145,8 @@ def test_inference():
     configs = {
         'epochs': 1,
         'optimizer': 'Adam',
-        'lr': 0.01,
-        'wd': 0,
+        'learning_rate': 0.01,
+        'weight_decay': 0,
         'momentum': 0,
         'device': 'cuda:1',
     }

@@ -25,8 +25,8 @@ audit: # Configurations for auditing
   batch_size: 16 # Integer number for indicating the batch size of training the reference models if reference attack is used.
   f_reference_dataset: 1 # Float number for indicating the ratio between the reference train dataset and the target train dataset.
   optimizer: Adam # String which indicates the optimizer for training reference models. We support Adam and SGD.
-  lr: 0.001 # Float number for indicating learning rate for training the reference model.
-  wd: 0 # Float number for indicating weight decay for training the reference model.
+  learning_rate: 0.001 # Float number for indicating learning rate for training the reference model.
+  weight_decay: 0 # Float number for indicating weight decay for training the reference model.
   model_name: alexnet # String for indicating the model type. We support CNN,alexnet. More model type can be added in model.py.
   epochs: 75 # Integer number for indicating the epochs for training target model.
   split_method: uniform # String for indicating the splitting methods for reference dataset. We support uniform and leave_one_out.

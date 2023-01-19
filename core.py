@@ -38,14 +38,14 @@ def load_existing_target_model(N, model_metadata_list, configs):
         matched_idx: List of target model index which matches the conditions
     """
     matched_idx = []
-    assert all(name in configs['train'] for name in ['num_target_model', 'key', 'optimizer', 'batch_size', 'epochs', 'lr', 'wd']
-               ), "Specify 'num_target_model','key', 'optimizer','batch_size','epochs','lr','wd' in config['train'] for loading the existing models"
+    assert all(name in configs['train'] for name in ['num_target_model', 'key', 'optimizer', 'batch_size', 'epochs', 'learning_rate', 'weight_decay']
+               ), "Specify 'num_target_model','key', 'optimizer','batch_size','epochs','learning_rate','weight_decay' in config['train'] for loading the existing models"
     assert type(
         model_metadata_list) == dict, "Input the correct model_metedata_list"
     assert 'model_metadata' in model_metadata_list, "Input the correct model_metedata_list"
 
     # Specify the conditions.
-    matching_key = ['optimizer', 'batch_size', 'epochs', 'lr', 'wd']
+    matching_key = ['optimizer', 'batch_size', 'epochs', 'learning_rate', 'weight_decay']
     for meta_idx in model_metadata_list['model_metadata']:
         meta_data = model_metadata_list['model_metadata'][meta_idx]
         # Check if conditions are satisfied.
@@ -89,7 +89,7 @@ def load_existing_reference_models(N, model_metadata_list, configs, matched_targ
     """
 
     reference_matched_idx_list = []
-    matching_key = ['optimizer', 'batch_size', 'epochs', 'lr', 'wd']
+    matching_key = ['optimizer', 'batch_size', 'epochs', 'learning_rate', 'weight_decay']
 
     for target_idx in matched_target_idx:
         reference_matched_idx = []
@@ -292,10 +292,11 @@ def prepare_models(log_dir, dataset, data_split, configs, model_metadata_list, m
         meta_data = {}
         baseline_time = time.time()
 
-        train_data = get_cifar10_subset(
-            dataset, data_split['split'][split]['train'])
-        test_data = get_cifar10_subset(
-            dataset, data_split['split'][split]['test'])
+        train_data = torch.utils.data.Subset(dataset, data_split['split'][split]['train'])
+        test_data = torch.utils.data.Subset(dataset, data_split['split'][split]['test'])
+        #get_cifar10_subset(dataset, data_split['split'][split]['train'])
+        # test_data = get_cifar10_subset(
+        #     dataset, data_split['split'][split]['test'])
         train_loader = torch.utils.data.DataLoader(
             train_data, batch_size=configs['batch_size'], shuffle=True, num_workers=2)
         test_loader = torch.utils.data.DataLoader(
@@ -333,8 +334,8 @@ def prepare_models(log_dir, dataset, data_split, configs, model_metadata_list, m
         meta_data['model_name'] = configs['model_name']
         meta_data['split_method'] = data_split['split_method']
         meta_data['idx'] = model_idx
-        meta_data['lr'] = configs['lr']
-        meta_data['wd'] = configs['wd']
+        meta_data['learning_rate'] = configs['learning_rate']
+        meta_data['weight_decay'] = configs['weight_decay']
         meta_data['model_path'] = f'{log_dir}/model_{model_idx}.pkl'
         # Check if there is any associated model (trained on the dataset differ by one record)
         if 'associated_models' in data_split:
@@ -367,15 +368,15 @@ def get_info_source_population_attack(dataset, data_split, model, configs):
         target_model: List of target models we want to audit 
         reference_model: List of reference models (which is the target model based on population attack)
     """
-    train_data = get_cifar10_subset(
+    train_data,train_targets = get_cifar10_subset(
         dataset, data_split['train'], is_tensor=True)
-    test_data = get_cifar10_subset(dataset, data_split['test'], is_tensor=True)
-    audit_data = get_cifar10_subset(
+    test_data,test_targets = get_cifar10_subset(dataset, data_split['test'], is_tensor=True)
+    audit_data,audit_targets = get_cifar10_subset(
         dataset, data_split['audit'], is_tensor=True)
     target_dataset = Dataset(
         data_dict={
-            'train': {'x': train_data.data, 'y': train_data.targets},
-            'test': {'x': test_data.data, 'y': test_data.targets},
+            'train': {'x': train_data, 'y': train_targets},
+            'test': {'x': test_data, 'y': test_targets},
         },
         default_input='x',
         default_output='y'
@@ -383,7 +384,7 @@ def get_info_source_population_attack(dataset, data_split, model, configs):
 
     audit_dataset = Dataset(
         data_dict={
-            'train': {'x': audit_data.data, 'y': audit_data.targets}
+            'train': {'x': audit_data, 'y': audit_targets}
         },
         default_input='x',
         default_output='y'
@@ -415,13 +416,13 @@ def get_info_source_reference_attack(log_dir, dataset, data_split, model, config
     """
 
     # Construct the target dataset and target models
-    train_data = get_cifar10_subset(
+    train_data,train_targets = get_cifar10_subset(
         dataset, data_split['train'], is_tensor=True)
-    test_data = get_cifar10_subset(dataset, data_split['test'], is_tensor=True)
+    test_data,test_targets = get_cifar10_subset(dataset, data_split['test'], is_tensor=True)
     target_dataset = Dataset(
         data_dict={
-            'train': {'x': train_data.data, 'y': train_data.targets},
-            'test': {'x': test_data.data, 'y': test_data.targets},
+            'train': {'x': train_data, 'y': train_targets},
+            'test': {'x': test_data, 'y': test_targets},
         },
         default_input='x',
         default_output='y'
@@ -454,8 +455,9 @@ def get_info_source_reference_attack(log_dir, dataset, data_split, model, config
         print(f'Training  {reference_idx}-th reference model')
         start_time = time.time()
 
-        reference_loader = torch.utils.data.DataLoader(get_cifar10_subset(
-            dataset, reference_data_idx), batch_size=configs['batch_size'], shuffle=True, num_workers=2)
+        reference_loader = torch.utils.data.DataLoader(torch.utils.data.Subset(dataset,reference_data_idx),batch_size=configs['batch_size'], shuffle=True, num_workers=2)
+        # reference_loader = torch.utils.data.DataLoader(get_cifar10_subset(
+        #     dataset, reference_data_idx), batch_size=configs['batch_size'], shuffle=True, num_workers=2)
         reference_model = get_model(configs['model_name'])
         reference_model = train(reference_model, reference_loader, configs)
         # Test performance on the training dataset and test dataset
@@ -477,8 +479,8 @@ def get_info_source_reference_attack(log_dir, dataset, data_split, model, config
         meta_data['epochs'] = configs['epochs']
         meta_data['split_method'] = configs['split_method']
         meta_data['idx'] = model_idx
-        meta_data['lr'] = configs['lr']
-        meta_data['wd'] = configs['wd']
+        meta_data['learning_rate'] = configs['learning_rate']
+        meta_data['weight_decay'] = configs['weight_decay']
         meta_data['model_name'] = configs['model_name']
         meta_data['model_path'] = f'{log_dir}/model_{model_idx}.pkl'
         model_metadata_list['model_metadata'][model_idx] = meta_data

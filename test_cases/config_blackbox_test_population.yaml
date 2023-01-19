@@ -29,8 +29,8 @@ train: # Configuration for training
   batch_size: 16 # Integer number for indicating batch size for training the target model.
   test_batch_size: 10000 # Integer number for indicating batch size for evaluating the target model.
   optimizer: Adam # String which indicates the optimizer. We support Adam and SGD.
-  lr: 0.001 # Float number for indicating learning rate for training the target model.
-  wd: 0 # Float number for indicating weight decay for training the target model.
+  learning_rate: 0.001 # Float number for indicating learning rate for training the target model.
+  weight_decay: 0 # Float number for indicating weight decay for training the target model.
   model_name: alexnet # String for indicating the model type. We support CNN. More model types can be added in model.py.
   device: cuda:0 # String for indicating the device we want to use for training models.
   key: none # String for indicating the meaning of the idx. We support data_idx, model_idx or none.

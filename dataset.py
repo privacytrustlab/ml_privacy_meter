@@ -68,13 +68,15 @@ def get_cifar10_subset(dataset: torchvision.datasets.cifar.CIFAR10, index: List(
     assert max(index) < 60000 and min(
         index) >= 0, ValueError("Input the correct index")
 
-    selected_data = copy.deepcopy(dataset)
-    selected_data.data = selected_data.data[index]
-    selected_data.targets = list(np.array(selected_data.targets)[index])
 
+    # selected_data = copy.deepcopy(dataset)
+    # selected_data.data = selected_data.data[index]
+    # selected_data.targets = list(np.array(selected_data.targets)[index])
+
+    data = dataset.data[index]
+    targets = list(np.array(dataset.targets)[index])
     if is_tensor:
-        selected_data.data = torch.from_numpy(
-            selected_data.data).float().permute(0, 3, 1, 2)/255  # channel first
-        selected_data.targets = torch.tensor(selected_data.targets)
+        data = torch.from_numpy(data).float().permute(0, 3, 1, 2)/255  # channel first
+        targets = torch.tensor(targets)
 
-    return selected_data
+    return data,targets

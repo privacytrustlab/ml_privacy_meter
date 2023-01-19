@@ -18,13 +18,18 @@ def get_optimizer(model: torch.nn.Module, configs: dict) -> torch.optim.Optimize
         optim: Optimizer for the given model
     """
     optimizer = configs.get('optimizer', 'SGD')
-    lr = configs.get('lr', 0.001)
-    wd = configs.get('wd', 0)
+    lr = configs.get('learning_rate', 0.001)
+    wd = configs.get('weight_decay', 0)
 
     if optimizer in ['SGD', 'Adam']:
         if optimizer == 'SGD':
-            return torch.optim.SGD(model.parameters(), lr=lr, momentum=configs.get('momentum', 0), weight_decay=wd)
+            momentum = configs.get('momentum', 0)
+            print(
+                f"Load the optimizer {optimizer} with learning rate {lr}, weight decay {wd} and momentum {momentum}")
+            return torch.optim.SGD(model.parameters(), lr=lr, momentum=momentum, weight_decay=wd)
         else:
+            print(
+                f"Load the optimizer {optimizer} with learning rate {lr}, weight decay {wd}")
             return torch.optim.Adam(model.parameters(), lr=lr, weight_decay=wd)
     else:
         raise NotImplementedError(

@@ -16,11 +16,18 @@ from torch import nn
 import torch
 import numpy as np
 import logging
-logging.basicConfig(filename='log_time.log',
-                    format='%(asctime)s %(levelname)-8s %(message)s',
-                    level=logging.INFO,
-                    filemode='w',
-                    datefmt='%Y-%m-%d %H:%M:%S')
+
+
+def setup_log(name):
+    logger = logging.getLogger(name)
+    logger.setLevel(logging.INFO)
+    log_format = logging.Formatter('%(asctime)s %(levelname)-8s %(message)s')
+    filename = f"log_{name}.log"
+    log_handler = logging.FileHandler(filename)
+    log_handler.setLevel(logging.INFO)
+    log_handler.setFormatter(log_format)
+    logger.addHandler(log_handler)
+    return logger
 
 
 if __name__ == '__main__':
@@ -36,10 +43,14 @@ if __name__ == '__main__':
 
     # Set the random seed, log_dir and inference_game
     torch.manual_seed(configs['run']['random_seed'])
-    global log_dir
+    np.random.seed(configs['run']['random_seed'])
+
     log_dir = configs['run']['log_dir']
     inference_game_type = configs['audit']['privacy_game'].upper()
 
+    # Set up the logger
+    logger = setup_log('time_analysis')
+    
     # Create folders for saving the logs if they do not exist
     Path(log_dir).mkdir(parents=True, exist_ok=True)
     Path(
@@ -84,7 +95,7 @@ if __name__ == '__main__':
         print(25*">"+"Prepare the the datasets")
         data_split_info = prepare_datasets(len(
             dataset), configs['train']['num_target_model'], configs['data'], model_metadata_list, matched_idx)
-        logging.info(
+        logger.info(
             f'Prepare the datasets costs {time.time()-baseline_time} seconds')
 
         # Prepare the target models
@@ -92,7 +103,7 @@ if __name__ == '__main__':
         baseline_time = time.time()
         model_list, model_metadata_list, matched_idx = prepare_models(
             log_dir, dataset, data_split_info, configs['train'], model_metadata_list, matched_idx)
-        logging.info(
+        logger.info(
             f'Prepare the target model costs {time.time()-baseline_time} seconds')
 
         # Prepare the information sources
@@ -100,7 +111,7 @@ if __name__ == '__main__':
         baseline_time = time.time()
         target_info_source, reference_info_source, metrics, log_dir_list, model_metadata_list = prepare_information_source(
             log_dir, dataset, data_split_info, model_list, configs['audit'], model_metadata_list, matched_reference_idx)
-        logging.info(
+        logger.info(
             f'Prepare the information source costs {time.time()-baseline_time} seconds')
 
         # Call core of privacy meter
@@ -116,7 +127,7 @@ if __name__ == '__main__':
         )
         audit_obj.prepare()
         audit_results = audit_obj.run()
-        logging.info(
+        logger.info(
             f'Prepare privacy meter results costs {time.time()-baseline_time} seconds')
 
         # Generate the privacy risk report
@@ -126,9 +137,9 @@ if __name__ == '__main__':
             log_dir, audit_results, configs['audit'], save_path=f"{log_dir}/{configs['audit']['report_log']}")
         print(100*"#")
 
-        logging.info(
+        logger.info(
             f'Prepare the plot for the privacy risk report costs {time.time()-baseline_time} seconds')
-        logging.info(
+        logger.info(
             f'Run the priavcy meter for the all steps costs {time.time()-start_time} seconds')
 
     # Auditing the priavcy risk for an individual data point
