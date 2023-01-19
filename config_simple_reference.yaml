@@ -4,7 +4,7 @@ run: # Configurations for a specific run
 
 audit: # Configurations for auditing
   privacy_game: privacy_loss_model # Indicate the privacy game from privacy_loss_model, avg_privacy_loss_training_algo, privacy_loss_sample
-  device: cuda:0 # String for indicating on which device we conduct the membership inference attack and train reference models.
+  device: cpu # String for indicating on which device we conduct the membership inference attack and train reference models.
   audit_batch_size: 1000 # Integer number for indicating the batch size for computing signals in the privacy meter.
   algorithm: reference # String for indicating the membership inference attack. We currently support population, reference.
   report_log: report_reference # String that indicates the folder where we save the and auditing report.
@@ -29,7 +29,7 @@ train: # Configuration for training
   learning_rate: 0.001 # Float number for indicating learning rate for training the target model.
   weight_decay: 0 # Float number for indicating weight decay for training the target model.
   model_name: CNN # String for indicating the model type. We support CNN. More model types can be added in model.py.
-  device: cuda:0 # String for indicating the device we want to use for training models.
+  device: cpu # String for indicating the device we want to use for training models.
   key: none # String for indicating the meaning of the idx. We support data_idx, model_idx or none.
   num_target_model: 1 #Integer number for indicating how many target models we want to audit for the privacy game
 
