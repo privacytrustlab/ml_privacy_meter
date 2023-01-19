@@ -51,32 +51,24 @@ def get_dataset(dataset_name: str, data_dir: str) -> torchvision.datasets:
     return all_data
 
 
-def get_cifar10_subset(dataset: torchvision.datasets.cifar.CIFAR10, index: List(int), is_tensor: bool = False) -> torchvision.datasets.cifar.CIFAR10:
-    # TODO: add the sampler instead of creating copies of the dataset
+def get_cifar10_subset(dataset: torchvision.datasets.cifar.CIFAR10, index: List(int), is_tensor: bool = False):
     """Get a subset of the cifar10 dataset
 
     Args:
         dataset (torchvision.datasets.cifar.CIFAR10): Whole dataset
         index (list): List of index
         is_tensor (bool, optional): Whether to return tensors of the data. Defaults to False.
-
-    Returns:
-        selected_data: Dataset which only contains the data indicated by the index
     """
     assert type(dataset) == torchvision.datasets.cifar.CIFAR10, ValueError(
         "Input the correct dataset")
     assert max(index) < 60000 and min(
         index) >= 0, ValueError("Input the correct index")
 
-
-    # selected_data = copy.deepcopy(dataset)
-    # selected_data.data = selected_data.data[index]
-    # selected_data.targets = list(np.array(selected_data.targets)[index])
-
     data = dataset.data[index]
     targets = list(np.array(dataset.targets)[index])
     if is_tensor:
-        data = torch.from_numpy(data).float().permute(0, 3, 1, 2)/255  # channel first
+        data = torch.from_numpy(data).float().permute(
+            0, 3, 1, 2)/255  # channel first
         targets = torch.tensor(targets)
 
-    return data,targets
+    return data, targets
