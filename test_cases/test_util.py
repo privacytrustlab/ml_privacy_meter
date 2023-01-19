@@ -16,7 +16,7 @@ log_dir = 'test_cases'
 
 # Test datasets
 def test_get_dataset_on_cifar():
-    dataset = get_dataset('cifar10', log_dir)
+    dataset = get_dataset('cifar10', 'data')
     assert len(dataset) == 60000
     assert os.path.exists(f"{log_dir}/cifar10.pkl")
     for i in range(10):
@@ -31,34 +31,32 @@ def test_get_dataset_on_other_datasets():
 def test_get_cifar10_subset():
     dataset = get_dataset('cifar10', 'data')
     selected_index = list(np.random.choice(range(60000), 100))
-    data = get_cifar10_subset(dataset, selected_index, is_tensor=False)
-    assert type(data) == torchvision.datasets.cifar.CIFAR10
+    data, targets = get_cifar10_subset(
+        dataset, selected_index, is_tensor=False)
     assert len(data) == 100
-    assert type(data.data) == np.ndarray
-    assert type(data.targets) == list
+    assert type(data) == np.ndarray
+    assert type(targets) == list
 
 
 def test_get_cifar10_subset_tensor():
-    dataset = get_dataset('cifar10', log_dir)
+    dataset = get_dataset('cifar10', 'data')
     selected_index = list(np.random.choice(range(60000), 80))
-    data = get_cifar10_subset(dataset, selected_index, is_tensor=True)
-    assert type(data) == torchvision.datasets.cifar.CIFAR10
+    data, targets = get_cifar10_subset(dataset, selected_index, is_tensor=True)
+    assert type(data) == torch.Tensor
     assert len(data) == 80
-    assert type(data.data) == torch.Tensor
-    assert type(data.targets) == torch.Tensor
+    assert type(targets) == torch.Tensor
 
 
 def test_get_cifar10_subset_index():
-    dataset = get_dataset('cifar10', log_dir)
+    dataset = get_dataset('cifar10', 'data')
     with pytest.raises(AssertionError):
         get_cifar10_subset(dataset, [-1], is_tensor=False)
 
     with pytest.raises(AssertionError):
         get_cifar10_subset(dataset, [67000], is_tensor=False)
 
+
 # Test models
-
-
 def test_get_model():
     model = get_model('CNN')
     assert type(model) == Net
@@ -107,7 +105,7 @@ def test_train_on_cnn():
 
 
 def test_train_on_alexnet():
-    dataset = get_dataset('cifar10', log_dir)
+    dataset = get_dataset('cifar10', 'data')
     configs = {
         'epochs': 1,
         'optimizer': 'Adam',
@@ -130,7 +128,7 @@ def test_train_on_alexnet():
 
 # Test inference function and the effect of the training
 def test_inference():
-    dataset = get_dataset('cifar10', log_dir)
+    dataset = get_dataset('cifar10', 'data')
     model = get_model('CNN')
     o_w = model.state_dict()
     data_loader = torch.utils.data.DataLoader(
