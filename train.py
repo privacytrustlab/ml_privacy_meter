@@ -41,6 +41,8 @@ def train(model: torch.nn.Module,
 
             # Move data to the device
             data, target = data.to(device), target.to(device)
+            # Cast target to long tensor
+            target = target.long()
 
             # Set the gradients to zero
             optimizer.zero_grad()
@@ -100,6 +102,8 @@ def inference(model: torch.nn.Module,
         for batch_idx, (data, target) in enumerate(loader):
             # Moving data and target to the device
             data, target = data.to(device), target.to(device)
+            # Cast target to long tensor
+            target = target.long()
 
             # Computing output and loss
             output = model(data)

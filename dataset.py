@@ -65,10 +65,10 @@ def get_cifar10_subset(dataset: torchvision.datasets.cifar.CIFAR10, index: List(
         index) >= 0, ValueError("Input the correct index")
 
     data = dataset.data[index]
-    targets = list(np.array(dataset.targets)[index])
+    targets = list(np.array(dataset.targets)[index].astype(np.int32))
     if is_tensor:
         data = torch.from_numpy(data).float().permute(
             0, 3, 1, 2)/255  # channel first
-        targets = torch.tensor(targets)
+        targets = torch.tensor(targets,dtype=torch.long)
 
     return data, targets
