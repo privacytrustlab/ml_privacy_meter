@@ -21,7 +21,7 @@ def check_configs(configs: dict):
             f"{privacy_game} is not supported."
             + f"Please choose from {supported_games}"
         )
-    if privacy_game in ["privacy_loss_model", "privacy_loss_sample"]:
+    if privacy_game in ["privacy_loss_model", "avg_privacy_loss_training_algo"]:
         num_target_model = configs["train"]["num_target_model"]
         if privacy_game == "privacy_loss_model" and num_target_model != 1:
             raise ValueError("privacy_loss_model game only supports one target model")

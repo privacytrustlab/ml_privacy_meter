@@ -109,11 +109,17 @@ if __name__ == "__main__":
                 target_model_idx_list,
                 configs["data"],
             )
+            num_target_models = configs["train"]["num_target_model"] - len(trained_target_dataset_list)
+        else:
+            target_model_idx_list = []
+            trained_target_models_list = []
+            trained_target_dataset_list = []
+            num_target_models = configs["train"]["num_target_model"] 
 
         # Prepare the datasets
         print(25 * ">" + "Prepare the the datasets")
         data_split_info = prepare_datasets(
-            len(dataset), configs["train"]["num_target_model"], configs["data"]
+            len(dataset), num_target_models, configs["data"]
         )
 
         logger.info(
@@ -128,8 +134,8 @@ if __name__ == "__main__":
             log_dir, dataset, data_split_info, configs["train"], model_metadata_list
         )
 
-        model_list = [*new_model_list, *trained_models_list]
-        data_split_info["split"] = [*data_split_info["split"], *trained_dataset_list]
+        model_list = [*new_model_list, *trained_target_models_list]
+        data_split_info["split"] = [*data_split_info["split"], *trained_target_dataset_list]
         target_model_idx_list = [*new_target_model_idx_list, *target_model_idx_list]
 
         logger.info(

@@ -65,16 +65,14 @@ def load_existing_target_model(dataset_size, model_metadata_dict, configs):
     return matched_idx_list
 
 
-def load_existing_reference_models(
-    dataset_size, model_metadata_dict, configs, matched_target_idx
-):
+def load_existing_reference_models(model_metadata_dict, configs, target_idx):
     """Check if there are trained models that matches the configuration.
 
     Args:
-        dataset_size (int): Size of the whole training dataset.
+        # dataset_size (int): Size of the whole training dataset.
         model_metadata_dict (dict): Model metedata dict.
         configs (dict): Training target models configuration.
-        matched_target_idx (List): List of existing target model index.
+        target_idx (int): Target model.
 
     Raises:
         ValueError: If the key for the configuration takes value from none and model_idx
@@ -84,29 +82,30 @@ def load_existing_reference_models(
     """
     assert isinstance(model_metadata_dict, dict)
     assert "model_metadata" in model_metadata_dict
-    assert isinstance(matched_target_idx, list)
-    if configs["audit"]["algorithm"] != "reference":
+    if configs["algorithm"] != "reference":
         return []
     # Specify the conditions.
-    matched_idx_list = []
-    number_models = configs["audit"].get("num_reference_model", 10)
-    if configs["audit"]["key"] == "none":
+    number_models = configs.get("num_reference_model", 10)
+    num_audit = int(
+        model_metadata_dict["model_metadata"][target_idx]["num_train"]
+        * configs["f_reference_dataset"]
+    )
+    if configs["key"] == "none":
         conditions = {
-            "optimizer": configs["train"]["optimizer"],
-            "batch_size": configs["train"]["batch_size"],
-            "epochs": configs["train"]["epochs"],
-            "learning_rate": configs["train"]["learning_rate"],
-            "weight_decay": configs["train"]["weight_decay"],
-            "num_train": int(dataset_size * configs["data"]["f_train"]),
+            "optimizer": configs["optimizer"],
+            "batch_size": configs["batch_size"],
+            "epochs": configs["epochs"],
+            "learning_rate": configs["learning_rate"],
+            "weight_decay": configs["weight_decay"],
+            "num_train": num_audit,
         }
-        for target_idx in matched_target_idx:
-            reference_matched_idx = load_models_by_conditions(
-                model_metadata_dict, conditions, number_models, [target_idx]
-            )
-            matched_idx_list.append(reference_matched_idx)
+
+        reference_matched_idx = load_models_by_conditions(
+            model_metadata_dict, conditions, number_models, [target_idx]
+        )
     else:
         raise ValueError("key can only be none or model_idx for loading target models")
-    return matched_idx_list
+    return reference_matched_idx
 
 
 def load_existing_models(
@@ -122,6 +121,7 @@ def load_existing_models(
             model.load_state_dict(model_weight)
             model_list.append(model)
         print(f"Load existing {len(model_list)} target models")
+        return model_list
     else:
         return []
 
@@ -351,7 +351,7 @@ def prepare_models(log_dir: dict, dataset, data_split, configs, model_metadata_d
     model_list = []
     target_model_idx_list = []
     # Train the additional target models based on the dataset split
-    for split in range(len(data_split)):
+    for split in range(len(data_split['split'])):
         meta_data = {}
         baseline_time = time.time()
 
@@ -512,26 +512,23 @@ def get_info_source_reference_attack(
     )
 
     # Construct reference models
-    reference_models = []
-
+    
     # Load existing reference models from disk using searching
-
-    # Load existing reference models from disk
-    if matched_reference_idx is not None:
-        for metadata_idx in matched_reference_idx:
-            metadata = model_metadata_dict["model_metadata"][metadata_idx]
-            model = get_model(configs["model_name"])
-            with open(f"{metadata['model_path']}", "rb") as f:
-                model_weight = pickle.load(f)
-            model.load_state_dict(model_weight)
-            reference_models.append(
-                PytorchModelTensor(
-                    model_obj=copy.deepcopy(model),
-                    loss_fn=nn.CrossEntropyLoss(),
-                    device=configs["device"],
-                    batch_size=configs["audit_batch_size"],
-                )
-            )
+    reference_idx = load_existing_reference_models(
+        model_metadata_dict, configs, target_model_idx
+    )
+    existing_reference_models = load_existing_models(
+        model_metadata_dict, reference_idx, configs["model_name"]
+    )
+    reference_models = [
+        PytorchModelTensor(
+            model_obj=model,
+            loss_fn=nn.CrossEntropyLoss(),
+            device=configs["device"],
+            batch_size=configs["audit_batch_size"],
+        )
+        for model in existing_reference_models
+    ]
 
     print(f"Load existing {len(reference_models)} reference models")
 
