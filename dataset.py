@@ -37,8 +37,10 @@ def get_dataset(dataset_name: str, data_dir: str) -> torchvision.datasets:
             test_data = torchvision.datasets.CIFAR10(
                 root=path, train=False, download=True, transform=transform
             )
-            all_features = np.concatenate([all_data.data, test_data.data], axis=0)
-            all_targets = np.concatenate([all_data.targets, test_data.targets], axis=0)
+            all_features = np.concatenate(
+                [all_data.data, test_data.data], axis=0)
+            all_targets = np.concatenate(
+                [all_data.targets, test_data.targets], axis=0)
 
             all_data.data = all_features
             all_data.targets = all_targets

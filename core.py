@@ -61,7 +61,8 @@ def load_existing_target_model(dataset_size, model_metadata_dict, configs):
             model_metadata_dict, [configs["train"]["idx"]]
         )
     else:
-        raise ValueError("key can only be none or model_idx for loading target models")
+        raise ValueError(
+            "key can only be none or model_idx for loading target models")
     return matched_idx_list
 
 
@@ -85,7 +86,7 @@ def load_existing_reference_models(model_metadata_dict, configs, target_idx):
     if configs["algorithm"] != "reference":
         return []
     # Specify the conditions.
-    number_models = configs.get("num_reference_model", 10)
+    number_models = configs.get("num_reference_models", 10)
     num_audit = int(
         model_metadata_dict["model_metadata"][target_idx]["num_train"]
         * configs["f_reference_dataset"]
@@ -104,8 +105,31 @@ def load_existing_reference_models(model_metadata_dict, configs, target_idx):
             model_metadata_dict, conditions, number_models, [target_idx]
         )
     else:
-        raise ValueError("key can only be none or model_idx for loading target models")
+        raise ValueError(
+            "key can only be none or model_idx for loading target models")
     return reference_matched_idx
+
+
+def check_reference_model_dataset(model_metadata_dict, reference_matched_idx, target_idx, splitting_method, data_idx=None):
+
+    meta_data_dict = model_metadata_dict["model_metadata"]
+    target_train_split = meta_data_dict[target_idx]["train_split"]
+    if splitting_method == 'no_overlapping':
+        return [idx
+                for idx in reference_matched_idx
+                if set(meta_data_dict[idx]["train_split"]).isdisjoint(target_train_split)
+                ]
+    elif splitting_method == 'uniform':
+        return reference_matched_idx
+    elif splitting_method == 'leave_one_out':
+        assert data_idx is not None
+        filter_reference_idx = []
+        for idx in reference_matched_idx:
+            diff = set(meta_data_dict[idx]["train_split"]
+                       ).symmetric_difference(target_train_split)
+            if set(diff) == set([data_idx]):
+                filter_reference_idx.append(idx)
+        return filter_reference_idx
 
 
 def load_existing_models(
@@ -120,7 +144,6 @@ def load_existing_models(
                 model_weight = pickle.load(file)
             model.load_state_dict(model_weight)
             model_list.append(model)
-        print(f"Load existing {len(model_list)} target models")
         return model_list
     else:
         return []
@@ -156,7 +179,7 @@ def load_dataset_for_existing_models(
                 }
             )
         else:
-            all_index = np.range(dataset_size)
+            all_index = np.arange(dataset_size)
             test_index = get_split(
                 all_index, metadata["train_split"], test_size, "no_overlapping"
             )
@@ -203,7 +226,8 @@ def prepare_datasets(dataset_size: int, num_datasets: int, configs: dict):
         selected_index = np.random.choice(
             all_index, train_size + test_size, replace=False
         )
-        train_index, test_index = train_test_split(selected_index, test_size=test_size)
+        train_index, test_index = train_test_split(
+            selected_index, test_size=test_size)
         audit_index = get_split(
             all_index,
             selected_index,
@@ -214,7 +238,8 @@ def prepare_datasets(dataset_size: int, num_datasets: int, configs: dict):
             {"train": train_index, "test": test_index, "audit": audit_index}
         )
 
-    dataset_splits = {"split": index_list, "split_method": configs["split_method"]}
+    dataset_splits = {"split": index_list,
+                      "split_method": configs["split_method"]}
     return dataset_splits
 
 
@@ -358,7 +383,8 @@ def prepare_models(log_dir: dict, dataset, data_split, configs, model_metadata_d
         train_data = torch.utils.data.Subset(
             dataset, data_split["split"][split]["train"]
         )
-        test_data = torch.utils.data.Subset(dataset, data_split["split"][split]["test"])
+        test_data = torch.utils.data.Subset(
+            dataset, data_split["split"][split]["test"])
         train_loader = torch.utils.data.DataLoader(
             train_data, batch_size=configs["batch_size"], shuffle=True, num_workers=2
         )
@@ -380,7 +406,8 @@ def prepare_models(log_dir: dict, dataset, data_split, configs, model_metadata_d
         model = train(model, train_loader, configs)
         # Test performance on the training dataset and test dataset
         test_loss, test_acc = inference(model, test_loader, configs["device"])
-        train_loss, train_acc = inference(model, train_loader, configs["device"])
+        train_loss, train_acc = inference(
+            model, train_loader, configs["device"])
         model_list.append(copy.deepcopy(model))
         logging.info(
             "Prepare %s-th target model costs %s seconds ",
@@ -437,9 +464,11 @@ def get_info_source_population_attack(dataset, data_split, model, configs):
         target_model: List of target models we want to audit
         reference_model: List of reference models (which is the target model based on population attack)
     """
-    train_data, train_targets = get_dataset_subset(dataset, data_split["train"])
+    train_data, train_targets = get_dataset_subset(
+        dataset, data_split["train"])
     test_data, test_targets = get_dataset_subset(dataset, data_split["test"])
-    audit_data, audit_targets = get_dataset_subset(dataset, data_split["audit"])
+    audit_data, audit_targets = get_dataset_subset(
+        dataset, data_split["audit"])
     target_dataset = Dataset(
         data_dict={
             "train": {"x": train_data, "y": train_targets},
@@ -494,7 +523,8 @@ def get_info_source_reference_attack(
     """
 
     # Construct the target dataset and target models
-    train_data, train_targets = get_dataset_subset(dataset, data_split["train"])
+    train_data, train_targets = get_dataset_subset(
+        dataset, data_split["train"])
     test_data, test_targets = get_dataset_subset(dataset, data_split["test"])
     target_dataset = Dataset(
         data_dict={
@@ -510,13 +540,14 @@ def get_info_source_reference_attack(
         device=configs["device"],
         batch_size=configs["audit_batch_size"],
     )
-
-    # Construct reference models
-    
     # Load existing reference models from disk using searching
     reference_idx = load_existing_reference_models(
         model_metadata_dict, configs, target_model_idx
     )
+
+    reference_idx = check_reference_model_dataset(
+        model_metadata_dict, reference_idx, target_model_idx, configs['split_method'])
+    print(f"Load existing {len(reference_idx)} reference models")
     existing_reference_models = load_existing_models(
         model_metadata_dict, reference_idx, configs["model_name"]
     )
@@ -530,10 +561,9 @@ def get_info_source_reference_attack(
         for model in existing_reference_models
     ]
 
-    print(f"Load existing {len(reference_models)} reference models")
-
     # Train additional reference models
-    num_reference_models = configs["num_reference_models"] - len(reference_models)
+    num_reference_models = configs["num_reference_models"] - \
+        len(reference_models)
     for reference_idx in range(num_reference_models):
         reference_data_idx = get_split(
             data_split["audit"],
@@ -556,7 +586,8 @@ def get_info_source_reference_attack(
         reference_model = get_model(configs["model_name"])
         reference_model = train(reference_model, reference_loader, configs)
         # Test performance on the training dataset and test dataset
-        train_loss, train_acc = inference(model, reference_loader, configs["device"])
+        train_loss, train_acc = inference(
+            model, reference_loader, configs["device"])
 
         logging.info(
             f"Prepare {reference_idx}-th reference model costs {time.time()-start_time} seconds: Train accuracy (on auditing dataset) {train_acc}, Train Loss {train_loss}"
@@ -748,4 +779,5 @@ def prepare_priavcy_risk_report(log_dir, audit_results, configs, save_path=None)
                 f"{len(audit_results)} results are not enough for {configs['privacy_game']})"
             )
     else:
-        raise NotImplementedError(f"{configs['privacy_game']} is not implemented yet")
+        raise NotImplementedError(
+            f"{configs['privacy_game']} is not implemented yet")
