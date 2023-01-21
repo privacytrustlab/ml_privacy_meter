@@ -4,7 +4,7 @@ from multiprocessing import reduction
 
 import numpy as np
 import torch
-from opacus import GradSampleModule # For speeding up the gradient computation
+from opacus import GradSampleModule  # For speeding up the gradient computation
 ########################################################################################################################
 # MODEL CLASS
 ########################################################################################################################
@@ -109,7 +109,8 @@ class PytorchModel(Model):
         # Add hooks to the layers (to access their value during a forward pass)
         self.intermediate_outputs = {}
         for (i, l) in enumerate(list(self.model_obj._modules.keys())):
-            getattr(self.model_obj, l).register_forward_hook(self.__forward_hook(l))
+            getattr(self.model_obj, l).register_forward_hook(
+                self.__forward_hook(l))
 
         # Create a second loss function, per point
         self.loss_fn_no_reduction = deepcopy(loss_fn)
@@ -156,7 +157,8 @@ class PytorchModel(Model):
         Returns:
             A list of gradients of the model loss (one item per layer) with respect to the model parameters.
         """
-        loss = self.loss_fn(self.model_obj(torch.Tensor(batch_samples)), torch.Tensor(batch_labels))
+        loss = self.loss_fn(self.model_obj(torch.Tensor(
+            batch_samples)), torch.Tensor(batch_labels))
         loss.backward()
         return [p.grad.numpy() for p in self.model_obj.parameters()]
 
@@ -442,7 +444,8 @@ class HuggingFaceCausalLanguageModel(LanguageModel):
         for sample in batch_samples:
             sample_length = len(sample)
 
-            sample = np.expand_dims(sample, axis=0)  # the model takes in a batch of sequences
+            # the model takes in a batch of sequences
+            sample = np.expand_dims(sample, axis=0)
             sample = torch.tensor(sample, dtype=torch.long)
 
             nlls = []
@@ -468,14 +471,13 @@ class HuggingFaceCausalLanguageModel(LanguageModel):
         return ppl_values
 
 
-
 class PytorchModelTensor(Model):
     """
     Inherits from the Model class, an interface to query a model without any assumption on how it is implemented.
     This particular class is to be used with pytorch models with GPU support.
     """
 
-    def __init__(self, model_obj, loss_fn,device='cpu',batch_size=25):
+    def __init__(self, model_obj, loss_fn, device='cpu', batch_size=25):
         """Constructor
 
         Args:
@@ -497,7 +499,6 @@ class PytorchModelTensor(Model):
         self.device = device
         self.grad_sampler_model = None
         self.batch_size = batch_size
-        
 
     def get_logits(self, batch_samples):
         """Function to get the model output from a given input.
@@ -509,7 +510,7 @@ class PytorchModelTensor(Model):
             Model output.
         """
         self.model_obj.to(self.device)
-        logits= self.model_obj(batch_samples).detach().numpy()
+        logits = self.model_obj(batch_samples).detach().numpy()
         self.model_obj.to('cpu')
         return logits
 
@@ -529,19 +530,20 @@ class PytorchModelTensor(Model):
         with torch.no_grad():
             if per_point:
                 loss_list = []
-                batched_samples = torch.split(batch_samples,self.batch_size)
-                batched_labels = torch.split(batch_labels,self.batch_size)
-                for x, y in zip(batched_samples,batched_labels):
-                    x=x.to(self.device)
+                batched_samples = torch.split(batch_samples, self.batch_size)
+                batched_labels = torch.split(batch_labels, self.batch_size)
+                for x, y in zip(batched_samples, batched_labels):
+                    x = x.to(self.device)
                     y = y.to(self.device)
                     loss = self.loss_fn_no_reduction(self.model_obj(x), y)
-                    loss_list.append(loss.detach()) # to avoid the OOM
+                    loss_list.append(loss.detach())  # to avoid the OOM
                 all_loss = torch.cat(loss_list).detach().cpu().numpy()
             else:
-                all_loss = self.loss_fn(self.model_obj(batch_samples.to(self.device)), batch_labels.to(self.device)).item()
+                all_loss = self.loss_fn(self.model_obj(batch_samples.to(
+                    self.device)), batch_labels.to(self.device)).item()
         self.model_obj.to('cpu')
         return all_loss
-             
+
     def get_grad(self, batch_samples, batch_labels):
         """Function to get the gradient of the model loss with respect to the model parameters, on a given input and an
         expected output.
@@ -556,28 +558,29 @@ class PytorchModelTensor(Model):
         self.model_obj.to(self.device)
         if self.grad_sampler_model is None:
             self.grad_sampler_model = GradSampleModule(self.model_obj)
-        
+
         self.grad_sampler_model._module.train()
-        batched_samples = torch.split(batch_samples,self.batch_size)
-        batched_labels = torch.split(batch_labels,self.batch_size)
+        batched_samples = torch.split(batch_samples, self.batch_size)
+        batched_labels = torch.split(batch_labels, self.batch_size)
         self.grad_sampler_model.zero_grad()
         grad_list = []
-        for x, y in zip(batched_samples,batched_labels):
+        for x, y in zip(batched_samples, batched_labels):
             x = x.to(self.device)
             y = y.to(self.device)
             loss = self.loss_fn(self.grad_sampler_model(x), y).sum()
             loss.backward()
-            
-            grad = torch.cat([p.grad_sample.reshape(len(y),-1) for p in self.grad_sampler_model.parameters()],axis=1).detach()
+
+            grad = torch.cat([p.grad_sample.reshape(
+                len(y), -1) for p in self.grad_sampler_model.parameters()], axis=1).detach()
             # grad = self.grad_sampler_model.conv1.weight.grad_sample.reshape(len(y),-1)
             grad_list.append(grad)
             self.grad_sampler_model.zero_grad()
-            
+
         self.model_obj.to('cpu')
         grad_list = torch.cat(grad_list).detach().cpu().numpy()
         return grad_list
-    
-    def get_gradnorm(self, batch_samples, batch_labels,is_features=True,layer_number=1):
+
+    def get_gradnorm(self, batch_samples, batch_labels, is_features=True, layer_number=1):
         """Function to get the gradient of the model loss with respect to the model parameters, on a given input and an
         expected output.
 
@@ -593,18 +596,20 @@ class PytorchModelTensor(Model):
             self.grad_sampler_model = GradSampleModule(self.model_obj)
         self.grad_sampler_model._module.train()
         grad_norm = []
-        batched_samples = torch.split(batch_samples,self.batch_size)
-        batched_labels = torch.split(batch_labels,self.batch_size)
+        batched_samples = torch.split(batch_samples, self.batch_size)
+        batched_labels = torch.split(batch_labels, self.batch_size)
         self.grad_sampler_model.zero_grad()
-        for x, y in zip(batched_samples,batched_labels):
+        for x, y in zip(batched_samples, batched_labels):
             x = x.to(self.device)
             y = y.to(self.device)
             loss = self.loss_fn(self.grad_sampler_model(x), y).sum()
             loss.backward()
             if is_features:
-                grad_norm.append(torch.norm(self.grad_sampler_model.features[layer_number].weight.grad_sample.reshape(self.batch_size,-1).detach(),dim=1)) # this detach can not be deleted
+                grad_norm.append(torch.norm(self.grad_sampler_model.features[layer_number].weight.grad_sample.reshape(
+                    self.batch_size, -1).detach(), dim=1))  # this detach can not be deleted
             else:
-                grad_norm.append(torch.norm(self.grad_sampler_model.classifier[layer_number].weight.grad_sample.reshape(self.batch_size,-1).detach(),dim=1)) # this detach can not be deleted
+                grad_norm.append(torch.norm(self.grad_sampler_model.classifier[layer_number].weight.grad_sample.reshape(
+                    self.batch_size, -1).detach(), dim=1))  # this detach can not be deleted
 
             self.grad_sampler_model.zero_grad()
         grad_norm = torch.cat(grad_norm).detach().cpu().numpy()

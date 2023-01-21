@@ -1,23 +1,22 @@
+import json
 import os
 import subprocess
 from abc import ABC, abstractmethod
-from typing import List, Union, Tuple, Dict
-import json
+from datetime import date
+from typing import Dict, List, Tuple, Union
 
 import jinja2
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import seaborn as sn
-import matplotlib.pyplot as plt
-from datetime import date
 from PIL import Image
 from scipy import interpolate
 
 from privacy_meter.constants import InferenceGame
 from privacy_meter.information_source import InformationSource
 from privacy_meter.information_source_signal import DatasetSample
-from privacy_meter.metric_result import MetricResult,CombinedMetricResult
-
+from privacy_meter.metric_result import CombinedMetricResult, MetricResult
 
 ########################################################################################################################
 # GLOBAL SETTINGS
@@ -54,7 +53,7 @@ class AuditReport(ABC):
     @staticmethod
     @abstractmethod
     def generate_report(
-            metric_result: Union[MetricResult, List[MetricResult], dict,CombinedMetricResult],
+            metric_result: Union[MetricResult, List[MetricResult], dict, CombinedMetricResult],
             inference_game_type: InferenceGame
     ):
         """
@@ -95,14 +94,15 @@ class ROCCurveReport(AuditReport):
         Returns:
             A tuple of aligned 1D numpy arrays, fpr and tpr.
         """
-        functions = [interpolate.interp1d(fpr, tpr) for (fpr, tpr) in zip(fpr_2d_list, tpr_2d_list)]
+        functions = [interpolate.interp1d(fpr, tpr) for (
+            fpr, tpr) in zip(fpr_2d_list, tpr_2d_list)]
         fpr = np.linspace(0, 1, n)
         tpr = np.mean([f(fpr) for f in functions], axis=0)
         return fpr, tpr
 
     @staticmethod
     def generate_report(
-            metric_result: Union[MetricResult, List[MetricResult], List[List[MetricResult]],CombinedMetricResult],
+            metric_result: Union[MetricResult, List[MetricResult], List[List[MetricResult]], CombinedMetricResult],
             inference_game_type: InferenceGame,
             show: bool = False,
             save: bool = True,
@@ -119,16 +119,14 @@ class ROCCurveReport(AuditReport):
             filename: File name to be used if the plot is saved as a file.
         """
 
-        
         # Read and store the explanation dict
         with open(f'{REPORT_FILES_DIR}/explanations.json', 'r') as f:
             explanations = json.load(f)
-            
-            
+
         # Check if it is the combined report:
         if not isinstance(metric_result, list):
             metric_result = [metric_result]
-        if not isinstance(metric_result[0],CombinedMetricResult) and not isinstance(metric_result[0][0],CombinedMetricResult):
+        if not isinstance(metric_result[0], CombinedMetricResult) and not isinstance(metric_result[0][0], CombinedMetricResult):
             # Casts type to a 2D list
             if not isinstance(metric_result[0], list):
                 metric_result = [metric_result]
@@ -143,15 +141,19 @@ class ROCCurveReport(AuditReport):
                     roc_auc = metric_result[0][0].roc_auc
             elif inference_game_type == InferenceGame.AVG_PRIVACY_LOSS_TRAINING_ALGO:
                 if metric_result[0][0].predictions_proba is None:
-                    fpr = [[metric_result[i][j].fp / (metric_result[i][j].fp + metric_result[i][j].tn) for j in range(len(metric_result[0]))] for i in range(len(metric_result))]
-                    tpr = [[metric_result[i][j].tp / (metric_result[i][j].tp + metric_result[i][j].fn) for j in range(len(metric_result[0]))] for i in range(len(metric_result))]
+                    fpr = [[metric_result[i][j].fp / (metric_result[i][j].fp + metric_result[i][j].tn)
+                            for j in range(len(metric_result[0]))] for i in range(len(metric_result))]
+                    tpr = [[metric_result[i][j].tp / (metric_result[i][j].tp + metric_result[i][j].fn)
+                            for j in range(len(metric_result[0]))] for i in range(len(metric_result))]
                     fpr = np.mean(fpr, axis=0)
                     tpr = np.mean(tpr, axis=0)
                     roc_auc = np.trapz(x=fpr, y=tpr)
                 else:
                     fpr, tpr = ROCCurveReport.__avg_roc(
-                        fpr_2d_list=[metric_result[i][0].roc[0] for i in range(len(metric_result))],
-                        tpr_2d_list=[metric_result[i][0].roc[1] for i in range(len(metric_result))]
+                        fpr_2d_list=[metric_result[i][0].roc[0]
+                                     for i in range(len(metric_result))],
+                        tpr_2d_list=[metric_result[i][0].roc[1]
+                                     for i in range(len(metric_result))]
                     )
                     roc_auc = np.trapz(x=fpr, y=tpr)
             else:
@@ -165,10 +167,12 @@ class ROCCurveReport(AuditReport):
                     fpr = mr.fp / (mr.fp + mr.tn)
                     tpr = mr.tp / (mr.tp + mr.fn)
                     roc_auc = np.trapz(x=fpr, y=tpr)
-            elif inference_game_type  == InferenceGame.AVG_PRIVACY_LOSS_TRAINING_ALGO:
+            elif inference_game_type == InferenceGame.AVG_PRIVACY_LOSS_TRAINING_ALGO:
                 if metric_result[0][0].predictions_proba is None:
-                    fpr = [[metric_result[i][j].fp / (metric_result[i][j].fp + metric_result[i][j].tn) for j in range(len(metric_result[0]))] for i in range(len(metric_result))]
-                    tpr = [[metric_result[i][j].tp / (metric_result[i][j].tp + metric_result[i][j].fn) for j in range(len(metric_result[0]))] for i in range(len(metric_result))]
+                    fpr = [[metric_result[i][j].fp / (metric_result[i][j].fp + metric_result[i][j].tn)
+                            for j in range(len(metric_result[0]))] for i in range(len(metric_result))]
+                    tpr = [[metric_result[i][j].tp / (metric_result[i][j].tp + metric_result[i][j].fn)
+                            for j in range(len(metric_result[0]))] for i in range(len(metric_result))]
                     fpr = np.mean(fpr, axis=0).ravel()
                     tpr = np.mean(tpr, axis=0).ravel()
                     roc_auc = np.trapz(x=fpr, y=tpr)
@@ -242,10 +246,12 @@ class ConfusionMatrixReport(AuditReport):
 
         if inference_game_type == InferenceGame.PRIVACY_LOSS_MODEL:
             assert isinstance(metric_result, MetricResult)
-            cm = np.array([[metric_result.tn, metric_result.fp], [metric_result.fn, metric_result.tp]])
+            cm = np.array([[metric_result.tn, metric_result.fp],
+                          [metric_result.fn, metric_result.tp]])
         elif inference_game_type == InferenceGame.AVG_PRIVACY_LOSS_TRAINING_ALGO:
             assert isinstance(metric_result, list)
-            cm = np.mean([[[mr.tn, mr.fp], [mr.fn, mr.tp]] for mr in metric_result], axis=0)
+            cm = np.mean([[[mr.tn, mr.fp], [mr.fn, mr.tp]]
+                         for mr in metric_result], axis=0)
         else:
             raise NotImplementedError
 
@@ -292,23 +298,28 @@ class SignalHistogramReport(AuditReport):
             save: Boolean specifying if the plot should be saved as a file.
             filename: File name to be used if the plot is saved as a file.
         """
-        
+
         if inference_game_type == InferenceGame.PRIVACY_LOSS_MODEL:
             values = np.array(metric_result.signal_values).ravel()
             labels = np.array(metric_result.true_labels).ravel()
             threshold = metric_result.threshold
-        elif inference_game_type == InferenceGame.AVG_PRIVACY_LOSS_TRAINING_ALGO: 
-            if not isinstance(metric_result[0],list):
-                values = np.concatenate([mr.signal_values for mr in metric_result]).ravel()
-                labels = np.concatenate([mr.true_labels for mr in metric_result]).ravel()
+        elif inference_game_type == InferenceGame.AVG_PRIVACY_LOSS_TRAINING_ALGO:
+            if not isinstance(metric_result[0], list):
+                values = np.concatenate(
+                    [mr.signal_values for mr in metric_result]).ravel()
+                labels = np.concatenate(
+                    [mr.true_labels for mr in metric_result]).ravel()
                 threshold_list = [mr.threshold for mr in metric_result]
-                threshold = None if None in threshold_list else np.mean(threshold_list)
+                threshold = None if None in threshold_list else np.mean(
+                    threshold_list)
             else:
-                values = np.array([[metric_result[i][j].signal_values  for j in range(len(metric_result[0]))] for i in range(len(metric_result))]).ravel()
-                labels = np.array([[metric_result[i][j].true_labels  for j in range(len(metric_result[0]))] for i in range(len(metric_result))]).ravel()
+                values = np.array([[metric_result[i][j].signal_values for j in range(
+                    len(metric_result[0]))] for i in range(len(metric_result))]).ravel()
+                labels = np.array([[metric_result[i][j].true_labels for j in range(
+                    len(metric_result[0]))] for i in range(len(metric_result))]).ravel()
                 threshold_list = None
-                threshold = None 
-            
+                threshold = None
+
         else:
             raise NotImplementedError
 
@@ -322,7 +333,7 @@ class SignalHistogramReport(AuditReport):
             element='step',
             kde=True
         )
-        
+
         if threshold is not None and type(threshold) == float:
             histogram.axvline(
                 x=threshold,
@@ -404,10 +415,8 @@ class VulnerablePointsReport(AuditReport):
             adjusted_values = np.where(
                 (np.array(mr.predicted_labels) == np.array(mr.true_labels))
                 &
-                (np.array(mr.true_labels) == 1)
-                ,
-                - mr.predictions_proba
-                ,
+                (np.array(mr.true_labels) == 1),
+                - mr.predictions_proba,
                 10
             )
             indices = np.argsort(adjusted_values)[:number_of_points]
@@ -450,13 +459,15 @@ class VulnerablePointsReport(AuditReport):
                     model_to_split_mapping=target_model_to_train_split_mapping,
                     extra={"model_num": 0, "point_num": point}
                 )
-                Image.fromarray((x*255).astype('uint8')).save(f'point{k:03d}.jpg')
+                Image.fromarray((x*255).astype('uint8')
+                                ).save(f'point{k:03d}.jpg')
 
         # If we are creating a LaTex
         if save_tex:
 
             # Load template
-            template = latex_jinja_env.get_template(f'{REPORT_FILES_DIR}/vulnerable_points_template.tex')
+            template = latex_jinja_env.get_template(
+                f'{REPORT_FILES_DIR}/vulnerable_points_template.tex')
 
             # Render the template (i.e. generate the corresponding string)
             latex_content = template.render(
@@ -499,7 +510,8 @@ class PDFReport(AuditReport):
             save: bool = True,
             filename_no_extension: str = 'report',
             target_info_source: InformationSource = None,
-            target_model_to_train_split_mapping: List[Tuple[int, str, str, str]] = None,
+            target_model_to_train_split_mapping: List[Tuple[int,
+                                                            str, str, str]] = None,
             point_type: str = 'any'
     ):
         """
@@ -522,7 +534,8 @@ class PDFReport(AuditReport):
             if not isinstance(metric_results[metric], list):
                 metric_results[metric] = [metric_results[metric]]
             if not isinstance(metric_results[metric][0], list):
-                metric_results[metric] = [[mr] for mr in metric_results[metric]]
+                metric_results[metric] = [[mr]
+                                          for mr in metric_results[metric]]
 
         # Read and store the explanation dict
         with open(f'{REPORT_FILES_DIR}/explanations.json', 'r') as f:
@@ -539,8 +552,10 @@ class PDFReport(AuditReport):
                 best_index = np.argmax([r.accuracy for r in result])
                 best_result = result[best_index]
             elif inference_game_type == InferenceGame.AVG_PRIVACY_LOSS_TRAINING_ALGO:
-                best_indices = np.argmax([[r2.accuracy for r2 in r1] for r1 in result], axis=1)
-                best_result = [result[k][best_index] for k, best_index in enumerate(best_indices)]
+                best_indices = np.argmax(
+                    [[r2.accuracy for r2 in r1] for r1 in result], axis=1)
+                best_result = [result[k][best_index]
+                               for k, best_index in enumerate(best_indices)]
             else:
                 raise NotImplementedError
 
@@ -588,7 +603,8 @@ class PDFReport(AuditReport):
                 )
 
         # Load template
-        template = latex_jinja_env.get_template(f'{REPORT_FILES_DIR}/report_template.tex')
+        template = latex_jinja_env.get_template(
+            f'{REPORT_FILES_DIR}/report_template.tex')
 
         # Render the template (i.e. generate the corresponding string)
         latex_content = template.render(
@@ -607,7 +623,8 @@ class PDFReport(AuditReport):
         with open(f'{filename_no_extension}.tex', 'w') as f:
             f.write(latex_content)
 
-        print(f'LaTex file created:\t{os.path.abspath(f"{filename_no_extension}.tex")}')
+        print(
+            f'LaTex file created:\t{os.path.abspath(f"{filename_no_extension}.tex")}')
 
         if call_pdflatex:
 
@@ -634,4 +651,5 @@ class PDFReport(AuditReport):
                                        stderr=subprocess.PIPE)
             stdout, stderr = process.communicate()
 
-            print(f'PDF file created:\t{os.path.abspath(f"{filename_no_extension}.pdf")}')
+            print(
+                f'PDF file created:\t{os.path.abspath(f"{filename_no_extension}.pdf")}')

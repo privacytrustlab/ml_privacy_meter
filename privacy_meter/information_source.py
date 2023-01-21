@@ -17,7 +17,8 @@ class InformationSource:
     def __init__(self,
                  models: List[Model],
                  datasets: List[Dataset],
-                 default_model_to_split_mapping: List[Tuple[int, str, str, str]] = None
+                 default_model_to_split_mapping: List[Tuple[int,
+                                                            str, str, str]] = None
                  ):
         """Constructor
 
@@ -39,7 +40,8 @@ class InformationSource:
 
     def get_signal(self,
                    signal: Signal,
-                   model_to_split_mapping: List[Tuple[int, str, str, str]] = None,
+                   model_to_split_mapping: List[Tuple[int,
+                                                      str, str, str]] = None,
                    extra: dict = None
                    ):
         """Calls the signal object with the appropriate arguments: Model objects and Dataset objects specified at
