@@ -571,7 +571,7 @@ class PytorchModelTensor(Model):
             loss.backward()
 
             grad = torch.cat([p.grad_sample.reshape(
-                len(y), -1) for p in self.grad_sampler_model.parameters()], axis=1).detach()
+                len(y), -1) for p in self.grad_sampler_model.parameters()], axis=1).detach().numpy()
             # grad = self.grad_sampler_model.conv1.weight.grad_sample.reshape(len(y),-1)
             grad_list.append(grad)
             self.grad_sampler_model.zero_grad()
