@@ -1,6 +1,5 @@
 """This file is the main entry point for running the priavcy auditing."""
 import argparse
-import copy
 import logging
 import os
 import pickle
@@ -16,8 +15,8 @@ import yaml
 from torch import nn
 
 from core import (load_dataset_for_existing_models, load_existing_models,
-                  load_existing_reference_models, load_existing_target_model,
-                  prepare_datasets, prepare_datasets_for_sample_privacy_risk,
+                  load_existing_target_model, prepare_datasets,
+                  prepare_datasets_for_sample_privacy_risk,
                   prepare_information_source, prepare_models,
                   prepare_priavcy_risk_report)
 from dataset import get_dataset, get_dataset_subset
@@ -87,7 +86,8 @@ if __name__ == "__main__":
         model_metadata_list = {"model_metadata": {}, "current_idx": 0}
     # Load the dataset
     baseline_time = time.time()
-    dataset = get_dataset(configs["data"]["dataset"], configs["data"]["data_dir"])
+    dataset = get_dataset(configs["data"]["dataset"],
+                          configs["data"]["data_dir"])
 
     privacy_game = configs["audit"]["privacy_game"]
 
@@ -109,12 +109,13 @@ if __name__ == "__main__":
                 target_model_idx_list,
                 configs["data"],
             )
-            num_target_models = configs["train"]["num_target_model"] - len(trained_target_dataset_list)
+            num_target_models = configs["train"]["num_target_model"] - \
+                len(trained_target_dataset_list)
         else:
             target_model_idx_list = []
             trained_target_models_list = []
             trained_target_dataset_list = []
-            num_target_models = configs["train"]["num_target_model"] 
+            num_target_models = configs["train"]["num_target_model"]
 
         # Prepare the datasets
         print(25 * ">" + "Prepare the the datasets")
@@ -135,8 +136,10 @@ if __name__ == "__main__":
         )
 
         model_list = [*new_model_list, *trained_target_models_list]
-        data_split_info["split"] = [*data_split_info["split"], *trained_target_dataset_list]
-        target_model_idx_list = [*new_target_model_idx_list, *target_model_idx_list]
+        data_split_info["split"] = [
+            *data_split_info["split"], *trained_target_dataset_list]
+        target_model_idx_list = [
+            *new_target_model_idx_list, *target_model_idx_list]
 
         logger.info(
             "Prepare the target model costs %0.5f seconds", time.time() - baseline_time
@@ -289,17 +292,21 @@ if __name__ == "__main__":
         # Test the models' performance on the data indicated by the audit.idx
         data, targets = get_dataset_subset(dataset, [configs["audit"]["idx"]])
         in_signal = np.array(
-            [model.get_loss(data, targets).item() for model in in_model_list_pm]
+            [model.get_loss(data, targets).item()
+             for model in in_model_list_pm]
         )
         out_signal = np.array(
-            [model.get_loss(data, targets).item() for model in out_model_list_pm]
+            [model.get_loss(data, targets).item()
+             for model in out_model_list_pm]
         )
 
         # Rescale the loss
         in_signal = in_signal + 1e-17  # avoid nan
-        in_signal = np.log(np.divide(np.exp(-in_signal), (1 - np.exp(-in_signal))))
+        in_signal = np.log(
+            np.divide(np.exp(-in_signal), (1 - np.exp(-in_signal))))
         out_signal = out_signal + 1e-17  # avoid nan
-        out_signal = np.log(np.divide(np.exp(-out_signal), (1 - np.exp(-out_signal))))
+        out_signal = np.log(
+            np.divide(np.exp(-out_signal), (1 - np.exp(-out_signal))))
 
         # Generate the privacy risk report
         labels = np.concatenate(

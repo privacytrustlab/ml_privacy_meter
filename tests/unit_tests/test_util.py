@@ -1,3 +1,4 @@
+"""This test is for testing functions in datasets.py."""
 import numpy as np
 import pytest
 import sys
@@ -5,9 +6,6 @@ sys.path.append('../')
 from util import (get_split, load_models_by_conditions,
                   load_models_by_model_idx, load_models_with_data_idx_list,
                   load_models_without_data_idx_list)
-
-
-# This test is for testing functions in datasets.py.
 
 
 def test_get_split():

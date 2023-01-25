@@ -1,4 +1,4 @@
-
+"""This test is for testing functions in datasets.py."""
 import sys
 sys.path.append('../../')
 from dataset import get_dataset, get_dataset_subset
@@ -9,9 +9,6 @@ import os
 from models import Net, AlexNet
 
 
-# This test is for testing functions in datasets.py.
-
-# Test datasets
 def test_get_dataset_on_cifar():
     dataset = get_dataset('cifar10', 'data')
     assert len(dataset) == 60000

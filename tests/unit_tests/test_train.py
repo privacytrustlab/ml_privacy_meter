@@ -1,15 +1,13 @@
-
+"""This test is for testing functions in train.py."""
 import sys
 sys.path.append('../')
 
 import torch
-
 from dataset import get_dataset
 from models import AlexNet, Net, get_model
 from train import inference, train
 
 
-# This test is for testing functions in train.py.
 def test_train_on_cnn():
     dataset = get_dataset('cifar10', "data")
 
