@@ -268,7 +268,6 @@ def prepare_datasets_for_sample_privacy_risk(
     Returns:
         _type_: _description_
     """
-    associated_models = []
     all_index = np.arange(dataset_size)
     all_index_exclude_z = np.array([i for i in all_index if i != data_idx])
     index_list = []
@@ -276,8 +275,6 @@ def prepare_datasets_for_sample_privacy_risk(
     # Indicate how to sample the rest of the dataset.
     if configs["split_method"] == "uniform":
         # Placeholder for the existing models
-        for _ in range(num_total - num_models):
-            index_list.append({})
         for _ in range(num_models):
             if data_type == "include":
                 train_index = np.random.choice(
@@ -316,12 +313,8 @@ def prepare_datasets_for_sample_privacy_risk(
         ), "Input enough in-world (with the target point z) to generate the out world"
 
         index_list = []  # List of data split
-        all_index = np.arange(N)
+        all_index = np.arange(dataset_size)
         all_index_exclude_z = np.array([i for i in all_index if i != data_idx])
-
-        for _ in range(num_total - num_models):
-            index_list.append({})
-            associated_models.append(None)
 
         for metadata_idx in matched_in_idx:
             metadata = model_metadata_dict["model_metadata"][metadata_idx]
@@ -341,7 +334,6 @@ def prepare_datasets_for_sample_privacy_risk(
                     ],
                 }
             )
-            associated_models.append(metadata["model_idx"])
 
     else:
         raise ValueError(
@@ -350,8 +342,7 @@ def prepare_datasets_for_sample_privacy_risk(
 
     dataset_splits = {
         "split": index_list,
-        "split_method": configs["split_method"],
-        "associated_models": associated_models,
+        "split_method": configs["split_method"]
     }
     return dataset_splits
 
@@ -436,12 +427,6 @@ def prepare_models(log_dir: dict, dataset, data_split, configs, model_metadata_d
         meta_data["learning_rate"] = configs["learning_rate"]
         meta_data["weight_decay"] = configs["weight_decay"]
         meta_data["model_path"] = f"{log_dir}/model_{model_idx}.pkl"
-        # Check if there is any associated model (trained on the dataset differ by one record)
-        if "associated_models" in data_split:
-            if split < len(data_split["associated_models"]):
-                meta_data["associated_models"] = {
-                    "remove_from": data_split["associated_models"][split]
-                }
         model_metadata_dict["model_metadata"][model_idx] = meta_data
         with open(f"{log_dir}/models_metadata.pkl", "wb") as f:
             pickle.dump(model_metadata_dict, f)

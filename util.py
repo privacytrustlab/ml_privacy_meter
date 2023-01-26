@@ -219,21 +219,31 @@ def load_models_without_data_idx_list(
     return matched_idx
 
 
-def load_models_with_data_idx_and_cond_list(
-    model_metadata_dict: dict,
-    conditions: dict,
-    data_idx_list: List(int),
-    exclude_idx: List(int) = [],
+def load_leave_one_out_models(
+    model_metadata_dict: dict, data_idx_list: List(int), reference_model_idx: List(int)
 ) -> List(int):
-    # TODO
-    return []
+    """Load existing models which has one data point left out.
+    Args:
+        model_metadata_dict (dict): Model metadata dict.
+        data_idx_list (List(int)): Data index list.
 
-
-def load_models_without_data_idx_and_cond_list(
-    model_metadata_dict: dict,
-    conditions: dict,
-    data_idx_list: List(int),
-    exclude_idx: List(int) = [],
-) -> List(int):
-    # TODO
-    return []
+    Returns:
+        List(int): List of metadata index which match the conditions.
+    """
+    assert all(isinstance(index, int) for index in data_idx_list)
+    assert isinstance(model_metadata_dict, dict)
+    assert all(isinstance(index, int) for index in reference_model_idx)
+    if not data_idx_list:
+        raise ValueError("data_idx_list is empty.")
+    matched_idx = []
+    for reference_meta_idx in reference_model_idx:
+        in_train_split = np.array(
+            model_metadata_dict["model_metadata"][reference_meta_idx]["train_split"])
+        for meta_idx, meta_data in model_metadata_dict["model_metadata"].items():
+            if set(meta_data["train_split"]).issubset(set(in_train_split)):
+                out_train_split = np.array(
+                    model_metadata_dict["model_metadata"][meta_idx]["train_split"])
+                diff = np.setdiff1d(in_train_split, out_train_split)
+                if set(diff) == set(data_idx_list) and meta_idx not in matched_idx:
+                    matched_idx.append(meta_idx)
+    return matched_idx

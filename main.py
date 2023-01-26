@@ -23,7 +23,7 @@ from dataset import get_dataset, get_dataset_subset
 from privacy_meter.audit import Audit
 from privacy_meter.model import PytorchModelTensor
 from util import (check_configs, load_models_with_data_idx_list,
-                  load_models_without_data_idx_list)
+                  load_models_without_data_idx_list, load_leave_one_out_models)
 
 
 def setup_log(name: str) -> logging.Logger:
@@ -51,7 +51,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--cf",
         type=str,
-        default="config_models.yaml",
+        default="config_samples.yaml",
         help="Yaml file which contains the configurations",
     )
 
@@ -93,7 +93,7 @@ if __name__ == "__main__":
 
     # Check the auditing game.
     if privacy_game in ["avg_privacy_loss_training_algo", "privacy_loss_model"]:
-        # Load the trained models
+        # Load the trained models from disk
         if model_metadata_list["current_idx"] > 0:
             target_model_idx_list = load_existing_target_model(
                 len(dataset), model_metadata_list, configs
@@ -209,84 +209,85 @@ if __name__ == "__main__":
 
     # Auditing the priavcy risk for an individual data point
     elif configs["audit"]["privacy_game"] == "privacy_loss_sample":
-
         # Load existing models that match the requirement
-        matched_in_idx = load_models_with_data_idx_list(
+        in_model_idx_list = load_models_with_data_idx_list(
             model_metadata_list, [configs["train"]["idx"]]
         )
-        matched_out_idx = load_models_without_data_idx_list(
-            model_metadata_list, [configs["train"]["idx"]]
+        model_in_list = load_existing_models(
+            model_metadata_list,
+            in_model_idx_list,
+            configs["train"]["model_name"],
         )
-
         # Train additional models if the existing models are not enough
-        if len(matched_in_idx) < configs["train"]["num_in_models"]:
+        if len(in_model_idx_list) < configs["train"]["num_in_models"]:
             data_split_info_in = prepare_datasets_for_sample_privacy_risk(
                 len(dataset),
                 configs["train"]["num_in_models"],
-                configs["train"]["num_in_models"] - len(matched_in_idx),
+                configs["train"]["num_in_models"] - len(in_model_idx_list),
                 configs["train"]["idx"],
                 configs["data"],
                 "include",
                 model_metadata_list,
             )
-            in_model_list, model_metadata_list, matched_in_idx = prepare_models(
+            new_in_model_list, model_metadata_list, new_matched_in_idx = prepare_models(
                 log_dir,
                 dataset,
                 data_split_info_in,
                 configs["train"],
-                model_metadata_list,
-                matched_in_idx,
+                model_metadata_list
             )
-        else:
-            in_model_list, model_metadata_list, matched_in_idx = prepare_models(
-                log_dir,
-                dataset,
-                {"split": []},
-                configs["train"],
-                model_metadata_list,
-                matched_in_idx[: configs["train"]["num_in_models"]],
-            )
-
-        if len(matched_out_idx) < configs["train"]["num_out_models"]:
-            data_split_info_out = prepare_datasets_for_sample_privacy_risk(
-                len(dataset),
-                configs["train"]["num_out_models"],
-                configs["train"]["num_out_models"] - len(matched_out_idx),
-                configs["train"]["idx"],
-                configs["data"],
-                "exclude",
-                model_metadata_list,
-            )
-            out_model_list, model_metadata_list, matched_out_idx = prepare_models(
-                log_dir,
-                dataset,
-                data_split_info_out,
-                configs["train"],
-                model_metadata_list,
-                matched_out_idx,
-            )
-        else:
-            out_model_list, model_metadata_list, matched_out_idx = prepare_models(
-                log_dir,
-                dataset,
-                {"split": []},
-                configs["train"],
-                model_metadata_list,
-                matched_out_idx[: configs["train"]["num_out_models"]],
-            )
-
-        # Obtain models trained on train.idx and without it
+            model_in_list = [*new_in_model_list, *model_in_list]
+            in_model_idx_list = [
+                *new_matched_in_idx, *in_model_idx_list]
         in_model_list_pm = [
             PytorchModelTensor(
                 model_obj=model, loss_fn=nn.CrossEntropyLoss(), batch_size=1000
             )
-            for model in in_model_list
+            for model in model_in_list
         ]
+        if configs["data"]["split_method"] == "uniform":
+            out_model_idx_list = load_models_without_data_idx_list(
+                model_metadata_list, [configs["train"]["idx"]]
+            )
+        elif configs["data"]["split_method"] == "leave_one_out":
+            out_model_idx_list = load_leave_one_out_models(
+                model_metadata_list, [configs["train"]["idx"]], in_model_idx_list)
+        else:
+            raise ValueError("The split method is not supported")
+
+        model_out_list = load_existing_models(
+            model_metadata_list,
+            out_model_idx_list,
+            configs["train"]["model_name"],
+        )
+        # Train additional models if the existing models are not enough
+        if len(out_model_idx_list) < configs["train"]["num_out_models"]:
+            data_split_info_out = prepare_datasets_for_sample_privacy_risk(
+                len(dataset),
+                configs["train"]["num_out_models"],
+                configs["train"]["num_out_models"] - len(out_model_idx_list),
+                configs["train"]["idx"],
+                configs["data"],
+                "exclude",
+                model_metadata_list,
+                in_model_idx_list
+            )
+            new_out_model_list, model_metadata_list, new_matched_out_idx = prepare_models(
+                log_dir,
+                dataset,
+                data_split_info_out,
+                configs["train"],
+                model_metadata_list
+            )
+            model_out_list = [*new_out_model_list, *model_out_list]
+            out_model_idx_list = [
+                *new_matched_out_idx, *out_model_idx_list]
+
         out_model_list_pm = [
             PytorchModelTensor(
                 model_obj=model, loss_fn=nn.CrossEntropyLoss(), batch_size=1000
             )
-            for model in out_model_list
+            for model in model_out_list
         ]
 
         # Test the models' performance on the data indicated by the audit.idx
