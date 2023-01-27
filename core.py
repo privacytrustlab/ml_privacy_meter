@@ -1,4 +1,3 @@
-import collections
 import copy
 import logging
 import pickle
@@ -8,6 +7,7 @@ from pathlib import Path
 
 import numpy as np
 import torch
+import torchvision
 from sklearn.model_selection import train_test_split
 from torch import nn
 
@@ -24,27 +24,28 @@ from train import inference, train
 from util import get_split, load_models_by_conditions, load_models_by_model_idx
 
 
-def load_existing_target_model(dataset_size, model_metadata_dict, configs):
-    """Check if there are trained models that matches the training configuration.
+def load_existing_target_model(
+    dataset_size: int, model_metadata_dict: dict, configs: dict
+) -> List(int):
+    """Return a list of model's index that matches the configuration.
 
     Args:
         dataset_size (int): Size of the whole training dataset.
         model_metadata_dict (dict): Model metedata dict.
         configs (dict): Training target models configuration.
 
-    Raises:
-        ValueError: Check if the key for the configuration takes value from data_idx and model_idx
-
     Returns:
-        matched_idx: List of target model index which matches the conditions
+        matched_idx: List of target model index which matches the conditions or model_idx specified in configs['train']['model_idx']
     """
     assert isinstance(model_metadata_dict, dict)
     assert "model_metadata" in model_metadata_dict
 
-    matched_idx_list = []
-    # Specify the conditions.
-    num_target_models = configs["train"].get("num_target_model", 1)
-    if configs["train"]["key"] == "none":
+    if "model_idx" in configs["train"]:
+        matched_idx_list = load_models_by_model_idx(
+            model_metadata_dict, [configs["train"]["model_idx"]]
+        )
+    else:
+        num_target_models = configs["train"].get("num_target_model", 1)
         conditions = {
             "optimizer": configs["train"]["optimizer"],
             "batch_size": configs["train"]["batch_size"],
@@ -56,85 +57,101 @@ def load_existing_target_model(dataset_size, model_metadata_dict, configs):
         matched_idx_list = load_models_by_conditions(
             model_metadata_dict, conditions, num_target_models
         )
-    elif configs["train"]["key"] == "model_idx":
-        matched_idx_list = load_models_by_model_idx(
-            model_metadata_dict, [configs["train"]["idx"]]
-        )
-    else:
-        raise ValueError(
-            "key can only be none or model_idx for loading target models")
     return matched_idx_list
 
 
-def load_existing_reference_models(model_metadata_dict, configs, target_idx):
-    """Check if there are trained models that matches the configuration.
+def load_existing_reference_models(
+    model_metadata_dict: dict, configs: dict, target_idx: int
+) -> List(int):
+    """Return a list of reference model's index that matches the configuration.
 
     Args:
-        # dataset_size (int): Size of the whole training dataset.
         model_metadata_dict (dict): Model metedata dict.
         configs (dict): Training target models configuration.
         target_idx (int): Target model.
 
-    Raises:
-        ValueError: If the key for the configuration takes value from none and model_idx
-
     Returns:
-        reference_matched_idx_list: List of reference model index which matches the conditions
+        List(int): List of reference model index which matches the conditions
     """
-    assert isinstance(model_metadata_dict, dict)
-    assert "model_metadata" in model_metadata_dict
     if configs["algorithm"] != "reference":
         return []
-    # Specify the conditions.
     number_models = configs.get("num_reference_models", 10)
-    num_audit = int(
+    num_audit_train_data = int(
         model_metadata_dict["model_metadata"][target_idx]["num_train"]
         * configs["f_reference_dataset"]
     )
-    if configs["key"] == "none":
-        conditions = {
-            "optimizer": configs["optimizer"],
-            "batch_size": configs["batch_size"],
-            "epochs": configs["epochs"],
-            "learning_rate": configs["learning_rate"],
-            "weight_decay": configs["weight_decay"],
-            "num_train": num_audit,
-        }
+    conditions = {
+        "optimizer": configs["optimizer"],
+        "batch_size": configs["batch_size"],
+        "epochs": configs["epochs"],
+        "learning_rate": configs["learning_rate"],
+        "weight_decay": configs["weight_decay"],
+        "num_train": num_audit_train_data,
+    }
 
-        reference_matched_idx = load_models_by_conditions(
-            model_metadata_dict, conditions, number_models, [target_idx]
-        )
-    else:
-        raise ValueError(
-            "key can only be none or model_idx for loading target models")
+    reference_matched_idx = load_models_by_conditions(
+        model_metadata_dict, conditions, number_models, [target_idx]
+    )
+
     return reference_matched_idx
 
 
-def check_reference_model_dataset(model_metadata_dict, reference_matched_idx, target_idx, splitting_method, data_idx=None):
+def check_reference_model_dataset(
+    model_metadata_dict: dict,
+    reference_matched_idx: List(int),
+    target_idx: int,
+    splitting_method: str,
+    data_idx=None,
+) -> List(int):
+    """Filter out the reference models that does not satisfy the splitting method.
 
+    Args:
+        model_metadata_dict (dict): Model metedata dict.
+        reference_matched_idx (List): List of reference model index we want to filter.
+        target_idx (int): Target model index.
+        splitting_method (str): Splitting method. Take value from ['no_overlapping', 'uniform', 'leave_one_out'].
+        data_idx (int, optional): Data index, used for check splitting_method='leave_one_out'. Defaults to None.
+    Returns:
+        List (int): List of reference model index which matches the splitting method.
+    """
     meta_data_dict = model_metadata_dict["model_metadata"]
     target_train_split = meta_data_dict[target_idx]["train_split"]
-    if splitting_method == 'no_overlapping':
-        return [idx
-                for idx in reference_matched_idx
-                if set(meta_data_dict[idx]["train_split"]).isdisjoint(target_train_split)
-                ]
-    elif splitting_method == 'uniform':
+    if splitting_method == "no_overlapping":
+        return [
+            idx
+            for idx in reference_matched_idx
+            if set(meta_data_dict[idx]["train_split"]).isdisjoint(target_train_split)
+        ]
+    elif splitting_method == "uniform":
         return reference_matched_idx
-    elif splitting_method == 'leave_one_out':
+    elif splitting_method == "leave_one_out":
         assert data_idx is not None
         filter_reference_idx = []
         for idx in reference_matched_idx:
-            diff = set(meta_data_dict[idx]["train_split"]
-                       ).symmetric_difference(target_train_split)
+            diff = set(meta_data_dict[idx]["train_split"]).symmetric_difference(
+                target_train_split
+            )
             if set(diff) == set([data_idx]):
                 filter_reference_idx.append(idx)
         return filter_reference_idx
+    else:
+        raise ValueError(
+            f"{splitting_method} is not a valid splitting method. Take value from ['no_overlapping', 'uniform', 'leave_one_out']"
+        )
 
 
 def load_existing_models(
     model_metadata_dict: dict, matched_idx: List(int), model_name: str
-):
+) -> List(nn.Module):
+    """Load existing models from dicks for matched_idx.
+
+    Args:
+        model_metadata_dict (dict): Model metedata dict.
+        matched_idx (List): List of model index we want to load.
+        model_name (str): Model name.
+    Returns:
+        List (nn.Module): List of models.
+    """
     model_list = []
     if len(matched_idx) > 0:
         for metadata_idx in matched_idx:
@@ -160,7 +177,7 @@ def load_dataset_for_existing_models(
         matched_idx (List(int)): List of matched model index.
         configs (dict): Training configuration.
     Returns:
-        _type_: _description_
+        List(dict): List of dataset splits for each model, including train, test, and audit.
     """
     assert isinstance(matched_idx, list)
     all_index = np.arange(dataset_size)
@@ -208,12 +225,8 @@ def prepare_datasets(dataset_size: int, num_datasets: int, configs: dict):
         num_datasets (int): Number of datasets we should generate
         configs (dict): Data split configuration
 
-    Raises:
-        ValueError: _description_
-        ValueError: _description_
-
     Returns:
-        dataset_splits: Data split information which saves the information of training points index and test points index for all target models.
+        dict: Data split information which saves the information of training points index and test points index for all target models.
     """
 
     # The index_list will save all the information about the train, test and auit for each target model.
@@ -226,8 +239,7 @@ def prepare_datasets(dataset_size: int, num_datasets: int, configs: dict):
         selected_index = np.random.choice(
             all_index, train_size + test_size, replace=False
         )
-        train_index, test_index = train_test_split(
-            selected_index, test_size=test_size)
+        train_index, test_index = train_test_split(selected_index, test_size=test_size)
         audit_index = get_split(
             all_index,
             selected_index,
@@ -238,42 +250,41 @@ def prepare_datasets(dataset_size: int, num_datasets: int, configs: dict):
             {"train": train_index, "test": test_index, "audit": audit_index}
         )
 
-    dataset_splits = {"split": index_list,
-                      "split_method": configs["split_method"]}
+    dataset_splits = {"split": index_list, "split_method": configs["split_method"]}
     return dataset_splits
 
 
 def prepare_datasets_for_sample_privacy_risk(
-    dataset_size,
-    num_total,
-    num_models,
-    data_idx,
-    configs,
-    data_type,
-    model_metadata_dict,
-    matched_in_idx=None,
-):
+    dataset_size: int,
+    num_models: int,
+    data_idx: int,
+    configs: dict,
+    data_type: str,
+    split_method: str,
+    model_metadata_dict: dict,
+    matched_in_idx: List(int) = None,
+) -> dict:
     """Prepare the datasets for auditing the priavcy risk for a data point. We prepare the dataset with or without the target point for training a set of models with or without the target point.
 
     Args:
         dataset_size (int): Size of the whole dataset
-        num_total (int): Number of all target models
         num_models (int): Number of additional target models
         data_idx (int): Data index of the target point
         configs (dict): Data split configuration
         data_type (str): Indicate whether we want to include the target point or exclude the data point (takes value from 'include' and 'exclude' )
+        split_method (str): Indicate how to sample the rest of the data points. Take value from uniform and no_overlapping.
         model_metadata_dict (dict): Metadata for existing models.
-        matched_in_idx (list, optional): _description_. Defaults to None.
+        matched_in_idx (List(int), optional): List of model index which are trained on the data points for generating leave_one_out dataset.
 
     Returns:
-        _type_: _description_
+        dict: Data split information.
     """
     all_index = np.arange(dataset_size)
     all_index_exclude_z = np.array([i for i in all_index if i != data_idx])
     index_list = []
 
     # Indicate how to sample the rest of the dataset.
-    if configs["split_method"] == "uniform":
+    if split_method == "uniform":
         # Placeholder for the existing models
         for _ in range(num_models):
             if data_type == "include":
@@ -304,7 +315,7 @@ def prepare_datasets_for_sample_privacy_risk(
                 )
 
     # We generate a list of dataset which is the same as the training dataset of the models indicated by the matched_in_idx but excluding the target point.
-    elif configs["split_method"] == "leave_one_out":
+    elif split_method == "leave_one_out":
         assert (
             matched_in_idx is not None
         ), "Please indicate the in-world model metdadata"
@@ -337,50 +348,50 @@ def prepare_datasets_for_sample_privacy_risk(
 
     else:
         raise ValueError(
-            f"{configs['split_method']} is not supported. Please use uniform or leave_one_out splitting method."
+            f"{split_method} is not supported. Please use uniform or leave_one_out splitting method."
         )
 
-    dataset_splits = {
-        "split": index_list,
-        "split_method": configs["split_method"]
-    }
+    dataset_splits = {"split": index_list, "split_method": split_method}
     return dataset_splits
 
 
-def prepare_models(log_dir: dict, dataset, data_split, configs, model_metadata_dict):
-    """Train models based on the dataset list
+def prepare_models(
+    log_dir: str,
+    dataset: torchvision.datasets,
+    data_split: dict,
+    configs: dict,
+    model_metadata_dict: dict,
+):
+    """Train models based on the dataset split information.
 
     Args:
-        log_dir: Log directory that saved all the information, including the models.
-        dataset: The whole dataset
+        log_dir (str): Log directory that saved all the information, including the models.
+        dataset (torchvision.datasets): The whole dataset
         data_split (dict): Data split information. 'split' contains a list of dict, each of which has the train, test and audit information. 'split_method' indicates the how the dataset is generated.
         configs (dict): Indicate the traininig information
         model_metadata_dict (dict): Metadata information about the existing models.
         matched_idx (List, optional): Index list of existing models that matchs configuration. Defaults to None.
 
     Returns:
-        model_list: List of trained models
-        model_metadata_dict: Updated Metadata of the existing models
-        target_model_idx_list: Updated index list that matches the target model configurations.
+        nn.Module: List of trained models
+        dict: Updated Metadata of the existing models
+        List(int): Updated index list that matches the target model configurations.
     """
     # Initialize the model list
     model_list = []
     target_model_idx_list = []
     # Train the additional target models based on the dataset split
-    for split in range(len(data_split['split'])):
+    for split in range(len(data_split["split"])):
         meta_data = {}
         baseline_time = time.time()
-
-        train_data = torch.utils.data.Subset(
-            dataset, data_split["split"][split]["train"]
-        )
-        test_data = torch.utils.data.Subset(
-            dataset, data_split["split"][split]["test"])
         train_loader = torch.utils.data.DataLoader(
-            train_data, batch_size=configs["batch_size"], shuffle=True, num_workers=2
+            torch.utils.data.Subset(dataset, data_split["split"][split]["train"]),
+            batch_size=configs["batch_size"],
+            shuffle=True,
+            num_workers=2,
         )
         test_loader = torch.utils.data.DataLoader(
-            test_data,
+            torch.utils.data.Subset(dataset, data_split["split"][split]["test"]),
             batch_size=configs["test_batch_size"],
             shuffle=False,
             num_workers=2,
@@ -389,16 +400,14 @@ def prepare_models(log_dir: dict, dataset, data_split, configs, model_metadata_d
         print(50 * "-")
         print(
             f"Training the {split}-th model: ",
-            f"Train size {len(train_data)}, " f"Test size {len(test_data)}",
+            f"Train size {len(data_split['split'][split]['train'])}, Test size {len(data_split['split'][split]['test'])}",
         )
 
         # Train the target model based on the configurations.
-        model = get_model(configs["model_name"])
-        model = train(model, train_loader, configs)
+        model = train(get_model(configs["model_name"]), train_loader, configs)
         # Test performance on the training dataset and test dataset
         test_loss, test_acc = inference(model, test_loader, configs["device"])
-        train_loss, train_acc = inference(
-            model, train_loader, configs["device"])
+        train_loss, train_acc = inference(model, train_loader, configs["device"])
         model_list.append(copy.deepcopy(model))
         logging.info(
             "Prepare %s-th target model costs %s seconds ",
@@ -434,26 +443,26 @@ def prepare_models(log_dir: dict, dataset, data_split, configs, model_metadata_d
     return model_list, model_metadata_dict, target_model_idx_list
 
 
-def get_info_source_population_attack(dataset, data_split, model, configs):
+def get_info_source_population_attack(
+    dataset: torchvision.datasets, data_split: dict, model: nn.Module, configs: dict
+):
     """Prepare the information source for calling the core of privacy meter for the population attack
 
     Args:
-        dataset: The whole dataset
+        dataset(torchvision.datasets): The whole dataset
         data_split (dict): Data split information. 'split' contains a list of dict, each of which has the train, test and audit information. 'split_method' indicates the how the dataset is generated.
-        model (model): Target Model.
+        model (nn.Module): Target Model.
         configs (dict): Auditing configuration
 
     Returns:
-        target_dataset: List of target dataset on which we want to infer the membership
-        audit_dataset:  List of auditing datasets we use for launch the attack
-        target_model: List of target models we want to audit
-        reference_model: List of reference models (which is the target model based on population attack)
+        List(Dataset): List of target dataset on which we want to infer the membership
+        List(Dataset):  List of auditing datasets we use for launch the attack
+        List(nn.Module): List of target models we want to audit
+        List(nn.Module): List of reference models (which is the target model based on population attack)
     """
-    train_data, train_targets = get_dataset_subset(
-        dataset, data_split["train"])
+    train_data, train_targets = get_dataset_subset(dataset, data_split["train"])
     test_data, test_targets = get_dataset_subset(dataset, data_split["test"])
-    audit_data, audit_targets = get_dataset_subset(
-        dataset, data_split["audit"])
+    audit_data, audit_targets = get_dataset_subset(dataset, data_split["audit"])
     target_dataset = Dataset(
         data_dict={
             "train": {"x": train_data, "y": train_targets},
@@ -478,25 +487,24 @@ def get_info_source_population_attack(dataset, data_split, model, configs):
 
 
 def get_info_source_reference_attack(
-    log_dir,
-    dataset,
-    data_split,
-    model,
-    configs,
-    model_metadata_dict,
-    target_model_idx,
-    # matched_reference_idx=None,
+    log_dir: str,
+    dataset: torchvision.datasets,
+    data_split: dict,
+    model: nn.Module,
+    configs: dict,
+    model_metadata_dict: dict,
+    target_model_idx: int,
 ):
     """Prepare the information source for the reference attacks
 
      Args:
-        log_dir: Log directory that saved all the information, including the models.
-        dataset: The whole dataset.
+        log_dir(str): Log directory that saved all the information, including the models.
+        dataset(torchvision.datasets): The whole dataset.
         data_split (dict): Data split information. 'split' contains a list of dict, each of which has the train, test and audit information. 'split_method' indicates the how the dataset is generated.
         model (model): Target Model.
         configs (dict): Auditing configuration.
         model_metadata_dict (dict): Model metedata dict.
-        # matched_reference_idx (list, optional): List of existing reference models. Defaults to None.
+        target_model_idx (int): target model index.
 
     Returns:
         target_dataset: List of target dataset on which we want to infer the membership.
@@ -508,8 +516,7 @@ def get_info_source_reference_attack(
     """
 
     # Construct the target dataset and target models
-    train_data, train_targets = get_dataset_subset(
-        dataset, data_split["train"])
+    train_data, train_targets = get_dataset_subset(dataset, data_split["train"])
     test_data, test_targets = get_dataset_subset(dataset, data_split["test"])
     target_dataset = Dataset(
         data_dict={
@@ -531,7 +538,8 @@ def get_info_source_reference_attack(
     )
 
     reference_idx = check_reference_model_dataset(
-        model_metadata_dict, reference_idx, target_model_idx, configs['split_method'])
+        model_metadata_dict, reference_idx, target_model_idx, configs["split_method"]
+    )
     print(f"Load existing {len(reference_idx)} reference models")
     existing_reference_models = load_existing_models(
         model_metadata_dict, reference_idx, configs["model_name"]
@@ -547,8 +555,7 @@ def get_info_source_reference_attack(
     ]
 
     # Train additional reference models
-    num_reference_models = configs["num_reference_models"] - \
-        len(reference_models)
+    num_reference_models = configs["num_reference_models"] - len(reference_models)
     for reference_idx in range(num_reference_models):
         reference_data_idx = get_split(
             data_split["audit"],
@@ -571,8 +578,7 @@ def get_info_source_reference_attack(
         reference_model = get_model(configs["model_name"])
         reference_model = train(reference_model, reference_loader, configs)
         # Test performance on the training dataset and test dataset
-        train_loss, train_acc = inference(
-            model, reference_loader, configs["device"])
+        train_loss, train_acc = inference(model, reference_loader, configs["device"])
 
         logging.info(
             f"Prepare {reference_idx}-th reference model costs {time.time()-start_time} seconds: Train accuracy (on auditing dataset) {train_acc}, Train Loss {train_loss}"
@@ -619,31 +625,29 @@ def get_info_source_reference_attack(
 
 
 def prepare_information_source(
-    log_dir,
-    dataset,
-    data_split,
-    model_list,
-    configs,
-    model_metadata_dict,
+    log_dir: str,
+    dataset: torchvision.datasets,
+    data_split: dict,
+    model_list: List(nn.Module),
+    configs: dict,
+    model_metadata_dict: dict,
     target_model_idx_list: List(int) = None,
-    # matched_reference_idx=None,
 ):
     """Prepare the information source for calling the core of the privacy meter
     Args:
-        log_dir: Log directory that saved all the information, including the models.
-        dataset: The whole dataset
+        log_dir (str): Log directory that saved all the information, including the models.
+        dataset (torchvision.datasets): The whole dataset
         data_split (dict): Data split information. 'split' contains a list of dict, each of which has the train, test and audit information. 'split_method' indicates the how the dataset is generated.
         model_list (List): List of target models.
         configs (dict): Auditing configuration.
         model_metadata_dict (dict): Model metedata dict.
-        matched_reference_idx (list, optional): List of existing reference models. Defaults to None.
 
     Returns:
-        target_info_source_list (List):
-        reference_info_source_list (List):
-        metric_list (List):
-        log_dir_list (List):
-        model_metadata_dict (dict): Updated metadata for the trained model.
+        List(InformationSource): target information source list.
+        List(InformationSource): reference information source list.
+        List: List of metrics used for each target models.
+        List(str): List of directory to save the privacy meter results for each target model.
+        dict: Updated metadata for the trained model.
     """
     reference_info_source_list = []
     target_info_source_list = []
@@ -706,12 +710,14 @@ def prepare_information_source(
     )
 
 
-def prepare_priavcy_risk_report(log_dir, audit_results, configs, save_path=None):
+def prepare_priavcy_risk_report(
+    log_dir: str, audit_results: List, configs: dict, save_path: str = None
+):
     """Generate privacy risk report based on the auditing report
 
     Args:
-        log_dir: Log directory that saved all the information, including the models.
-        audit_results: Privacy meter results.
+        log_dir(str): Log directory that saved all the information, including the models.
+        audit_results(List): Privacy meter results.
         configs (dict): Auditing configuration.
         save_path (str, optional): Report path. Defaults to None.
 
@@ -764,5 +770,4 @@ def prepare_priavcy_risk_report(log_dir, audit_results, configs, save_path=None)
                 f"{len(audit_results)} results are not enough for {configs['privacy_game']})"
             )
     else:
-        raise NotImplementedError(
-            f"{configs['privacy_game']} is not implemented yet")
+        raise NotImplementedError(f"{configs['privacy_game']} is not implemented yet")

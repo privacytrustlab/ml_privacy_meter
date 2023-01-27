@@ -14,16 +14,25 @@ import torch
 import yaml
 from torch import nn
 
-from core import (load_dataset_for_existing_models, load_existing_models,
-                  load_existing_target_model, prepare_datasets,
-                  prepare_datasets_for_sample_privacy_risk,
-                  prepare_information_source, prepare_models,
-                  prepare_priavcy_risk_report)
+from core import (
+    load_dataset_for_existing_models,
+    load_existing_models,
+    load_existing_target_model,
+    prepare_datasets,
+    prepare_datasets_for_sample_privacy_risk,
+    prepare_information_source,
+    prepare_models,
+    prepare_priavcy_risk_report,
+)
 from dataset import get_dataset, get_dataset_subset
 from privacy_meter.audit import Audit
 from privacy_meter.model import PytorchModelTensor
-from util import (check_configs, load_models_with_data_idx_list,
-                  load_models_without_data_idx_list, load_leave_one_out_models)
+from util import (
+    check_configs,
+    load_leave_one_out_models,
+    load_models_with_data_idx_list,
+    load_models_without_data_idx_list,
+)
 
 
 def setup_log(name: str) -> logging.Logger:
@@ -86,8 +95,7 @@ if __name__ == "__main__":
         model_metadata_list = {"model_metadata": {}, "current_idx": 0}
     # Load the dataset
     baseline_time = time.time()
-    dataset = get_dataset(configs["data"]["dataset"],
-                          configs["data"]["data_dir"])
+    dataset = get_dataset(configs["data"]["dataset"], configs["data"]["data_dir"])
 
     privacy_game = configs["audit"]["privacy_game"]
 
@@ -109,8 +117,9 @@ if __name__ == "__main__":
                 target_model_idx_list,
                 configs["data"],
             )
-            num_target_models = configs["train"]["num_target_model"] - \
-                len(trained_target_dataset_list)
+            num_target_models = configs["train"]["num_target_model"] - len(
+                trained_target_dataset_list
+            )
         else:
             target_model_idx_list = []
             trained_target_models_list = []
@@ -137,9 +146,10 @@ if __name__ == "__main__":
 
         model_list = [*new_model_list, *trained_target_models_list]
         data_split_info["split"] = [
-            *data_split_info["split"], *trained_target_dataset_list]
-        target_model_idx_list = [
-            *new_target_model_idx_list, *target_model_idx_list]
+            *data_split_info["split"],
+            *trained_target_dataset_list,
+        ]
+        target_model_idx_list = [*new_target_model_idx_list, *target_model_idx_list]
 
         logger.info(
             "Prepare the target model costs %0.5f seconds", time.time() - baseline_time
@@ -210,8 +220,15 @@ if __name__ == "__main__":
     # Auditing the priavcy risk for an individual data point
     elif configs["audit"]["privacy_game"] == "privacy_loss_sample":
         # Load existing models that match the requirement
+        assert (
+            "data_idx" in configs["train"]
+        ), "data_idx in config.train is not specified"
+        assert (
+            "data_idx" in configs["audit"]
+        ), "data_idx in config.audit is not specified"
+
         in_model_idx_list = load_models_with_data_idx_list(
-            model_metadata_list, [configs["train"]["idx"]]
+            model_metadata_list, [configs["train"]["data_idx"]]
         )
         model_in_list = load_existing_models(
             model_metadata_list,
@@ -222,11 +239,11 @@ if __name__ == "__main__":
         if len(in_model_idx_list) < configs["train"]["num_in_models"]:
             data_split_info_in = prepare_datasets_for_sample_privacy_risk(
                 len(dataset),
-                configs["train"]["num_in_models"],
                 configs["train"]["num_in_models"] - len(in_model_idx_list),
-                configs["train"]["idx"],
+                configs["train"]["data_idx"],
                 configs["data"],
                 "include",
+                "uniform",
                 model_metadata_list,
             )
             new_in_model_list, model_metadata_list, new_matched_in_idx = prepare_models(
@@ -234,11 +251,10 @@ if __name__ == "__main__":
                 dataset,
                 data_split_info_in,
                 configs["train"],
-                model_metadata_list
+                model_metadata_list,
             )
             model_in_list = [*new_in_model_list, *model_in_list]
-            in_model_idx_list = [
-                *new_matched_in_idx, *in_model_idx_list]
+            in_model_idx_list = [*new_matched_in_idx, *in_model_idx_list]
         in_model_list_pm = [
             PytorchModelTensor(
                 model_obj=model, loss_fn=nn.CrossEntropyLoss(), batch_size=1000
@@ -247,11 +263,12 @@ if __name__ == "__main__":
         ]
         if configs["data"]["split_method"] == "uniform":
             out_model_idx_list = load_models_without_data_idx_list(
-                model_metadata_list, [configs["train"]["idx"]]
+                model_metadata_list, [configs["train"]["data_idx"]]
             )
         elif configs["data"]["split_method"] == "leave_one_out":
             out_model_idx_list = load_leave_one_out_models(
-                model_metadata_list, [configs["train"]["idx"]], in_model_idx_list)
+                model_metadata_list, [configs["train"]["data_idx"]], in_model_idx_list
+            )
         else:
             raise ValueError("The split method is not supported")
 
@@ -264,24 +281,27 @@ if __name__ == "__main__":
         if len(out_model_idx_list) < configs["train"]["num_out_models"]:
             data_split_info_out = prepare_datasets_for_sample_privacy_risk(
                 len(dataset),
-                configs["train"]["num_out_models"],
                 configs["train"]["num_out_models"] - len(out_model_idx_list),
-                configs["train"]["idx"],
+                configs["train"]["data_idx"],
                 configs["data"],
                 "exclude",
+                configs["data"]["split_method"],
                 model_metadata_list,
-                in_model_idx_list
+                in_model_idx_list,
             )
-            new_out_model_list, model_metadata_list, new_matched_out_idx = prepare_models(
+            (
+                new_out_model_list,
+                model_metadata_list,
+                new_matched_out_idx,
+            ) = prepare_models(
                 log_dir,
                 dataset,
                 data_split_info_out,
                 configs["train"],
-                model_metadata_list
+                model_metadata_list,
             )
             model_out_list = [*new_out_model_list, *model_out_list]
-            out_model_idx_list = [
-                *new_matched_out_idx, *out_model_idx_list]
+            out_model_idx_list = [*new_matched_out_idx, *out_model_idx_list]
 
         out_model_list_pm = [
             PytorchModelTensor(
@@ -291,23 +311,19 @@ if __name__ == "__main__":
         ]
 
         # Test the models' performance on the data indicated by the audit.idx
-        data, targets = get_dataset_subset(dataset, [configs["audit"]["idx"]])
+        data, targets = get_dataset_subset(dataset, [configs["audit"]["data_idx"]])
         in_signal = np.array(
-            [model.get_loss(data, targets).item()
-             for model in in_model_list_pm]
+            [model.get_loss(data, targets).item() for model in in_model_list_pm]
         )
         out_signal = np.array(
-            [model.get_loss(data, targets).item()
-             for model in out_model_list_pm]
+            [model.get_loss(data, targets).item() for model in out_model_list_pm]
         )
 
         # Rescale the loss
         in_signal = in_signal + 1e-17  # avoid nan
-        in_signal = np.log(
-            np.divide(np.exp(-in_signal), (1 - np.exp(-in_signal))))
+        in_signal = np.log(np.divide(np.exp(-in_signal), (1 - np.exp(-in_signal))))
         out_signal = out_signal + 1e-17  # avoid nan
-        out_signal = np.log(
-            np.divide(np.exp(-out_signal), (1 - np.exp(-out_signal))))
+        out_signal = np.log(np.divide(np.exp(-out_signal), (1 - np.exp(-out_signal))))
 
         # Generate the privacy risk report
         labels = np.concatenate(
@@ -318,9 +334,9 @@ if __name__ == "__main__":
                 {
                     "Signal": np.concatenate([in_signal, out_signal]),
                     "Membership": [
-                        f"In ({configs['train']['idx']})"
+                        f"In ({configs['train']['data_idx']})"
                         if y == 1
-                        else f"Out ({configs['train']['idx']})"
+                        else f"Out ({configs['train']['data_idx']})"
                         for y in labels
                     ],
                 }
@@ -333,7 +349,7 @@ if __name__ == "__main__":
         plt.grid()
         plt.xlabel("Signal value")
         plt.ylabel("Number of Models")
-        plt.title(f"Signal histogram for data point {configs['audit']['idx']}")
+        plt.title(f"Signal histogram for data point {configs['audit']['data_idx']}")
         plt.savefig(
-            f"{log_dir}/{configs['audit']['report_log']}/individual_pr_{configs['train']['idx']}_{configs['audit']['idx']}.png"
+            f"{log_dir}/{configs['audit']['report_log']}/individual_pr_{configs['train']['data_idx']}_{configs['audit']['data_idx']}.png"
         )

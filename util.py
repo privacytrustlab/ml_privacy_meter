@@ -1,5 +1,6 @@
 """This file contains information about the utility functions."""
 from ast import List
+
 import numpy as np
 import torch
 
@@ -24,8 +25,7 @@ def check_configs(configs: dict):
     if privacy_game in ["privacy_loss_model", "avg_privacy_loss_training_algo"]:
         num_target_model = configs["train"]["num_target_model"]
         if privacy_game == "privacy_loss_model" and num_target_model != 1:
-            raise ValueError(
-                "privacy_loss_model game only supports one target model")
+            raise ValueError("privacy_loss_model game only supports one target model")
         if privacy_game == "avg_privacy_loss_training_algo":
             if num_target_model <= 1:
                 raise ValueError(
@@ -90,11 +90,9 @@ def get_split(
         np.ndarray: List of index
     """
     if split_method in "no_overlapping":
-        selected_index = np.array(
-            [i for i in all_index if i not in used_index])
+        selected_index = np.array([i for i in all_index if i not in used_index])
         if size <= len(selected_index):
-            selected_index = np.random.choice(
-                selected_index, size, replace=False)
+            selected_index = np.random.choice(selected_index, size, replace=False)
         else:
             raise ValueError("Not enough remaining data points.")
     elif split_method == "uniform":
@@ -163,11 +161,12 @@ def load_models_by_model_idx(
     Returns:
         List[int]: List of metadata index which match the model index.
     """
-    assert all(isinstance(index, int) for index in model_idx_list)
-    assert isinstance(model_metadata_dict, dict)
+    assert all(
+        isinstance(index, int) for index in model_idx_list
+    ), "Model index musr be integer."
     assert set(model_idx_list).issubset(
         set(model_metadata_dict["model_metadata"].keys())
-    )
+    ), "Input the correct model index."
     return model_idx_list
 
 
@@ -238,11 +237,13 @@ def load_leave_one_out_models(
     matched_idx = []
     for reference_meta_idx in reference_model_idx:
         in_train_split = np.array(
-            model_metadata_dict["model_metadata"][reference_meta_idx]["train_split"])
+            model_metadata_dict["model_metadata"][reference_meta_idx]["train_split"]
+        )
         for meta_idx, meta_data in model_metadata_dict["model_metadata"].items():
             if set(meta_data["train_split"]).issubset(set(in_train_split)):
                 out_train_split = np.array(
-                    model_metadata_dict["model_metadata"][meta_idx]["train_split"])
+                    model_metadata_dict["model_metadata"][meta_idx]["train_split"]
+                )
                 diff = np.setdiff1d(in_train_split, out_train_split)
                 if set(diff) == set(data_idx_list) and meta_idx not in matched_idx:
                     matched_idx.append(meta_idx)

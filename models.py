@@ -1,6 +1,6 @@
 """This file contains the definition of models"""
-from torch import nn
 import torch.nn.functional as F
+from torch import nn
 
 
 class Net(nn.Module):
