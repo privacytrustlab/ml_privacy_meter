@@ -573,8 +573,6 @@ def get_info_source_reference_attack(
             shuffle=True,
             num_workers=2,
         )
-        # reference_loader = torch.utils.data.DataLoader(get_cifar10_subset(
-        #     dataset, reference_data_idx), batch_size=configs['batch_size'], shuffle=True, num_workers=2)
         reference_model = get_model(configs["model_name"])
         reference_model = train(reference_model, reference_loader, configs)
         # Test performance on the training dataset and test dataset
