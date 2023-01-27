@@ -8,8 +8,7 @@ audit: # the configurations for the MIA
   audit_batch_size: 1000 # the batch size for computing signals for inferring membership information
   split_method: uniform # spliting methods among reference datasets
   report_log: report_sample # String that indicates the folder where we save the and auditing report.
-  key: data_idx # String for indicating the meaning of the idx. We support data_idx, model_idx or none.
-  idx: 1 # Integer number indicating the data index for which we want to show the performance difference
+  data_idx: 1 # Integer number indicating the data index for which we want to show the performance difference
 
 train: # Configuration for training
   type: pytorch # Training framework (we only support pytorch now).
@@ -17,12 +16,11 @@ train: # Configuration for training
   batch_size: 64 # Integer number for indicating batch size for training the target model.
   test_batch_size: 10000 # Integer number for indicating batch size for evaluating the target model.
   optimizer: Adam # String which indicates the optimizer. We support Adam and SGD.
-  lr: 0.001 # Float number for indicating learning rate for training the target model.
-  wd: 0 # Float number for indicating weight decay for training the target model.
+  learning_rate: 0.001 # Float number for indicating learning rate for training the target model.
+  weight_decay: 0 # Float number for indicating weight decay for training the target model.
   model_name: CNN # String for indicating the model type. We support CNN. More model types can be added in model.py.
   device: cuda:0 # String for indicating the device we want to use for training models.
-  key: data_idx # String for indicating the meaning of the idx. We support data_idx, model_idx or none.
-  idx: 1 # Integer number for indicating the model index or data index.
+  data_idx: 1 # Integer number for indicating the model index or data index.
   num_in_models: 40 # Integer number that indicates how many target models trained on idx
   num_out_models: 40 # Integer number that indicates how many target models not trained on idx
 
@@ -30,5 +28,6 @@ data: # Configuration for data
   dataset: cifar10 # String indicates the name of the dataset
   f_train: 0.3 # Float number from 0 to 1 indicating the fraction of the train dataset
   f_test: 0.3 # Float number from 0 to 1 indicating the fraction of the test dataset
-  split_method: uniform # String for indicating the methods of splitting the dataset between train, test, and auditing.
+  split_method: leave_one_out # String for indicating the methods of splitting the dataset between train, test, and auditing; Take value from uniform and leave_one_out
   f_audit: 0.3 # Float from 0 to 1, indicating the fraction of the auditing dataset
+  data_dir: data # String about where to save the data.
