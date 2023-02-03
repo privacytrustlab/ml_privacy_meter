@@ -1,6 +1,7 @@
 run: # Configurations for a specific run
   random_seed: 1234 # Integer number of specifying random seed
-  log_dir: demo_all # String for indicating where to save all the information, including models and computed signals. We can reuse the models saved in the same log_dir.
+  log_dir: demo # String for indicating where to save all the information, including models and computed signals. We can reuse the models saved in the same log_dir.
+  time_log: True # Indicate whether to log the time for each step
 
 audit: # Configurations for auditing
   privacy_game: privacy_loss_model # Indicate the privacy game from privacy_loss_model, avg_privacy_loss_training_algo, privacy_loss_sample
@@ -17,8 +18,6 @@ audit: # Configurations for auditing
   epochs: 30 # Integer number for indicating the epochs for training target model.
   report_log: report_reference # String that indicates the folder where we save the and auditing report.
   split_method: uniform # String for indicating the splitting methods for reference dataset. We support uniform and leave_one_out.
-  key: none # String for indicating the meaning of the idx. We support data_idx and none for reusing existing reference models. data_idx search for models which include or exclude the data point indicated using idx. Otherwise, the reference models are the ones that have the same training setting as indicated above.
-  idx: none # Integer number for the model index or data index.
 
 train: # Configuration for training
   type: pytorch # Training framework (we only support pytorch now).
@@ -30,9 +29,8 @@ train: # Configuration for training
   weight_decay: 0 # Float number for indicating weight decay for training the target model.
   model_name: CNN # String for indicating the model type. We support CNN. More model types can be added in model.py.
   device: cuda:0 # String for indicating the device we want to use for training models.
-  key: model_idx # String for indicating the meaning of the idx. We support data_idx, model_idx or none.
-  idx: 1 # Integer number for indicating the model index or data index.
   num_target_model: 1 #Integer number for indicating how many target models we want to audit for the privacy game
+  model_idx: 0
 
 data: # Configuration for data
   dataset: cifar10 # String indicates the name of the dataset
@@ -40,4 +38,4 @@ data: # Configuration for data
   f_test: 0.3 # Float number from 0 to 1 indicating the fraction of the test dataset
   split_method: no_overlapping # String for indicating the methods of splitting the dataset between train, test, and auditing.
   f_audit: 0.3 # Float from 0 to 1, indicating the fraction of the auditing dataset
-  data_dir: data # String about where to save the data.
+  data_dir: ../data/cifar10 # String about where to save the data.

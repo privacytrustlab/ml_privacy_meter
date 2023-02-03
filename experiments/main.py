@@ -12,8 +12,6 @@ import pandas as pd
 import seaborn as sns
 import torch
 import yaml
-from torch import nn
-
 from core import (
     load_dataset_for_existing_models,
     load_existing_models,
@@ -25,8 +23,7 @@ from core import (
     prepare_priavcy_risk_report,
 )
 from dataset import get_dataset, get_dataset_subset
-from privacy_meter.audit import Audit
-from privacy_meter.model import PytorchModelTensor
+from torch import nn
 from util import (
     check_configs,
     load_leave_one_out_models,
@@ -34,23 +31,28 @@ from util import (
     load_models_without_data_idx_list,
 )
 
+from privacy_meter.audit import Audit
+from privacy_meter.model import PytorchModelTensor
 
-def setup_log(name: str) -> logging.Logger:
+
+def setup_log(name: str, save_file: bool) -> logging.Logger:
     """Generate the logger for the current run.
     Args:
         name (str): Logging file name.
-
+        save_file (bool): Flag about whether to save to file.
     Returns:
         logging.Logger: Logger object for the current run.
     """
     my_logger = logging.getLogger(name)
     my_logger.setLevel(logging.INFO)
-    log_format = logging.Formatter("%(asctime)s %(levelname)-8s %(message)s")
-    filename = f"log_{name}.log"
-    log_handler = logging.FileHandler(filename, mode="w")
-    log_handler.setLevel(logging.INFO)
-    log_handler.setFormatter(log_format)
-    my_logger.addHandler(log_handler)
+    if save_file:
+        log_format = logging.Formatter("%(asctime)s %(levelname)-8s %(message)s")
+        filename = f"log_{name}.log"
+        log_handler = logging.FileHandler(filename, mode="w")
+        log_handler.setLevel(logging.INFO)
+        log_handler.setFormatter(log_format)
+        my_logger.addHandler(log_handler)
+
     return my_logger
 
 
@@ -78,7 +80,7 @@ if __name__ == "__main__":
     inference_game_type = configs["audit"]["privacy_game"].upper()
 
     # Set up the logger
-    logger = setup_log("time_analysis")
+    logger = setup_log("time_analysis", configs["run"]["time_log"])
 
     # Create folders for saving the logs if they do not exist
     Path(log_dir).mkdir(parents=True, exist_ok=True)

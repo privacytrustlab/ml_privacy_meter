@@ -1,7 +1,0 @@
-2023-01-17 17:10:58 INFO     Prepare the datasets costs 58.180299520492554 seconds
-2023-01-17 17:11:03 INFO     Prepare 0-th target model costs 5.209181785583496 seconds: Train accuracy 0.2588, Train Loss 1.917228383623111; Test accuracy 0.2412, Test Loss 1.953158974647522
-2023-01-17 17:11:03 INFO     Prepare the target model costs 5.211298227310181 seconds
-2023-01-17 17:11:04 INFO     Prepare the information source costs 0.18576645851135254 seconds
-2023-01-17 17:11:04 INFO     Prepare privacy meter results costs 0.03850007057182023-01-17 17:11:28 INFO     Prepare 4-th reference model costs 168.12566089630127 seconds
-2023-01-17 17:14:17 INFO     Prepare 5-th reference model costs 168.4740526676178 seconds
-2023-01-17 17:17:06 INFO     Prepare 6-th reference model costs 168.78677225112915 seconds

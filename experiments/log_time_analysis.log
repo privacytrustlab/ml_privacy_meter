@@ -1,0 +1,6 @@
+2023-02-03 11:09:41,129 INFO     Prepare the datasets costs 0.09670 seconds
+2023-02-03 11:09:41,130 INFO     Prepare the target model costs 0.00001 seconds
+2023-02-03 11:09:41,236 INFO     Prepare the information source costs 0.10580 seconds
+2023-02-03 11:09:41,336 INFO     Prepare the privacy meter result costs 0.10026 seconds
+2023-02-03 11:09:44,737 INFO     Prepare the plot for the privacy risk report costs 3.40022 seconds
+2023-02-03 11:09:44,737 INFO     Run the priavcy meter for the all steps costs 3.70455 seconds

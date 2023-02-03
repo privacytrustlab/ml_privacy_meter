@@ -1,10 +1,11 @@
 from abc import ABC, abstractmethod
 from copy import deepcopy
-from multiprocessing import reduction
 
 import numpy as np
+import tensorflow as tf
 import torch
 from opacus import GradSampleModule  # For speeding up the gradient computation
+
 ########################################################################################################################
 # MODEL CLASS
 ########################################################################################################################
@@ -101,7 +102,7 @@ class PytorchModel(Model):
         """
 
         # Imports torch with global scope
-        globals()['torch'] = __import__('torch')
+        globals()["torch"] = __import__("torch")
 
         # Initializes the parent model
         super().__init__(model_obj, loss_fn)
@@ -109,12 +110,11 @@ class PytorchModel(Model):
         # Add hooks to the layers (to access their value during a forward pass)
         self.intermediate_outputs = {}
         for (i, l) in enumerate(list(self.model_obj._modules.keys())):
-            getattr(self.model_obj, l).register_forward_hook(
-                self.__forward_hook(l))
+            getattr(self.model_obj, l).register_forward_hook(self.__forward_hook(l))
 
         # Create a second loss function, per point
         self.loss_fn_no_reduction = deepcopy(loss_fn)
-        self.loss_fn_no_reduction.reduction = 'none'
+        self.loss_fn_no_reduction.reduction = "none"
 
     def get_logits(self, batch_samples):
         """Function to get the model output from a given input.
@@ -139,12 +139,18 @@ class PytorchModel(Model):
             The loss value, as defined by the loss_fn attribute.
         """
         if per_point:
-            return self.loss_fn_no_reduction(
-                self.model_obj(torch.Tensor(batch_samples)),
-                torch.Tensor(batch_labels)
-            ).detach().numpy()
+            return (
+                self.loss_fn_no_reduction(
+                    self.model_obj(torch.Tensor(batch_samples)),
+                    torch.Tensor(batch_labels),
+                )
+                .detach()
+                .numpy()
+            )
         else:
-            return self.loss_fn(self.model_obj(torch.Tensor(batch_samples)), torch.Tensor(batch_labels)).item()
+            return self.loss_fn(
+                self.model_obj(torch.Tensor(batch_samples)), torch.Tensor(batch_labels)
+            ).item()
 
     def get_grad(self, batch_samples, batch_labels):
         """Function to get the gradient of the model loss with respect to the model parameters, on a given input and an
@@ -157,8 +163,9 @@ class PytorchModel(Model):
         Returns:
             A list of gradients of the model loss (one item per layer) with respect to the model parameters.
         """
-        loss = self.loss_fn(self.model_obj(torch.Tensor(
-            batch_samples)), torch.Tensor(batch_labels))
+        loss = self.loss_fn(
+            self.model_obj(torch.Tensor(batch_samples)), torch.Tensor(batch_labels)
+        )
         loss.backward()
         return [p.grad.numpy() for p in self.model_obj.parameters()]
 
@@ -182,7 +189,10 @@ class PytorchModel(Model):
                 layer_names.append(layer)
             else:
                 layer_names.append(list(self.model_obj._modules.keys())[layer])
-        return [self.intermediate_outputs[layer_name].detach().numpy() for layer_name in layer_names]
+        return [
+            self.intermediate_outputs[layer_name].detach().numpy()
+            for layer_name in layer_names
+        ]
 
     def __forward_hook(self, layer_name):
         """Private helper function to access outputs of intermediate layers.
@@ -198,6 +208,7 @@ class PytorchModel(Model):
             self.intermediate_outputs[layer_name] = output
 
         return hook
+
 
 ########################################################################################################################
 # TENSORFLOW_MODEL CLASS
@@ -218,20 +229,22 @@ class TensorflowModel(Model):
         """
 
         # Imports tensorflow with global scope
-        globals()['tf'] = __import__('tensorflow')
+        globals()["tf"] = __import__("tensorflow")
 
         # Initializes the parent model
         super().__init__(model_obj, loss_fn)
 
         # Store the layers names in a dict (to access intermediate outputs by names)
-        self.layers_names = dict(zip(
-            [layer._name for layer in self.model_obj.layers],
-            [i for i in range(len(self.model_obj.layers))]
-        ))
+        self.layers_names = dict(
+            zip(
+                [layer._name for layer in self.model_obj.layers],
+                [i for i in range(len(self.model_obj.layers))],
+            )
+        )
 
         # Create a second loss function, per point
         self.loss_fn_no_reduction = deepcopy(loss_fn)
-        self.loss_fn_no_reduction.reduction = 'none'
+        self.loss_fn_no_reduction.reduction = "none"
 
     def get_logits(self, batch_samples):
         """Function to get the model output from a given input.
@@ -256,7 +269,9 @@ class TensorflowModel(Model):
             The loss value, as defined by the loss_fn attribute.
         """
         if per_point:
-            return self.loss_fn_no_reduction(batch_labels, self.get_logits(batch_samples)).numpy()
+            return self.loss_fn_no_reduction(
+                batch_labels, self.get_logits(batch_samples)
+            ).numpy()
         else:
             return self.loss_fn(batch_labels, self.get_logits(batch_samples)).numpy()
 
@@ -288,11 +303,13 @@ class TensorflowModel(Model):
         Returns:
             A list of intermediate outputs of layers.
         """
-        assert forward_pass, 'Implementation of get_intermediate_outputs in TensorflowModel requires forward_pass=True'
+        assert (
+            forward_pass
+        ), "Implementation of get_intermediate_outputs in TensorflowModel requires forward_pass=True"
 
         extractor = tf.keras.Model(
             inputs=self.model_obj.inputs,
-            outputs=[layer.output for layer in self.model_obj.layers]
+            outputs=[layer.output for layer in self.model_obj.layers],
         )
         layers_indices = []
         for layer in layers:
@@ -318,6 +335,7 @@ class TensorflowModel(Model):
         else:
             return x.numpy()
 
+
 ########################################################################################################################
 # LANGUAGE_MODEL CLASS
 ########################################################################################################################
@@ -341,6 +359,7 @@ class LanguageModel(Model):
         """
         pass
 
+
 ########################################################################################################################
 # HUGGINGFACE_CAUSAL_LANGUAGE_MODEL_CLASS
 ########################################################################################################################
@@ -363,7 +382,7 @@ class HuggingFaceCausalLanguageModel(LanguageModel):
         """
 
         # Imports torch with global scope
-        globals()['torch'] = __import__('torch')
+        globals()["torch"] = __import__("torch")
 
         # Initializes the parent model
         super().__init__(model_obj, loss_fn)
@@ -372,7 +391,7 @@ class HuggingFaceCausalLanguageModel(LanguageModel):
 
         # Create a second loss function, per point
         self.loss_fn_no_reduction = deepcopy(loss_fn)
-        self.loss_fn_no_reduction.reduction = 'none'
+        self.loss_fn_no_reduction.reduction = "none"
 
     def get_logits(self, batch_samples):
         """Function to get the model output from a given input.
@@ -477,7 +496,7 @@ class PytorchModelTensor(Model):
     This particular class is to be used with pytorch models with GPU support.
     """
 
-    def __init__(self, model_obj, loss_fn, device='cpu', batch_size=25):
+    def __init__(self, model_obj, loss_fn, device="cpu", batch_size=25):
         """Constructor
 
         Args:
@@ -488,14 +507,14 @@ class PytorchModelTensor(Model):
         """
 
         # Imports torch with global scope
-        globals()['torch'] = __import__('torch')
+        globals()["torch"] = __import__("torch")
 
         # Initializes the parent model
         super().__init__(model_obj, loss_fn)
 
         # Create a second loss function, per point
         self.loss_fn_no_reduction = deepcopy(loss_fn)
-        self.loss_fn_no_reduction.reduction = 'none'
+        self.loss_fn_no_reduction.reduction = "none"
         self.device = device
         self.grad_sampler_model = None
         self.batch_size = batch_size
@@ -511,7 +530,7 @@ class PytorchModelTensor(Model):
         """
         self.model_obj.to(self.device)
         logits = self.model_obj(batch_samples).detach().numpy()
-        self.model_obj.to('cpu')
+        self.model_obj.to("cpu")
         return logits
 
     def get_loss(self, batch_samples, batch_labels, per_point=True):
@@ -539,9 +558,11 @@ class PytorchModelTensor(Model):
                     loss_list.append(loss.detach())  # to avoid the OOM
                 all_loss = torch.cat(loss_list).detach().cpu().numpy()
             else:
-                all_loss = self.loss_fn(self.model_obj(batch_samples.to(
-                    self.device)), batch_labels.to(self.device)).item()
-        self.model_obj.to('cpu')
+                all_loss = self.loss_fn(
+                    self.model_obj(batch_samples.to(self.device)),
+                    batch_labels.to(self.device),
+                ).item()
+        self.model_obj.to("cpu")
         return all_loss
 
     def get_grad(self, batch_samples, batch_labels):
@@ -570,17 +591,28 @@ class PytorchModelTensor(Model):
             loss = self.loss_fn(self.grad_sampler_model(x), y).sum()
             loss.backward()
 
-            grad = torch.cat([p.grad_sample.reshape(
-                len(y), -1) for p in self.grad_sampler_model.parameters()], axis=1).detach().numpy()
+            grad = (
+                torch.cat(
+                    [
+                        p.grad_sample.reshape(len(y), -1)
+                        for p in self.grad_sampler_model.parameters()
+                    ],
+                    axis=1,
+                )
+                .detach()
+                .numpy()
+            )
             # grad = self.grad_sampler_model.conv1.weight.grad_sample.reshape(len(y),-1)
             grad_list.append(grad)
             self.grad_sampler_model.zero_grad()
 
-        self.model_obj.to('cpu')
+        self.model_obj.to("cpu")
         grad_list = torch.cat(grad_list).detach().cpu().numpy()
         return grad_list
 
-    def get_gradnorm(self, batch_samples, batch_labels, is_features=True, layer_number=1):
+    def get_gradnorm(
+        self, batch_samples, batch_labels, is_features=True, layer_number=1
+    ):
         """Function to get the gradient of the model loss with respect to the model parameters, on a given input and an
         expected output.
 
@@ -605,16 +637,28 @@ class PytorchModelTensor(Model):
             loss = self.loss_fn(self.grad_sampler_model(x), y).sum()
             loss.backward()
             if is_features:
-                grad_norm.append(torch.norm(self.grad_sampler_model.features[layer_number].weight.grad_sample.reshape(
-                    self.batch_size, -1).detach(), dim=1))  # this detach can not be deleted
+                grad_norm.append(
+                    torch.norm(
+                        self.grad_sampler_model.features[layer_number]
+                        .weight.grad_sample.reshape(self.batch_size, -1)
+                        .detach(),
+                        dim=1,
+                    )
+                )  # this detach can not be deleted
             else:
-                grad_norm.append(torch.norm(self.grad_sampler_model.classifier[layer_number].weight.grad_sample.reshape(
-                    self.batch_size, -1).detach(), dim=1))  # this detach can not be deleted
+                grad_norm.append(
+                    torch.norm(
+                        self.grad_sampler_model.classifier[layer_number]
+                        .weight.grad_sample.reshape(self.batch_size, -1)
+                        .detach(),
+                        dim=1,
+                    )
+                )  # this detach can not be deleted
 
             self.grad_sampler_model.zero_grad()
         grad_norm = torch.cat(grad_norm).detach().cpu().numpy()
-        self.model_obj.to('cpu')
-        self.grad_sampler_model.to('cpu')
+        self.model_obj.to("cpu")
+        self.grad_sampler_model.to("cpu")
         return grad_norm
 
     def get_intermediate_outputs(self, layers, batch_samples, forward_pass=True):
@@ -637,4 +681,7 @@ class PytorchModelTensor(Model):
                 layer_names.append(layer)
             else:
                 layer_names.append(list(self.model_obj._modules.keys())[layer])
-        return [self.intermediate_outputs[layer_name].detach().numpy() for layer_name in layer_names]
+        return [
+            self.intermediate_outputs[layer_name].detach().numpy()
+            for layer_name in layer_names
+        ]

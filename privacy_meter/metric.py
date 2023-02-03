@@ -5,7 +5,7 @@ from typing import Callable, List, Optional, Tuple, Union
 import numpy as np
 from sklearn.linear_model import LogisticRegression
 
-from privacy_meter.constants import *
+from privacy_meter.constants import NPZ_EXTENSION, MetricEnum, SignalSourceEnum
 from privacy_meter.information_source import InformationSource
 from privacy_meter.information_source_signal import GroupInfo, Signal
 from privacy_meter.metric_result import CombinedMetricResult, MetricResult
@@ -24,12 +24,12 @@ class Metric(ABC):
     """
 
     def __init__(
-            self,
-            target_info_source: InformationSource,
-            reference_info_source: InformationSource,
-            signals: List[Signal],
-            hypothesis_test_func: Optional[Callable],
-            logs_dirname: str
+        self,
+        target_info_source: InformationSource,
+        reference_info_source: InformationSource,
+        signals: List[Signal],
+        hypothesis_test_func: Optional[Callable],
+        logs_dirname: str,
     ):
         """
         Constructor
@@ -50,8 +50,8 @@ class Metric(ABC):
         self.logs_dirname = logs_dirname
 
     def _load_or_compute_signal(
-            self,
-            signal_source: SignalSourceEnum,
+        self,
+        signal_source: SignalSourceEnum,
     ):
         """
         Private helper function to load signals if they have been computed already, or compute and save signals
@@ -64,7 +64,9 @@ class Metric(ABC):
             Signals computed using the specified information source and mapping object.
         """
         if self.logs_dirname is not None:
-            signal_filepath = f'{self.logs_dirname}/{type(self).__name__}_{signal_source.value}'
+            signal_filepath = (
+                f"{self.logs_dirname}/{type(self).__name__}_{signal_source.value}"
+            )
         else:
             signal_filepath = None
 
@@ -74,7 +76,10 @@ class Metric(ABC):
         elif signal_source == SignalSourceEnum.TARGET_NON_MEMBER:
             info_source_obj = self.target_info_source
             mapping_obj = self.target_model_to_test_split_mapping
-        elif signal_source == SignalSourceEnum.REFERENCE_MEMBER or signal_source == SignalSourceEnum.REFERENCE:
+        elif (
+            signal_source == SignalSourceEnum.REFERENCE_MEMBER
+            or signal_source == SignalSourceEnum.REFERENCE
+        ):
             info_source_obj = self.reference_info_source
             mapping_obj = self.reference_model_to_train_split_mapping
         elif signal_source == SignalSourceEnum.REFERENCE_NON_MEMBER:
@@ -85,26 +90,26 @@ class Metric(ABC):
 
         signals = []
 
-        if os.path.isfile(f'{signal_filepath}{NPZ_EXTENSION}'):
-            with np.load(f'{signal_filepath}{NPZ_EXTENSION}', allow_pickle=True) as data:
-                signals = np.array(data['arr_0'][()])
+        if os.path.isfile(f"{signal_filepath}{NPZ_EXTENSION}"):
+            with np.load(
+                f"{signal_filepath}{NPZ_EXTENSION}", allow_pickle=True
+            ) as data:
+                signals = np.array(data["arr_0"][()])
         else:
             # For each signal, compute the response of the model on the dataset according to the mapping
             for signal in self.signals:
-                signals.append(
-                    info_source_obj.get_signal(signal, mapping_obj)
-                )
+                signals.append(info_source_obj.get_signal(signal, mapping_obj))
             if signal_filepath is not None:
                 np.savez(signal_filepath, signals)
 
         return signals
 
     def _load_or_compute_group_membership(
-            self,
-            signal_source: SignalSourceEnum,
+        self,
+        signal_source: SignalSourceEnum,
     ):
         """
-        Private helper function to compute group membership 
+        Private helper function to compute group membership
         Args:
             signal_source: Signal source to determine which information source and mapping objects need to be used.
 
@@ -117,7 +122,10 @@ class Metric(ABC):
         elif signal_source == SignalSourceEnum.TARGET_NON_MEMBER:
             info_source_obj = self.target_info_source
             mapping_obj = self.target_model_to_test_split_mapping_group
-        elif signal_source == SignalSourceEnum.REFERENCE_MEMBER or signal_source == SignalSourceEnum.REFERENCE:
+        elif (
+            signal_source == SignalSourceEnum.REFERENCE_MEMBER
+            or signal_source == SignalSourceEnum.REFERENCE
+        ):
             info_source_obj = self.reference_info_source
             mapping_obj = self.reference_model_to_train_split_mapping_group
         elif signal_source == SignalSourceEnum.REFERENCE_NON_MEMBER:
@@ -130,10 +138,7 @@ class Metric(ABC):
 
         return group_membership
 
-    def _set_default_mappings(
-            self,
-            unique_dataset: bool
-    ):
+    def _set_default_mappings(self, unique_dataset: bool):
         """
         Private helper function, to set default values for mappings between models and dataset splits.
 
@@ -145,37 +150,39 @@ class Metric(ABC):
         if unique_dataset:
             if self.target_model_to_train_split_mapping is None:
                 self.target_model_to_train_split_mapping = [
-                    (0, 'train000', '<default_input>', '<default_output>')]
+                    (0, "train000", "<default_input>", "<default_output>")
+                ]
             if self.target_model_to_test_split_mapping is None:
                 self.target_model_to_test_split_mapping = [
-                    (0, 'test000', '<default_input>', '<default_output>')]
+                    (0, "test000", "<default_input>", "<default_output>")
+                ]
             if self.reference_model_to_train_split_mapping is None:
                 self.reference_model_to_train_split_mapping = [
-                    (0, f'train{k + 1:03d}',
-                     '<default_input>', '<default_output>')
+                    (0, f"train{k + 1:03d}", "<default_input>", "<default_output>")
                     for k in range(len(self.reference_info_source.models))
                 ]
             if self.reference_model_to_test_split_mapping is None:
                 self.reference_model_to_test_split_mapping = [
-                    (0, f'test{k + 1:03d}',
-                     '<default_input>', '<default_output>')
+                    (0, f"test{k + 1:03d}", "<default_input>", "<default_output>")
                     for k in range(len(self.reference_info_source.models))
                 ]
         else:
             if self.target_model_to_train_split_mapping is None:
                 self.target_model_to_train_split_mapping = [
-                    (0, 'train', '<default_input>', '<default_output>')]
+                    (0, "train", "<default_input>", "<default_output>")
+                ]
             if self.target_model_to_test_split_mapping is None:
                 self.target_model_to_test_split_mapping = [
-                    (0, 'test', '<default_input>', '<default_output>')]
+                    (0, "test", "<default_input>", "<default_output>")
+                ]
             if self.reference_model_to_train_split_mapping is None:
                 self.reference_model_to_train_split_mapping = [
-                    (k, f'train', '<default_input>', '<default_output>')
+                    (k, "train", "<default_input>", "<default_output>")
                     for k in range(len(self.reference_info_source.models))
                 ]
             if self.reference_model_to_test_split_mapping is None:
                 self.reference_model_to_test_split_mapping = [
-                    (k, f'test', '<default_input>', '<default_output>')
+                    (k, "test", "<default_input>", "<default_output>")
                     for k in range(len(self.reference_info_source.models))
                 ]
 
@@ -190,35 +197,39 @@ class Metric(ABC):
         if unique_dataset:
             if self.target_model_to_train_split_mapping_group is None:
                 self.target_model_to_train_split_mapping_group = [
-                    (0, 'train000', '<default_group>')]
+                    (0, "train000", "<default_group>")
+                ]
             if self.target_model_to_test_split_mapping_group is None:
                 self.target_model_to_test_split_mapping_group = [
-                    (0, 'test000', '<default_group>')]
+                    (0, "test000", "<default_group>")
+                ]
             if self.reference_model_to_train_split_mapping_group is None:
                 self.reference_model_to_train_split_mapping_group = [
-                    (0, f'train{k + 1:03d}', '<default_group>')
+                    (0, f"train{k + 1:03d}", "<default_group>")
                     for k in range(len(self.reference_info_source.models))
                 ]
             if self.reference_model_to_test_split_mapping_group is None:
                 self.reference_model_to_test_split_mapping_group = [
-                    (0, f'test{k + 1:03d}', '<default_group>')
+                    (0, f"test{k + 1:03d}", "<default_group>")
                     for k in range(len(self.reference_info_source.models))
                 ]
         else:
             if self.target_model_to_train_split_mapping_group is None:
                 self.target_model_to_train_split_mapping_group = [
-                    (0, 'train', '<default_group>')]
+                    (0, "train", "<default_group>")
+                ]
             if self.target_model_to_test_split_mapping_group is None:
                 self.target_model_to_test_split_mapping_group = [
-                    (0, 'test', '<default_group>')]
+                    (0, "test", "<default_group>")
+                ]
             if self.reference_model_to_train_split_mapping_group is None:
                 self.reference_model_to_train_split_mapping_group = [
-                    (k, f'train', '<default_group>')
+                    (k, "train", "<default_group>")
                     for k in range(len(self.reference_info_source.models))
                 ]
             if self.reference_model_to_test_split_mapping_group is None:
                 self.reference_model_to_test_split_mapping_group = [
-                    (k, f'test', '<default_group>')
+                    (k, "test", "<default_group>")
                     for k in range(len(self.reference_info_source.models))
                 ]
 
@@ -231,7 +242,9 @@ class Metric(ABC):
         pass
 
     @abstractmethod
-    def run_metric(self, fpr_tolerance_rate_list=None) -> Union[MetricResult, List[MetricResult]]:
+    def run_metric(
+        self, fpr_tolerance_rate_list=None
+    ) -> Union[MetricResult, List[MetricResult]]:
         """
         Function to run the metric on the target model and dataset.
 
@@ -243,6 +256,7 @@ class Metric(ABC):
             Result(s) of the metric.
         """
         pass
+
 
 ########################################################################################################################
 # POPULATION_METRIC CLASS
@@ -256,19 +270,16 @@ class PopulationMetric(Metric):
     """
 
     def __init__(
-            self,
-            target_info_source: InformationSource,
-            reference_info_source: InformationSource,
-            signals: List[Signal],
-            hypothesis_test_func: Optional[Callable],
-            target_model_to_train_split_mapping: List[Tuple[int,
-                                                            str, str, str]] = None,
-            target_model_to_test_split_mapping: List[Tuple[int,
-                                                           str, str, str]] = None,
-            reference_model_to_train_split_mapping: List[Tuple[int,
-                                                               str, str, str]] = None,
-            unique_dataset: bool = False,
-            logs_dirname: str = None
+        self,
+        target_info_source: InformationSource,
+        reference_info_source: InformationSource,
+        signals: List[Signal],
+        hypothesis_test_func: Optional[Callable],
+        target_model_to_train_split_mapping: List[Tuple[int, str, str, str]] = None,
+        target_model_to_test_split_mapping: List[Tuple[int, str, str, str]] = None,
+        reference_model_to_train_split_mapping: List[Tuple[int, str, str, str]] = None,
+        unique_dataset: bool = False,
+        logs_dirname: str = None,
     ):
         """
         Constructor
@@ -291,11 +302,13 @@ class PopulationMetric(Metric):
         """
 
         # Initializes the parent metric
-        super().__init__(target_info_source=target_info_source,
-                         reference_info_source=reference_info_source,
-                         signals=signals,
-                         hypothesis_test_func=hypothesis_test_func,
-                         logs_dirname=logs_dirname)
+        super().__init__(
+            target_info_source=target_info_source,
+            reference_info_source=reference_info_source,
+            signals=signals,
+            hypothesis_test_func=hypothesis_test_func,
+            logs_dirname=logs_dirname,
+        )
 
         # Useless object, for compatibility purposes only
         self.reference_model_to_test_split_mapping = None
@@ -306,7 +319,9 @@ class PopulationMetric(Metric):
         # Store the model to split mappings
         self.target_model_to_train_split_mapping = target_model_to_train_split_mapping
         self.target_model_to_test_split_mapping = target_model_to_test_split_mapping
-        self.reference_model_to_train_split_mapping = reference_model_to_train_split_mapping
+        self.reference_model_to_train_split_mapping = (
+            reference_model_to_train_split_mapping
+        )
         self._set_default_mappings(unique_dataset)
 
         # Variables used in prepare_metric and run_metric
@@ -321,11 +336,14 @@ class PopulationMetric(Metric):
         """
         # Load signals if they have been computed already; otherwise, compute and save them
         self.member_signals = flatten_array(
-            self._load_or_compute_signal(SignalSourceEnum.TARGET_MEMBER))
+            self._load_or_compute_signal(SignalSourceEnum.TARGET_MEMBER)
+        )
         self.non_member_signals = flatten_array(
-            self._load_or_compute_signal(SignalSourceEnum.TARGET_NON_MEMBER))
+            self._load_or_compute_signal(SignalSourceEnum.TARGET_NON_MEMBER)
+        )
         self.reference_signals = flatten_array(
-            self._load_or_compute_signal(SignalSourceEnum.REFERENCE))
+            self._load_or_compute_signal(SignalSourceEnum.REFERENCE)
+        )
 
     def run_metric(self, fpr_tolerance_rate_list=None) -> List[MetricResult]:
         """
@@ -344,26 +362,29 @@ class PopulationMetric(Metric):
         else:
             self.quantiles = default_quantile()
         thresholds = self.hypothesis_test_func(
-            self.reference_signals, self.quantiles).reshape(-1, 1)
+            self.reference_signals, self.quantiles
+        ).reshape(-1, 1)
 
         num_threshold = len(self.quantiles)
-        member_signals = self.member_signals.reshape(
-            -1, 1).repeat(num_threshold, 1).T
-        non_member_signals = self.non_member_signals.reshape(
-            -1, 1).repeat(num_threshold, 1).T
+        member_signals = self.member_signals.reshape(-1, 1).repeat(num_threshold, 1).T
+        non_member_signals = (
+            self.non_member_signals.reshape(-1, 1).repeat(num_threshold, 1).T
+        )
         member_preds = np.less(member_signals, thresholds)
         non_member_preds = np.less(non_member_signals, thresholds)
 
         predictions = np.concatenate([member_preds, non_member_preds], axis=1)
         true_labels = np.concatenate(
-            [np.ones(len(self.member_signals)), np.zeros(len(self.non_member_signals))])
-        signal_values = np.concatenate(
-            [self.member_signals, self.non_member_signals])
-        metric_result = CombinedMetricResult(metric_id=MetricEnum.REFERENCE.value,
-                                             predicted_labels=predictions,
-                                             true_labels=true_labels,
-                                             predictions_proba=None,
-                                             signal_values=signal_values)
+            [np.ones(len(self.member_signals)), np.zeros(len(self.non_member_signals))]
+        )
+        signal_values = np.concatenate([self.member_signals, self.non_member_signals])
+        metric_result = CombinedMetricResult(
+            metric_id=MetricEnum.REFERENCE.value,
+            predicted_labels=predictions,
+            true_labels=true_labels,
+            predictions_proba=None,
+            signal_values=signal_values,
+        )
         return [metric_result]
 
 
@@ -379,22 +400,18 @@ class ShadowMetric(Metric):
     """
 
     def __init__(
-            self,
-            target_info_source: InformationSource,
-            reference_info_source: InformationSource,
-            signals: List[Signal],
-            hypothesis_test_func: Optional[Callable],
-            target_model_to_train_split_mapping: List[Tuple[int,
-                                                            str, str, str]] = None,
-            target_model_to_test_split_mapping: List[Tuple[int,
-                                                           str, str, str]] = None,
-            reference_model_to_train_split_mapping: List[Tuple[int,
-                                                               str, str, str]] = None,
-            reference_model_to_test_split_mapping: List[Tuple[int,
-                                                              str, str, str]] = None,
-            reweight_samples: bool = True,
-            unique_dataset: bool = False,
-            logs_dirname: str = None
+        self,
+        target_info_source: InformationSource,
+        reference_info_source: InformationSource,
+        signals: List[Signal],
+        hypothesis_test_func: Optional[Callable],
+        target_model_to_train_split_mapping: List[Tuple[int, str, str, str]] = None,
+        target_model_to_test_split_mapping: List[Tuple[int, str, str, str]] = None,
+        reference_model_to_train_split_mapping: List[Tuple[int, str, str, str]] = None,
+        reference_model_to_test_split_mapping: List[Tuple[int, str, str, str]] = None,
+        reweight_samples: bool = True,
+        unique_dataset: bool = False,
+        logs_dirname: str = None,
     ):
         """
         Constructor
@@ -423,11 +440,13 @@ class ShadowMetric(Metric):
         """
 
         # Initializes the parent metric
-        super().__init__(target_info_source=target_info_source,
-                         reference_info_source=reference_info_source,
-                         signals=signals,
-                         hypothesis_test_func=hypothesis_test_func,
-                         logs_dirname=logs_dirname)
+        super().__init__(
+            target_info_source=target_info_source,
+            reference_info_source=reference_info_source,
+            signals=signals,
+            hypothesis_test_func=hypothesis_test_func,
+            logs_dirname=logs_dirname,
+        )
 
         # Logs directory
         self.logs_dirname = logs_dirname
@@ -437,8 +456,12 @@ class ShadowMetric(Metric):
         # Store the model to split mappings
         self.target_model_to_train_split_mapping = target_model_to_train_split_mapping
         self.target_model_to_test_split_mapping = target_model_to_test_split_mapping
-        self.reference_model_to_train_split_mapping = reference_model_to_train_split_mapping
-        self.reference_model_to_test_split_mapping = reference_model_to_test_split_mapping
+        self.reference_model_to_train_split_mapping = (
+            reference_model_to_train_split_mapping
+        )
+        self.reference_model_to_test_split_mapping = (
+            reference_model_to_test_split_mapping
+        )
         self._set_default_mappings(unique_dataset)
 
         # Variables used in prepare_metric and run_metric
@@ -452,14 +475,18 @@ class ShadowMetric(Metric):
         models and the auxiliary dataset will contain the train-test splits of these models.
         """
         # Load signals if they have been computed already; otherwise, compute and save them
-        self.member_signals = flatten_array(self._load_or_compute_signal(
-            signal_source=SignalSourceEnum.TARGET_MEMBER))
+        self.member_signals = flatten_array(
+            self._load_or_compute_signal(signal_source=SignalSourceEnum.TARGET_MEMBER)
+        )
         self.non_member_signals = flatten_array(
-            self._load_or_compute_signal(SignalSourceEnum.TARGET_NON_MEMBER))
+            self._load_or_compute_signal(SignalSourceEnum.TARGET_NON_MEMBER)
+        )
         self.reference_member_signals = flatten_array(
-            self._load_or_compute_signal(SignalSourceEnum.REFERENCE_MEMBER))
+            self._load_or_compute_signal(SignalSourceEnum.REFERENCE_MEMBER)
+        )
         self.reference_non_member_signals = flatten_array(
-            self._load_or_compute_signal(SignalSourceEnum.REFERENCE_NON_MEMBER))
+            self._load_or_compute_signal(SignalSourceEnum.REFERENCE_NON_MEMBER)
+        )
 
     def run_metric(self, fpr_tolerance_rate_list=None) -> MetricResult:
         """
@@ -475,34 +502,47 @@ class ShadowMetric(Metric):
 
         # Create and fit a LogisticRegression object, from the members and non-members of the reference
         # InformationSource
-        clf = LogisticRegression(class_weight={
-            0: self.reference_member_signals.shape[0],
-            1: self.reference_non_member_signals.shape[0],
-        } if self.reweight_samples else None)
-        x = np.concatenate([self.reference_member_signals,
-                           self.reference_non_member_signals]).reshape(-1, 1)
-        y = np.array([1] * len(self.reference_member_signals) +
-                     [0] * len(self.reference_non_member_signals))
+        clf = LogisticRegression(
+            class_weight={
+                0: self.reference_member_signals.shape[0],
+                1: self.reference_non_member_signals.shape[0],
+            }
+            if self.reweight_samples
+            else None
+        )
+        x = np.concatenate(
+            [self.reference_member_signals, self.reference_non_member_signals]
+        ).reshape(-1, 1)
+        y = np.array(
+            [1] * len(self.reference_member_signals)
+            + [0] * len(self.reference_non_member_signals)
+        )
         clf.fit(x, y)
 
-        signal_space = np.linspace(np.array(x).ravel().min(
-        ), np.array(x).ravel().max(), 200).reshape((-1, 1))
-        i = np.max([i if v == 1 else -1 for i,
-                   v in enumerate(clf.predict(signal_space))])
-        threshold = signal_space[i:i + 2].mean()
+        signal_space = np.linspace(
+            np.array(x).ravel().min(), np.array(x).ravel().max(), 200
+        ).reshape((-1, 1))
+        i = np.max(
+            [i if v == 1 else -1 for i, v in enumerate(clf.predict(signal_space))]
+        )
+        threshold = signal_space[i : i + 2].mean()
 
         # Predict the membership status of samples in the target InformationSource
-        predictions_proba = clf.predict_proba(np.concatenate([
-            self.member_signals.reshape(-1, 1),
-            self.non_member_signals.reshape(-1, 1)
-        ]))
+        predictions_proba = clf.predict_proba(
+            np.concatenate(
+                [
+                    self.member_signals.reshape(-1, 1),
+                    self.non_member_signals.reshape(-1, 1),
+                ]
+            )
+        )
         predictions_label = np.argmax(predictions_proba, axis=1)
         predictions_proba = predictions_proba[:, 1]
 
-        true_labels = [1] * len(self.member_signals) + \
-            [0] * len(self.non_member_signals)
-        signal_values = np.concatenate(
-            [self.member_signals, self.non_member_signals])
+        true_labels = [1] * len(self.member_signals) + [0] * len(
+            self.non_member_signals
+        )
+        signal_values = np.concatenate([self.member_signals, self.non_member_signals])
 
         # Evaluate the power of this inference and display the result
         metric_result = MetricResult(
@@ -511,10 +551,11 @@ class ShadowMetric(Metric):
             predicted_labels=predictions_label,
             true_labels=true_labels,
             signal_values=signal_values,
-            threshold=threshold
+            threshold=threshold,
         )
 
         return metric_result
+
 
 ########################################################################################################################
 # REFERENCE_METRIC CLASS
@@ -528,21 +569,17 @@ class ReferenceMetric(Metric):
     """
 
     def __init__(
-            self,
-            target_info_source: InformationSource,
-            reference_info_source: InformationSource,
-            signals: List[Signal],
-            hypothesis_test_func: Optional[Callable],
-            target_model_to_train_split_mapping: List[Tuple[int,
-                                                            str, str, str]] = None,
-            target_model_to_test_split_mapping: List[Tuple[int,
-                                                           str, str, str]] = None,
-            reference_model_to_train_split_mapping: List[Tuple[int,
-                                                               str, str, str]] = None,
-            reference_model_to_test_split_mapping: List[Tuple[int,
-                                                              str, str, str]] = None,
-            unique_dataset: bool = False,
-            logs_dirname: str = None
+        self,
+        target_info_source: InformationSource,
+        reference_info_source: InformationSource,
+        signals: List[Signal],
+        hypothesis_test_func: Optional[Callable],
+        target_model_to_train_split_mapping: List[Tuple[int, str, str, str]] = None,
+        target_model_to_test_split_mapping: List[Tuple[int, str, str, str]] = None,
+        reference_model_to_train_split_mapping: List[Tuple[int, str, str, str]] = None,
+        reference_model_to_test_split_mapping: List[Tuple[int, str, str, str]] = None,
+        unique_dataset: bool = False,
+        logs_dirname: str = None,
     ):
         """
         Constructor
@@ -566,11 +603,13 @@ class ReferenceMetric(Metric):
         """
 
         # Initializes the parent metric
-        super().__init__(target_info_source=target_info_source,
-                         reference_info_source=reference_info_source,
-                         signals=signals,
-                         hypothesis_test_func=hypothesis_test_func,
-                         logs_dirname=logs_dirname)
+        super().__init__(
+            target_info_source=target_info_source,
+            reference_info_source=reference_info_source,
+            signals=signals,
+            hypothesis_test_func=hypothesis_test_func,
+            logs_dirname=logs_dirname,
+        )
 
         # Logs directory
         self.logs_dirname = logs_dirname
@@ -582,11 +621,11 @@ class ReferenceMetric(Metric):
         # Custom default mapping for the reference metric
         if reference_model_to_train_split_mapping is None:
             self.reference_model_to_train_split_mapping = [
-                (0, 'train', '<default_input>', '<default_output>')
+                (0, "train", "<default_input>", "<default_output>")
             ] * len(self.reference_info_source.models)
         if reference_model_to_test_split_mapping is None:
             self.reference_model_to_test_split_mapping = [
-                (0, 'test', '<default_input>', '<default_output>')
+                (0, "test", "<default_input>", "<default_output>")
             ] * len(self.reference_info_source.models)
 
         self._set_default_mappings(unique_dataset)
@@ -605,13 +644,17 @@ class ReferenceMetric(Metric):
         """
         # Load signals if they have been computed already; otherwise, compute and save them
         self.member_signals = flatten_array(
-            self._load_or_compute_signal(SignalSourceEnum.TARGET_MEMBER))
+            self._load_or_compute_signal(SignalSourceEnum.TARGET_MEMBER)
+        )
         self.non_member_signals = flatten_array(
-            self._load_or_compute_signal(SignalSourceEnum.TARGET_NON_MEMBER))
+            self._load_or_compute_signal(SignalSourceEnum.TARGET_NON_MEMBER)
+        )
         self.reference_member_signals = np.array(
-            self._load_or_compute_signal(SignalSourceEnum.REFERENCE_MEMBER)[0]).transpose()
+            self._load_or_compute_signal(SignalSourceEnum.REFERENCE_MEMBER)[0]
+        ).transpose()
         self.reference_non_member_signals = np.array(
-            self._load_or_compute_signal(SignalSourceEnum.REFERENCE_NON_MEMBER)[0]).transpose()
+            self._load_or_compute_signal(SignalSourceEnum.REFERENCE_NON_MEMBER)[0]
+        ).transpose()
 
     def run_metric(self, fpr_tolerance_rate_list=None) -> List[MetricResult]:
         """
@@ -630,31 +673,34 @@ class ReferenceMetric(Metric):
         else:
             self.quantiles = np.array(fpr_tolerance_rate_list)
         reference_member_threshold = self.hypothesis_test_func(
-            self.reference_member_signals, self.quantiles)
+            self.reference_member_signals, self.quantiles
+        )
         reference_non_member_threshold = self.hypothesis_test_func(
-            self.reference_non_member_signals, self.quantiles)
+            self.reference_non_member_signals, self.quantiles
+        )
 
         num_threshold = len(self.quantiles)
-        member_signals = self.member_signals.reshape(
-            -1, 1).repeat(num_threshold, 1).T
-        non_member_signals = self.non_member_signals.reshape(
-            -1, 1).repeat(num_threshold, 1).T
+        member_signals = self.member_signals.reshape(-1, 1).repeat(num_threshold, 1).T
+        non_member_signals = (
+            self.non_member_signals.reshape(-1, 1).repeat(num_threshold, 1).T
+        )
         member_preds = np.less(member_signals, reference_member_threshold)
-        non_member_preds = np.less(
-            non_member_signals, reference_non_member_threshold)
+        non_member_preds = np.less(non_member_signals, reference_non_member_threshold)
 
         predictions = np.concatenate([member_preds, non_member_preds], axis=1)
         true_labels = np.concatenate(
-            [np.ones(len(self.member_signals)), np.zeros(len(self.non_member_signals))])
+            [np.ones(len(self.member_signals)), np.zeros(len(self.non_member_signals))]
+        )
 
-        signal_values = np.concatenate(
-            [self.member_signals, self.non_member_signals])
+        signal_values = np.concatenate([self.member_signals, self.non_member_signals])
 
-        metric_result = CombinedMetricResult(metric_id=MetricEnum.REFERENCE.value,
-                                             predicted_labels=predictions,
-                                             true_labels=true_labels,
-                                             predictions_proba=None,
-                                             signal_values=signal_values)
+        metric_result = CombinedMetricResult(
+            metric_id=MetricEnum.REFERENCE.value,
+            predicted_labels=predictions,
+            true_labels=true_labels,
+            predictions_proba=None,
+            signal_values=signal_values,
+        )
 
         return [metric_result]
 
@@ -671,23 +717,19 @@ class GroupPopulationMetric(Metric):
     """
 
     def __init__(
-            self,
-            target_info_source: InformationSource,
-            reference_info_source: InformationSource,
-            signals: List[Signal],
-            hypothesis_test_func: Optional[Callable],
-            target_model_to_train_split_mapping: List[Tuple[int,
-                                                            str, str, str]] = None,
-            target_model_to_test_split_mapping: List[Tuple[int,
-                                                           str, str, str]] = None,
-            reference_model_to_train_split_mapping: List[Tuple[int,
-                                                               str, str, str]] = None,
-            target_model_to_train_split_mapping_group: List[Tuple[int, str, str]] = None,
-            target_model_to_test_split_mapping_group: List[Tuple[int,
-                                                                 str, str]] = None,
-            reference_model_to_train_split_mapping_group: List[Tuple[int, str, str]] = None,
-            unique_dataset: bool = False,
-            logs_dirname: str = None
+        self,
+        target_info_source: InformationSource,
+        reference_info_source: InformationSource,
+        signals: List[Signal],
+        hypothesis_test_func: Optional[Callable],
+        target_model_to_train_split_mapping: List[Tuple[int, str, str, str]] = None,
+        target_model_to_test_split_mapping: List[Tuple[int, str, str, str]] = None,
+        reference_model_to_train_split_mapping: List[Tuple[int, str, str, str]] = None,
+        target_model_to_train_split_mapping_group: List[Tuple[int, str, str]] = None,
+        target_model_to_test_split_mapping_group: List[Tuple[int, str, str]] = None,
+        reference_model_to_train_split_mapping_group: List[Tuple[int, str, str]] = None,
+        unique_dataset: bool = False,
+        logs_dirname: str = None,
     ):
         """
         Constructor
@@ -718,11 +760,13 @@ class GroupPopulationMetric(Metric):
         """
 
         # Initializes the parent metric
-        super().__init__(target_info_source=target_info_source,
-                         reference_info_source=reference_info_source,
-                         signals=signals,
-                         hypothesis_test_func=hypothesis_test_func,
-                         logs_dirname=logs_dirname)
+        super().__init__(
+            target_info_source=target_info_source,
+            reference_info_source=reference_info_source,
+            signals=signals,
+            hypothesis_test_func=hypothesis_test_func,
+            logs_dirname=logs_dirname,
+        )
 
         # Useless object, for compatibility purposes only
         self.reference_model_to_test_split_mapping = None
@@ -734,10 +778,18 @@ class GroupPopulationMetric(Metric):
         # Store the model to split mappings
         self.target_model_to_train_split_mapping = target_model_to_train_split_mapping
         self.target_model_to_test_split_mapping = target_model_to_test_split_mapping
-        self.reference_model_to_train_split_mapping = reference_model_to_train_split_mapping
-        self.target_model_to_train_split_mapping_group = target_model_to_train_split_mapping_group
-        self.target_model_to_test_split_mapping_group = target_model_to_test_split_mapping_group
-        self.reference_model_to_train_split_mapping_group = reference_model_to_train_split_mapping_group
+        self.reference_model_to_train_split_mapping = (
+            reference_model_to_train_split_mapping
+        )
+        self.target_model_to_train_split_mapping_group = (
+            target_model_to_train_split_mapping_group
+        )
+        self.target_model_to_test_split_mapping_group = (
+            target_model_to_test_split_mapping_group
+        )
+        self.reference_model_to_train_split_mapping_group = (
+            reference_model_to_train_split_mapping_group
+        )
 
         # get the mapping for the groups
         self._set_default_group_mappings(unique_dataset)
@@ -757,17 +809,23 @@ class GroupPopulationMetric(Metric):
         """
         # Load signals if they have been computed already; otherwise, compute and save them
         self.member_signals = flatten_array(
-            self._load_or_compute_signal(SignalSourceEnum.TARGET_MEMBER))
+            self._load_or_compute_signal(SignalSourceEnum.TARGET_MEMBER)
+        )
         self.non_member_signals = flatten_array(
-            self._load_or_compute_signal(SignalSourceEnum.TARGET_NON_MEMBER))
+            self._load_or_compute_signal(SignalSourceEnum.TARGET_NON_MEMBER)
+        )
         self.reference_signals = flatten_array(
-            self._load_or_compute_signal(SignalSourceEnum.REFERENCE))
+            self._load_or_compute_signal(SignalSourceEnum.REFERENCE)
+        )
         self.reference_groups = flatten_array(
-            self._load_or_compute_group_membership(SignalSourceEnum.REFERENCE))
+            self._load_or_compute_group_membership(SignalSourceEnum.REFERENCE)
+        )
         self.non_member_groups = flatten_array(
-            self._load_or_compute_group_membership(SignalSourceEnum.TARGET_NON_MEMBER))
+            self._load_or_compute_group_membership(SignalSourceEnum.TARGET_NON_MEMBER)
+        )
         self.member_groups = flatten_array(
-            self._load_or_compute_group_membership(SignalSourceEnum.TARGET_MEMBER))
+            self._load_or_compute_group_membership(SignalSourceEnum.TARGET_MEMBER)
+        )
 
     def run_metric(self, fpr_tolerance_rate_list=None) -> List[MetricResult]:
         """
@@ -794,20 +852,29 @@ class GroupPopulationMetric(Metric):
         for g in np.unique(self.reference_groups):
 
             thresholds = self.hypothesis_test_func(
-                self.reference_signals[self.reference_groups == g], self.quantiles).reshape(-1, 1)
+                self.reference_signals[self.reference_groups == g], self.quantiles
+            ).reshape(-1, 1)
 
-            member_signals = self.member_signals[self.member_groups == g].reshape(
-                -1, 1).repeat(num_threshold, 1).T
+            member_signals = (
+                self.member_signals[self.member_groups == g]
+                .reshape(-1, 1)
+                .repeat(num_threshold, 1)
+                .T
+            )
 
-            non_member_signals = self.non_member_signals[self.non_member_groups == g].reshape(
-                -1, 1).repeat(num_threshold, 1).T
+            non_member_signals = (
+                self.non_member_signals[self.non_member_groups == g]
+                .reshape(-1, 1)
+                .repeat(num_threshold, 1)
+                .T
+            )
             member_pred = np.less(member_signals, thresholds)
             non_member_pred = np.less(non_member_signals, thresholds)
 
-            member_signal_list.append(
-                self.member_signals[self.member_groups == g])
+            member_signal_list.append(self.member_signals[self.member_groups == g])
             non_member_signal_list.append(
-                self.non_member_signals[self.member_groups == g])
+                self.non_member_signals[self.member_groups == g]
+            )
             member_preds.append(member_pred)
             non_member_preds.append(non_member_pred)
 
@@ -817,18 +884,22 @@ class GroupPopulationMetric(Metric):
         non_member_preds = np.concatenate(non_member_preds, axis=1)
         predictions = np.concatenate([member_preds, non_member_preds], axis=1)
         true_labels = np.concatenate(
-            [np.ones(len(self.member_signals)), np.zeros(len(self.non_member_signals))])
+            [np.ones(len(self.member_signals)), np.zeros(len(self.non_member_signals))]
+        )
 
         member_signals = np.concatenate(
-            member_signal_list, axis=0)  # reoder based on the groups
+            member_signal_list, axis=0
+        )  # reoder based on the groups
         non_member_signals = np.concatenate(non_member_signal_list, axis=0)
 
         signal_values = np.concatenate([member_signals, non_member_signals])
 
-        metric_result = CombinedMetricResult(metric_id=MetricEnum.REFERENCE.value,
-                                             predicted_labels=predictions,
-                                             true_labels=true_labels,
-                                             predictions_proba=None,
-                                             signal_values=signal_values,
-                                             threshold=reference_thresholds)
+        metric_result = CombinedMetricResult(
+            metric_id=MetricEnum.REFERENCE.value,
+            predicted_labels=predictions,
+            true_labels=true_labels,
+            predictions_proba=None,
+            signal_values=signal_values,
+            threshold=reference_thresholds,
+        )
         return [metric_result]

@@ -1,8 +1,13 @@
 from typing import List
 
 import numpy as np
-from sklearn.metrics import (accuracy_score, auc, confusion_matrix,
-                             roc_auc_score, roc_curve)
+from sklearn.metrics import (
+    accuracy_score,
+    auc,
+    confusion_matrix,
+    roc_auc_score,
+    roc_curve,
+)
 
 ########################################################################################################################
 # METRIC_RESULT CLASS
@@ -15,13 +20,13 @@ class MetricResult:
     """
 
     def __init__(
-            self,
-            metric_id: str,
-            predicted_labels: list,
-            true_labels: list,
-            predictions_proba: List[List[float]] = None,
-            signal_values=None,
-            threshold: float = None
+        self,
+        metric_id: str,
+        predicted_labels: list,
+        true_labels: list,
+        predictions_proba: List[List[float]] = None,
+        signal_values=None,
+        threshold: float = None,
     ):
         """
         Constructor.
@@ -42,8 +47,7 @@ class MetricResult:
         self.signal_values = signal_values
         self.threshold = threshold
 
-        self.accuracy = accuracy_score(
-            y_true=true_labels, y_pred=predicted_labels)
+        self.accuracy = accuracy_score(y_true=true_labels, y_pred=predicted_labels)
 
         if self.predictions_proba is None:
             self.roc = roc_curve(y_true=true_labels, y_score=predicted_labels)
@@ -51,14 +55,13 @@ class MetricResult:
             self.roc = roc_curve(y_true=true_labels, y_score=predictions_proba)
 
         if self.predictions_proba is None:
-            self.roc_auc = roc_auc_score(
-                y_true=true_labels, y_score=predicted_labels)
+            self.roc_auc = roc_auc_score(y_true=true_labels, y_score=predicted_labels)
         else:
-            self.roc_auc = roc_auc_score(
-                y_true=true_labels, y_score=predictions_proba)
+            self.roc_auc = roc_auc_score(y_true=true_labels, y_score=predictions_proba)
 
         self.tn, self.fp, self.fn, self.tp = confusion_matrix(
-            y_true=true_labels, y_pred=predicted_labels).ravel()
+            y_true=true_labels, y_pred=predicted_labels
+        ).ravel()
 
     def __str__(self):
         """
@@ -66,12 +69,12 @@ class MetricResult:
         """
         txt = [
             f'{" METRIC RESULT OBJECT ":=^48}',
-            f'Accuracy          = {self.accuracy}',
-            f'ROC AUC Score     = {self.roc_auc}',
-            f'FPR               = {self.fp / (self.fp + self.tn)}',
-            f'TN, FP, FN, TP    = {self.tn, self.fp, self.fn, self.tp}'
+            f"Accuracy          = {self.accuracy}",
+            f"ROC AUC Score     = {self.roc_auc}",
+            f"FPR               = {self.fp / (self.fp + self.tn)}",
+            f"TN, FP, FN, TP    = {self.tn, self.fp, self.fn, self.tp}",
         ]
-        return '\n'.join(txt)
+        return "\n".join(txt)
 
 
 class CombinedMetricResult:
@@ -80,14 +83,13 @@ class CombinedMetricResult:
     """
 
     def __init__(
-            self,
-            metric_id: str,
-            predicted_labels: list,
-            true_labels: list,
-            predictions_proba=None,
-            signal_values=None,
-            threshold: float = None
-
+        self,
+        metric_id: str,
+        predicted_labels: list,
+        true_labels: list,
+        predictions_proba=None,
+        signal_values=None,
+        threshold: float = None,
     ):
         """
         Constructor.
@@ -109,15 +111,18 @@ class CombinedMetricResult:
         self.threshold = threshold
 
         self.accuracy = np.mean(predicted_labels == true_labels, axis=1)
-        self.tn = np.sum(true_labels == 0) - \
-            np.sum(predicted_labels[:, true_labels == 0], axis=1)
+        self.tn = np.sum(true_labels == 0) - np.sum(
+            predicted_labels[:, true_labels == 0], axis=1
+        )
         self.tp = np.sum(predicted_labels[:, true_labels == 1], axis=1)
         self.fp = np.sum(predicted_labels[:, true_labels == 0], axis=1)
-        self.fn = np.sum(true_labels == 1) - \
-            np.sum(predicted_labels[:, true_labels == 1], axis=1)
+        self.fn = np.sum(true_labels == 1) - np.sum(
+            predicted_labels[:, true_labels == 1], axis=1
+        )
 
-        self.roc_auc = auc(self.fp/(np.sum(true_labels == 0)),
-                           self.tp/(np.sum(true_labels == 1)))
+        self.roc_auc = auc(
+            self.fp / (np.sum(true_labels == 0)), self.tp / (np.sum(true_labels == 1))
+        )
 
     def __str__(self):
         """
@@ -127,11 +132,11 @@ class CombinedMetricResult:
         for idx in range(len(self.accuracy)):
             txt = [
                 f'{" METRIC RESULT OBJECT ":=^48}',
-                f'Accuracy          = {self.accuracy[idx]}',
-                f'ROC AUC Score     = {self.roc_auc}',
-                f'FPR               = {self.fp[idx] / (self.fp[idx] + self.tn[idx])}',
-                f'TN, FP, FN, TP    = {self.tn[idx], self.fp[idx], self.fn[idx], self.tp[idx]}'
+                f"Accuracy          = {self.accuracy[idx]}",
+                f"ROC AUC Score     = {self.roc_auc}",
+                f"FPR               = {self.fp[idx] / (self.fp[idx] + self.tn[idx])}",
+                f"TN, FP, FN, TP    = {self.tn[idx], self.fp[idx], self.fn[idx], self.tp[idx]}",
             ]
 
-            txt_list.append('\n'.join(txt))
-        return '\n\n'.join(txt_list)
+            txt_list.append("\n".join(txt))
+        return "\n\n".join(txt_list)

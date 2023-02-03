@@ -1,8 +1,12 @@
 # Developer Guide 
 
 # Table of Contents
-1. [Auto-generating Documentation](#auto-generating-documentation)
-2. [Building and Publishing Privacy Meter](#building-and-publishing-privacy-meter)
+- [Developer Guide](#developer-guide)
+- [Table of Contents](#table-of-contents)
+  - [Auto-generating Documentation](#auto-generating-documentation)
+    - [One time configuration](#one-time-configuration)
+    - [Updating the documentation](#updating-the-documentation)
+  - [Building and Publishing Privacy Meter](#building-and-publishing-privacy-meter)
 
 ## Auto-generating Documentation
 

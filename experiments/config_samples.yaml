@@ -1,6 +1,7 @@
 run: # Configurations for a specific run
   random_seed: 1234 # Integer number of specifying random seed
-  log_dir: demo_all # String for indicating where to save all the information, including models and computed signals. We can reuse the models saved in the same log_dir.
+  log_dir: demo # String for indicating where to save all the information, including models and computed signals. We can reuse the models saved in the same log_dir.
+  time_log: True # Indicate whether to log the time for each step
 
 audit: # the configurations for the MIA
   privacy_game: privacy_loss_sample #privacy_loss_model #avg_privacy_loss_training_algo # the configuarations for the privacy loss game
@@ -30,4 +31,4 @@ data: # Configuration for data
   f_test: 0.3 # Float number from 0 to 1 indicating the fraction of the test dataset
   split_method: leave_one_out # String for indicating the methods of splitting the dataset between train, test, and auditing; Take value from uniform and leave_one_out
   f_audit: 0.3 # Float from 0 to 1, indicating the fraction of the auditing dataset
-  data_dir: data # String about where to save the data.
+  data_dir: ../data/cifar10 # String about where to save the data.

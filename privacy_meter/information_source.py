@@ -1,8 +1,8 @@
 from typing import List, Tuple
 
 from privacy_meter.dataset import Dataset
-from privacy_meter.model import Model
 from privacy_meter.information_source_signal import Signal
+from privacy_meter.model import Model
 
 ########################################################################################################################
 # INFORMATION_SOURCE CLASS
@@ -14,12 +14,12 @@ class InformationSource:
     Interface to dispatch Model objects, Dataset objects, and any additional objects required, to Signal objects.
     """
 
-    def __init__(self,
-                 models: List[Model],
-                 datasets: List[Dataset],
-                 default_model_to_split_mapping: List[Tuple[int,
-                                                            str, str, str]] = None
-                 ):
+    def __init__(
+        self,
+        models: List[Model],
+        datasets: List[Dataset],
+        default_model_to_split_mapping: List[Tuple[int, str, str, str]] = None,
+    ):
         """Constructor
 
         Args:
@@ -38,12 +38,12 @@ class InformationSource:
         self.datasets = datasets
         self.default_model_to_split_mapping = default_model_to_split_mapping
 
-    def get_signal(self,
-                   signal: Signal,
-                   model_to_split_mapping: List[Tuple[int,
-                                                      str, str, str]] = None,
-                   extra: dict = None
-                   ):
+    def get_signal(
+        self,
+        signal: Signal,
+        model_to_split_mapping: List[Tuple[int, str, str, str]] = None,
+        extra: dict = None,
+    ):
         """Calls the signal object with the appropriate arguments: Model objects and Dataset objects specified at
         object instantiation, plus and any additional object required.
 
@@ -69,11 +69,13 @@ class InformationSource:
         # If no value of model_to_split_mapping is provided and no default value is set, raise an exception
         if model_to_split_mapping is None:
             raise TypeError(
-                'At least one of self.default_model_to_split_mapping and model_to_split_mapping should be specified'
+                "At least one of self.default_model_to_split_mapping and model_to_split_mapping should be specified"
             )
 
         # Calls the signal object, and returns the value of the call
-        return signal(models=self.models,
-                      datasets=self.datasets,
-                      model_to_split_mapping=model_to_split_mapping,
-                      extra=extra)
+        return signal(
+            models=self.models,
+            datasets=self.datasets,
+            model_to_split_mapping=model_to_split_mapping,
+            extra=extra,
+        )
