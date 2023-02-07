@@ -2,7 +2,6 @@
 import torch.nn.functional as F
 from torch import nn
 
-
 class Net(nn.Module):
     """Simple CNN for CIFAR10 dataset."""
 

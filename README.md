@@ -20,11 +20,11 @@ Privacy Meter is an open-source library to audit data privacy in statistical and
 
 ## Why Privacy Meter?
 
-Machine learning is playing a central role in automated decision making in a wide range of organization and service providers. The data, which is used to train the models, typically contain sensitive information about individuals. Although the data in most cases cannot be released, due to privacy concerns, the models are usually made public or deployed as a service for inference on new test data. For a safe and secure use of machine learning models, it is important to have a quantitative assessment of the privacy risks of these models, and to make sure that they do not reveal sensitive information about their training data. This is of a great importance as there has been a surge in use of machine learning in sensitive domains such as medical and finance applications.
+Machine learning is playing a central role in automated decision-making in a wide range of organization and service providers. The data, which is used to train the models, typically contain sensitive information about individuals. Although the data in most cases cannot be released, due to privacy concerns, the models are usually made public or deployed as a service for inference on new test data. For a safe and secure use of machine learning models, it is important to have a quantitative assessment of the privacy risks of these models, and to make sure that they do not reveal sensitive information about their training data. This is of a great importance as there has been a surge in use of machine learning in sensitive domains such as medical and finance applications.
 
 Data Protection regulations, such as GDPR, and AI governance frameworks require personal data to be protected when used in AI systems, and that the users have control over their data and awareness about how it is being used. For example, [Article 35 of GDPR](https://gdpr-info.eu/art-35-gdpr/) requires organizations to systematically analyze, identify and minimize the data protection risks of a project, especially when the project involves innovative technologies such as Artificial Intelligence, Machine Learning and Deep Learning. Thus, proper mechanisms need to be in place to quantitatively evaluate and verify the privacy of individuals in every step of the data processing pipeline in AI systems.
 
-ML Privacy Meter is a Python library (`privacy_meter`) that enables quantifying the privacy risks of machine learning models. The tool provides privacy risk scores which help in identifying data records among the training data that are under high risk of being leaked through the model parameters or predictions.
+ML Privacy Meter is a Python library (`privacy_meter`) that enables quantifying the privacy risks of machine learning models. The tool provides privacy risk scores which help in identifying data records among the training data that are at high risk of being leaked through the model parameters or predictions.
 
 ## Installation
 
@@ -44,7 +44,7 @@ conda install privacy-meter
 
 ## Quickstart
 
-We provide examples about how to run privacy meter on standard datasets and models in experiments folder. Run the following code for your first membership inference attack on CIFAR10.
+We provide examples of how to run privacy meter on standard datasets and models in experiments folder. Run the following code for your first membership inference attack on CIFAR10.
 
 ```
 cd experments
@@ -53,58 +53,46 @@ python main.py --cf config_models.yaml
 
 ## User manual
 
+We provide comprehensive tutorials for users to get ideas about the privacy meter.
+
 ### Basic Usage
 
-### Auditing privacy risk for a trained model
+1. Auditing privacy risk for a trained model
+
+2. Auditing privacy risk for a training algorithm
+
+3. Auditing the privacy risk for a specific data point (memorization)
+
+4. Auditing the privacy risk for a training algorithm with a fixed dataset (leave-one-out attack).
 
 ### Advanced Usage
 
-## White box attack
-
-## Roadmap and Architecture
-
-Roadmap is usually included in the issues, where the tage of the issues is for example `feature requested` or `v1.0`.
-[Roadmap](https://github.com/Trusted-AI/adversarial-robustness-toolbox/wiki/ART-Architecture-and-Roadmap#art-19-december-2021)
-
-Architecture shows the module design of the privacy meter.
-[Architecture](https://github.com/Trusted-AI/adversarial-robustness-toolbox/wiki/ART-Architecture-and-Roadmap#art-19-december-2021)
+We provide tutorials in the tutorial folder, which helps the user to extend our privacy meter attack ML models implemented by other libraries, HuggingFace, and OpenVino. In addition, we also provide tutorials about the white-box attack and the Lira attack.
 
 ## Video (Talks)
 
+- [Auditing Data Privacy in Machine Learning: A Comprehensive Introduction](https://www.sigsac.org/ccs/CCS2022/workshops/workshops.html#:~:text=Auditing%20Data%20Privacy%20in%20Machine%20Learning%3A%20A%20Comprehensive%20Introduction) at CCS 2022, by Reza Shokri.
 - [Auditing Data Privacy in Machine Learning](https://youtu.be/sqCd5A1UTrQ) at USENIX Enigma 2022, by Reza Shokri.
 - [Machine Learning Privacy Meter Tool](https://youtu.be/DWqnKNZTz10) at HotPETS 2020, by Sasi Kumar Murakonda.
 
 ## Contributing
 
-If you wish to add new ways of analyzing the privacy risk or add new models support, please follow our guildelins.
+If you wish to add new ways of analyzing the privacy risk or add new model support, please follow our [guidelines](CONTRIBUTING.md).
 
 ## Contact / Feedback
 
-Please feel free to join our Slack Channel for providing your feedbacks and your thoughts on the project!
+Please feel free to join our [Slack Channel](https://join.slack.com/t/privacy-meter/shared_invite/zt-1oge6ovjq-SS4UZnBVB115Tx8Nn3TVhA) to provide your feedbacks and your thoughts on the project!
+
+## Citing Privacy Meter
+
+To cite this repository, please include the following references (or you can download the [bib file](CITATION.bib)).
+
+1. Jiayuan Ye, Aadyaa Maddi, Sasi Kumar Murakonda, Reza Shokri. [Enhanced Membership Inference Attacks against Machine Learning Models](https://arxiv.org/pdf/2111.09679.pdf) in Proceedings of the 2022 ACM SIGSAC Conference on Computer and Communications Security, 2022.
+
+2. Milad Nasr, Reza Shokri, and Amir Houmansadr. [Comprehensive Privacy Analysis of Deep Learning: Stand-alone and Federated Learning under Passive and Active White-box Inference Attacks](https://www.comp.nus.edu.sg/~reza/files/Shokri-SP2019.pdf) in IEEE Symposium on Security and Privacy, 2019.
+
+3. Reza Shokri, Marco Stronati, Congzheng Song, and Vitaly Shmatikov. [Membership Inference Attacks against Machine Learning Models](https://www.comp.nus.edu.sg/~reza/files/Shokri-SP2017.pdf) in IEEE Symposium on Security and Privacy, 2017.
 
 ## Authors
 
 The tool is designed and developed at NUS Data Privacy and Trustworthy Machine Learning Lab.
-
-<!-- Current contributers are: Aadyaa Maddi, Jiayuan Ye, Victor Masiak, Fatemehsadat Mireshghallah, Hongyan Chang, Martin Strobel, and Reza Shokri. Earlier contributors were Sasi Kumar Murakonda, Milad Nasr, Shadab Shaikh, and Mihir Harshavardhan Khandekar.
-
-<p float="left">
-<img src="https://www.comp.nus.edu.sg/~reza/img/aadyaa.jpg" height="140"/>
-<img src="https://www.comp.nus.edu.sg/~reza/img/jiayuan.jpg" height="140"/>
-<img src="https://www.comp.nus.edu.sg/~reza/img/victor.jpg" height="140"/>
-<img src="https://cseweb.ucsd.edu//~fmireshg/pic.jpg" height="140"/>
-<img src="https://www.comp.nus.edu.sg/~reza/img/martin.jpg" height="140"/>
-<img src="https://www.comp.nus.edu.sg/~reza/img/hongyan.jpg" height="140"/>
-<img src="https://www.comp.nus.edu.sg/~reza/img/reza.jpg" height="140"/>
-</p> -->
-
-## Citing Privacy Meter
-
-To cite this repository:
-
-```
-@article{murakondaml,
-  title={ML Privacy Meter: Aiding Regulatory Compliance by Quantifying the Privacy Risks of Machine Learning},
-  author={Murakonda, Sasi Kumar and Shokri, Reza}
-}
-```

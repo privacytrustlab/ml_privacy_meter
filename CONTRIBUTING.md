@@ -13,8 +13,7 @@ For more details, please check the doc about [contributing-to-projects](https://
 
 ## Validate Git Commit
 
-This project uses [DCO](https://developercertificate.org/). Be sure to sign off your commits using the -s flag or add Signed-off-By: Name<Email> in the commit message.
-
+We use the [DCO](https://developercertificate.org/) in our project, and please be sure to sign off your commit with the -s flag
 ```
 git commit -s -m 'Commit message'
 ```

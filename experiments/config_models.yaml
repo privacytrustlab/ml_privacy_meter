@@ -7,7 +7,7 @@ audit: # Configurations for auditing
   privacy_game: privacy_loss_model # Indicate the privacy game from privacy_loss_model, avg_privacy_loss_training_algo, privacy_loss_sample
   device: cuda:0 # String for indicating on which device we conduct the membership inference attack and train reference models.
   audit_batch_size: 1000 # Integer number for indicating the batch size for computing signals in the privacy meter.
-  algorithm: reference # String for indicating the membership inference attack. We currently support population, reference.
+  algorithm: population # String for indicating the membership inference attack. We currently support population, reference.
   num_reference_models: 10 # Integer number for indicating how many reference models we need to train for auditing, if the reference attack is used.
   batch_size: 64 # Integer number for indicating the batch size of training the reference models if reference attack is used.
   f_reference_dataset: 1 # Float number for indicating the ratio between the reference train dataset and the target train dataset.
@@ -38,4 +38,4 @@ data: # Configuration for data
   f_test: 0.3 # Float number from 0 to 1 indicating the fraction of the test dataset
   split_method: no_overlapping # String for indicating the methods of splitting the dataset between train, test, and auditing.
   f_audit: 0.3 # Float from 0 to 1, indicating the fraction of the auditing dataset
-  data_dir: ../data/cifar10 # String about where to save the data.
+  data_dir: ../data # String about where to save the data.

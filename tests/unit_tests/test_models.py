@@ -1,7 +1,7 @@
 """This test is for testing functions in models.py."""
 import sys
 
-sys.path.append("../../")
+sys.path.append("../../experiments")
 
 import pytest
 

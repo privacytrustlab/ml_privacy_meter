@@ -34,6 +34,8 @@ from util import (
 from privacy_meter.audit import Audit
 from privacy_meter.model import PytorchModelTensor
 
+torch.backends.cudnn.benchmark = True
+
 
 def setup_log(name: str, save_file: bool) -> logging.Logger:
     """Generate the logger for the current run.

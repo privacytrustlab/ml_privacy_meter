@@ -6,11 +6,8 @@ from torch import nn
 
 from util import get_optimizer
 
-
 # Train Function
-def train(
-    model: torch.nn.Module, train_loader: torch.utils.data.DataLoader, configs: dict
-) -> torch.nn.Module:
+def train(model: torch.nn.Module, train_loader: torch.utils.data.DataLoader, configs: dict):
     """Train the model based on on the train loader
     Args:
         model(nn.Module): Model for evaluation.
@@ -32,20 +29,18 @@ def train(
 
     # Get the number of epochs for training
     epochs = configs.get("epochs", 1)
-
     # Loop over each epoch
     for epoch_idx in range(epochs):
         train_loss = 0
         # Loop over the training set
         for data, target in train_loader:
-
             # Move data to the device
-            data, target = data.to(device), target.to(device)
+            data, target = data.to(device, non_blocking=True), target.to(device,non_blocking=True)
             # Cast target to long tensor
             target = target.long()
 
             # Set the gradients to zero
-            optimizer.zero_grad()
+            optimizer.zero_grad(set_to_none=True)
 
             # Get the model output
             output = model(data)
@@ -55,7 +50,6 @@ def train(
 
             # Perform the backward pass
             loss.backward()
-
             # Take a step using optimizer
             optimizer.step()
 

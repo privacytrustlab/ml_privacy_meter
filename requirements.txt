@@ -12,3 +12,5 @@ pillow
 opacus
 torchvision==0.14.0
 PyYAML
+# git+https://github.com/wbaek/torchskeleton.git@v0.2.1_dawnbench_cifar10_release
+pytest
