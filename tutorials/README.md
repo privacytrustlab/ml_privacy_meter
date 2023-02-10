@@ -1,13 +1,17 @@
 <!-- # Documentation  -->
+
 # Privacy Meter Tutorials
 
-We include the following tutorials as Jupyter Notebooks for you to get started with Privacy Meter. 
+To help you get started with the Privacy Meter, we have included the following tutorials in the form of Jupyter Notebooks. For a comprehensive understanding, we suggest working through the first five tutorials. Additionally, we have included tutorials on how to utilize the Privacy Meter with OpenVINO models and Hugging Face's Causal Language Models.
 
-| Tutorial |  |
-|---|------|
-| [Running the Population Metric](https://github.com/privacytrustlab/ml_privacy_meter/blob/master/tutorials/population_metric.ipynb) |     |
-| [Running the Shadow Metric ](https://github.com/privacytrustlab/ml_privacy_meter/blob/master/tutorials/shadow_metric.ipynb)     |
-| [Running the Reference Metric](https://github.com/privacytrustlab/ml_privacy_meter/blob/master/tutorials/reference_metric.ipynb) |      |
-| [Evaluating the Average Privacy Loss of a Training Algorithm](https://github.com/privacytrustlab/ml_privacy_meter/blob/master/tutorials/avg_loss_training_algo.ipynb) |      |
-| [Extending the Model class for OpenVINO Models](https://github.com/privacytrustlab/ml_privacy_meter/blob/master/tutorials/openvino_models.ipynb) |      |
-| [Extending the tool for HuggingFace Causal Language Models](https://github.com/privacytrustlab/ml_privacy_meter/blob/master/tutorials/hf_causal_language_models.ipynb) |      |
+You can access these tutorials on Colab for a seamless experience.
+
+| Tutorial                                                                                                                                                               | <img src="https://www.tensorflow.org/images/colab_logo_32px.png" />                                                                      |
+| ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| [Running the Population Metric](https://github.com/privacytrustlab/ml_privacy_meter/blob/master/tutorials/population_metric.ipynb)                                     | [Run]("https://colab.research.google.com/github/privacytrustlab/ml_privacy_meter/blob/master/tutorials/population_metric.ipynb")         |
+| [Running the Reference Metric](https://github.com/privacytrustlab/ml_privacy_meter/blob/master/tutorials/whit_box_attack.ipynb)                                        | [Run]("https://colab.research.google.com/github/privacytrustlab/ml_privacy_meter/blob/master/tutorials/whit_box_attack.ipynb")           |
+| [Running the Reference Metric](https://github.com/privacytrustlab/ml_privacy_meter/blob/master/tutorials/reference_metric.ipynb)                                       | [Run]("https://colab.research.google.com/github/privacytrustlab/ml_privacy_meter/blob/master/tutorials/reference_metric.ipynb")          |
+| [Evaluating the Average Privacy Loss of a Training Algorithm](https://github.com/privacytrustlab/ml_privacy_meter/blob/master/tutorials/avg_loss_training_algo.ipynb)  | [Run]("https://colab.research.google.com/github/privacytrustlab/ml_privacy_meter/blob/master/tutorials/avg_loss_training_algo.ipynb")    |
+| [Running the Shadow Metric ](https://github.com/privacytrustlab/ml_privacy_meter/blob/master/tutorials/shadow_metric.ipynb)                                            | [Run]("https://colab.research.google.com/github/privacytrustlab/ml_privacy_meter/blob/master/tutorials/shadow_metric.ipynb")             |
+| [Extending the Model class for OpenVINO Models](https://github.com/privacytrustlab/ml_privacy_meter/blob/master/tutorials/openvino_models.ipynb)                       | [Run]("https://colab.research.google.com/github/privacytrustlab/ml_privacy_meter/blob/master/tutorials/openvino_models.ipynb")           |
+| [Extending the tool for HuggingFace Causal Language Models](https://github.com/privacytrustlab/ml_privacy_meter/blob/master/tutorials/hf_causal_language_models.ipynb) | [Run]("https://colab.research.google.com/github/privacytrustlab/ml_privacy_meter/blob/master/tutorials/hf_causal_language_models.ipynb") |
