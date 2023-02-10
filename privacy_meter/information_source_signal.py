@@ -316,12 +316,7 @@ class ModelGradient(Signal):
             ) = model_to_split_mapping[k]
             x = datasets[dataset_index].get_feature(split_name, input_feature)
             y = datasets[dataset_index].get_feature(split_name, output_feature)
-            # Compute the signal for each sample
-            for (sample_x, sample_y) in zip(x, y):
-                xx, yy = np.expand_dims(sample_x, axis=0), np.expand_dims(
-                    sample_y, axis=0
-                )
-                results.append(model.get_grad(xx, yy))
+            results.append(model.get_grad(x, y))
         return results
 
 
@@ -378,11 +373,6 @@ class ModelGradientNorm(Signal):
     This particular class is used to get the gradient norm of a model.
     """
 
-    def __init__(self, is_features=True, layer_number=10) -> None:
-        super().__init__()
-        self.is_features = is_features
-        self.layer_number = layer_number
-
     def __call__(
         self,
         models: List[Model],
@@ -423,7 +413,7 @@ class ModelGradientNorm(Signal):
             y = datasets[dataset_index].get_feature(split_name, output_feature)
             results.append(
                 model.get_gradnorm(
-                    x, y, is_features=self.is_features, layer_number=self.layer_number
+                    x, y
                 )
             )
         return results

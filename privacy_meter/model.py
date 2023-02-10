@@ -110,7 +110,8 @@ class PytorchModel(Model):
         # Add hooks to the layers (to access their value during a forward pass)
         self.intermediate_outputs = {}
         for (i, l) in enumerate(list(self.model_obj._modules.keys())):
-            getattr(self.model_obj, l).register_forward_hook(self.__forward_hook(l))
+            getattr(self.model_obj, l).register_forward_hook(
+                self.__forward_hook(l))
 
         # Create a second loss function, per point
         self.loss_fn_no_reduction = deepcopy(loss_fn)
@@ -149,7 +150,8 @@ class PytorchModel(Model):
             )
         else:
             return self.loss_fn(
-                self.model_obj(torch.Tensor(batch_samples)), torch.Tensor(batch_labels)
+                self.model_obj(torch.Tensor(batch_samples)
+                               ), torch.Tensor(batch_labels)
             ).item()
 
     def get_grad(self, batch_samples, batch_labels):
@@ -164,7 +166,8 @@ class PytorchModel(Model):
             A list of gradients of the model loss (one item per layer) with respect to the model parameters.
         """
         loss = self.loss_fn(
-            self.model_obj(torch.Tensor(batch_samples)), torch.Tensor(batch_labels)
+            self.model_obj(torch.Tensor(batch_samples)
+                           ), torch.Tensor(batch_labels)
         )
         loss.backward()
         return [p.grad.numpy() for p in self.model_obj.parameters()]
@@ -599,20 +602,17 @@ class PytorchModelTensor(Model):
                     ],
                     axis=1,
                 )
-                .detach()
-                .numpy()
+                .detach().cpu().numpy()
             )
             # grad = self.grad_sampler_model.conv1.weight.grad_sample.reshape(len(y),-1)
             grad_list.append(grad)
             self.grad_sampler_model.zero_grad()
 
         self.model_obj.to("cpu")
-        grad_list = torch.cat(grad_list).detach().cpu().numpy()
+        grad_list = np.concatenate(grad_list)
         return grad_list
 
-    def get_gradnorm(
-        self, batch_samples, batch_labels, is_features=True, layer_number=1
-    ):
+    def get_gradnorm(self, batch_samples, batch_labels):
         """Function to get the gradient of the model loss with respect to the model parameters, on a given input and an
         expected output.
 
@@ -636,27 +636,18 @@ class PytorchModelTensor(Model):
             y = y.to(self.device)
             loss = self.loss_fn(self.grad_sampler_model(x), y).sum()
             loss.backward()
-            if is_features:
-                grad_norm.append(
-                    torch.norm(
-                        self.grad_sampler_model.features[layer_number]
-                        .weight.grad_sample.reshape(self.batch_size, -1)
-                        .detach(),
-                        dim=1,
-                    )
-                )  # this detach can not be deleted
-            else:
-                grad_norm.append(
-                    torch.norm(
-                        self.grad_sampler_model.classifier[layer_number]
-                        .weight.grad_sample.reshape(self.batch_size, -1)
-                        .detach(),
-                        dim=1,
-                    )
-                )  # this detach can not be deleted
+            grad_norm.append(
+                torch.norm(torch.cat(
+                    [
+                        p.grad_sample.reshape(len(y), -1)
+                        for p in self.grad_sampler_model.parameters()
+                    ],
+                    axis=1,
+                ), dim=1).detach().cpu().numpy()
+            )
 
             self.grad_sampler_model.zero_grad()
-        grad_norm = torch.cat(grad_norm).detach().cpu().numpy()
+        grad_norm = np.concatenate(grad_norm)
         self.model_obj.to("cpu")
         self.grad_sampler_model.to("cpu")
         return grad_norm

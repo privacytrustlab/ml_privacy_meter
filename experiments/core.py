@@ -1,3 +1,5 @@
+import sys
+sys.path.append("../")
 import copy
 import logging
 import pickle
@@ -13,6 +15,8 @@ from torch import nn
 
 from dataset import get_dataset_subset
 from models import get_model
+
+
 from privacy_meter import audit_report
 from privacy_meter.audit import MetricEnum
 from privacy_meter.audit_report import ROCCurveReport, SignalHistogramReport
@@ -388,13 +392,19 @@ def prepare_models(
             torch.utils.data.Subset(dataset, data_split["split"][split]["train"]),
             batch_size=configs["batch_size"],
             shuffle=True,
-            num_workers=2,
+            num_workers=4,
+            pin_memory=True,
+            persistent_workers=True,
+            prefetch_factor=16
         )
         test_loader = torch.utils.data.DataLoader(
             torch.utils.data.Subset(dataset, data_split["split"][split]["test"]),
             batch_size=configs["test_batch_size"],
             shuffle=False,
-            num_workers=2,
+            num_workers=4,
+            pin_memory=True,
+            persistent_workers=True,
+            prefetch_factor=16
         )
 
         print(50 * "-")
@@ -571,7 +581,10 @@ def get_info_source_reference_attack(
             torch.utils.data.Subset(dataset, reference_data_idx),
             batch_size=configs["batch_size"],
             shuffle=True,
-            num_workers=2,
+            num_workers=4,
+            pin_memory=True,
+            persistent_workers=True,
+            prefetch_factor=16
         )
         reference_model = get_model(configs["model_name"])
         reference_model = train(reference_model, reference_loader, configs)

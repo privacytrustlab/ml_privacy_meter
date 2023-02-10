@@ -5,7 +5,7 @@ run: # Configurations for a specific run
 
 audit: # the configurations for the MIA
   privacy_game: privacy_loss_sample #privacy_loss_model #avg_privacy_loss_training_algo # the configuarations for the privacy loss game
-  device: cuda:1 # indicate on which device we conduct the MIA
+  device: cpu # indicate on which device we conduct the MIA
   audit_batch_size: 1000 # the batch size for computing signals for inferring membership information
   split_method: uniform # spliting methods among reference datasets
   report_log: report_sample # String that indicates the folder where we save the and auditing report.
@@ -20,7 +20,7 @@ train: # Configuration for training
   learning_rate: 0.001 # Float number for indicating learning rate for training the target model.
   weight_decay: 0 # Float number for indicating weight decay for training the target model.
   model_name: CNN # String for indicating the model type. We support CNN. More model types can be added in model.py.
-  device: cuda:0 # String for indicating the device we want to use for training models.
+  device: cpu # String for indicating the device we want to use for training models.
   data_idx: 1 # Integer number for indicating the model index or data index.
   num_in_models: 40 # Integer number that indicates how many target models trained on idx
   num_out_models: 40 # Integer number that indicates how many target models not trained on idx
