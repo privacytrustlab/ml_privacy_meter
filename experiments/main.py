@@ -48,7 +48,8 @@ def setup_log(name: str, save_file: bool) -> logging.Logger:
     my_logger = logging.getLogger(name)
     my_logger.setLevel(logging.INFO)
     if save_file:
-        log_format = logging.Formatter("%(asctime)s %(levelname)-8s %(message)s")
+        log_format = logging.Formatter(
+            "%(asctime)s %(levelname)-8s %(message)s")
         filename = f"log_{name}.log"
         log_handler = logging.FileHandler(filename, mode="w")
         log_handler.setLevel(logging.INFO)
@@ -99,7 +100,8 @@ if __name__ == "__main__":
         model_metadata_list = {"model_metadata": {}, "current_idx": 0}
     # Load the dataset
     baseline_time = time.time()
-    dataset = get_dataset(configs["data"]["dataset"], configs["data"]["data_dir"])
+    dataset = get_dataset(configs["data"]["dataset"],
+                          configs["data"]["data_dir"])
 
     privacy_game = configs["audit"]["privacy_game"]
 
@@ -153,7 +155,8 @@ if __name__ == "__main__":
             *data_split_info["split"],
             *trained_target_dataset_list,
         ]
-        target_model_idx_list = [*new_target_model_idx_list, *target_model_idx_list]
+        target_model_idx_list = [
+            *new_target_model_idx_list, *target_model_idx_list]
 
         logger.info(
             "Prepare the target model costs %0.5f seconds", time.time() - baseline_time
@@ -271,7 +274,8 @@ if __name__ == "__main__":
             )
         elif configs["data"]["split_method"] == "leave_one_out":
             out_model_idx_list = load_leave_one_out_models(
-                model_metadata_list, [configs["train"]["data_idx"]], in_model_idx_list
+                model_metadata_list, [configs["train"]
+                                      ["data_idx"]], in_model_idx_list
             )
         else:
             raise ValueError("The split method is not supported")
@@ -315,19 +319,24 @@ if __name__ == "__main__":
         ]
 
         # Test the models' performance on the data indicated by the audit.idx
-        data, targets = get_dataset_subset(dataset, [configs["audit"]["data_idx"]])
+        data, targets = get_dataset_subset(
+            dataset, [configs["audit"]["data_idx"]])
         in_signal = np.array(
-            [model.get_loss(data, targets).item() for model in in_model_list_pm]
+            [model.get_loss(data, targets).item()
+             for model in in_model_list_pm]
         )
         out_signal = np.array(
-            [model.get_loss(data, targets).item() for model in out_model_list_pm]
+            [model.get_loss(data, targets).item()
+             for model in out_model_list_pm]
         )
 
         # Rescale the loss
         in_signal = in_signal + 1e-17  # avoid nan
-        in_signal = np.log(np.divide(np.exp(-in_signal), (1 - np.exp(-in_signal))))
+        in_signal = np.log(
+            np.divide(np.exp(-in_signal), (1 - np.exp(-in_signal))))
         out_signal = out_signal + 1e-17  # avoid nan
-        out_signal = np.log(np.divide(np.exp(-out_signal), (1 - np.exp(-out_signal))))
+        out_signal = np.log(
+            np.divide(np.exp(-out_signal), (1 - np.exp(-out_signal))))
 
         # Generate the privacy risk report
         labels = np.concatenate(
@@ -353,7 +362,46 @@ if __name__ == "__main__":
         plt.grid()
         plt.xlabel("Signal value")
         plt.ylabel("Number of Models")
-        plt.title(f"Signal histogram for data point {configs['audit']['data_idx']}")
+        plt.title(
+            f"Signal histogram for data point {configs['audit']['data_idx']}")
         plt.savefig(
             f"{log_dir}/{configs['audit']['report_log']}/individual_pr_{configs['train']['data_idx']}_{configs['audit']['data_idx']}.png"
         )
+
+        # Generate the ROC
+        all_signals = np.concatenate([in_signal, out_signal])
+        all_signals.sort()
+        tpr_list = []
+        fpr_list = []
+        for threshold in all_signals:
+            tp = np.sum(in_signal < threshold)
+            fp = np.sum(out_signal < threshold)
+            tn = np.sum(out_signal >= threshold)
+            fn = np.sum(in_signal >= threshold)
+            tpr = tp / (tp + fn)
+            fpr = fp / (fp + tn)
+            tpr_list.append(tpr)
+            fpr_list.append(fpr)
+        roc_auc = np.trapz(x=fpr_list, y=tpr_list)
+        range01 = np.linspace(0, 1)
+        plt.fill_between(fpr_list, tpr_list, alpha=0.15)
+        plt.plot(range01, range01, "--", label="Random guess")
+        plt.plot(fpr_list, tpr_list, label="ROC curve")
+        plt.xlim([0, 1])
+        plt.ylim([0, 1])
+        plt.grid()
+        plt.legend()
+        plt.xlabel("False positive rate (FPR)")
+        plt.ylabel("True positive rate (TPR)")
+        plt.title("ROC curve")
+        plt.text(
+            0.7,
+            0.3,
+            f"AUC = {roc_auc:.03f}",
+            horizontalalignment="center",
+            verticalalignment="center",
+            bbox=dict(facecolor="white", alpha=0.5),
+        )
+        plt.savefig(
+            fname=f"{log_dir}/{configs['audit']['report_log']}/individual_pr_roc_{configs['train']['data_idx']}_{configs['audit']['data_idx']}.png", dpi=1000)
+        plt.clf()
