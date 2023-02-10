@@ -12,11 +12,10 @@
 ![Stargazers](https://img.shields.io/github/stars/privacytrustlab/ml_privacy_meter?style=social)
 ![License](https://img.shields.io/github/license/privacytrustlab/ml_privacy_meter)
 
+
 ## What is privacy meter?
 
 Privacy Meter is an open-source library to audit data privacy in statistical and machine learning algorithms. The tool can help in data protection impact assessment process by providing a quantitative analysis of fundamental privacy risks of a (machine learning) model. It uses state-of-the-art inference techniques to audit a wide range of machine learning algorithms for classification, regression, computer vision, and natural language processing. Privacy Meter generates extensive reports about the aggregate and individual privacy risks for data records in the training set, at multiple levels of access to the model.
-
-## Overview
 
 ## Why Privacy Meter?
 
@@ -25,6 +24,11 @@ Machine learning is playing a central role in automated decision-making in a wid
 Data Protection regulations, such as GDPR, and AI governance frameworks require personal data to be protected when used in AI systems, and that the users have control over their data and awareness about how it is being used. For example, [Article 35 of GDPR](https://gdpr-info.eu/art-35-gdpr/) requires organizations to systematically analyze, identify and minimize the data protection risks of a project, especially when the project involves innovative technologies such as Artificial Intelligence, Machine Learning and Deep Learning. Thus, proper mechanisms need to be in place to quantitatively evaluate and verify the privacy of individuals in every step of the data processing pipeline in AI systems.
 
 ML Privacy Meter is a Python library (`privacy_meter`) that enables quantifying the privacy risks of machine learning models. The tool provides privacy risk scores which help in identifying data records among the training data that are at high risk of being leaked through the model parameters or predictions.
+
+## Overview
+The core of the privacy meter consists of three parts. 
+
+
 
 ## Installation
 
