@@ -1,5 +1,3 @@
-import sys
-sys.path.append("../")
 import copy
 import logging
 import pickle
@@ -243,7 +241,8 @@ def prepare_datasets(dataset_size: int, num_datasets: int, configs: dict):
         selected_index = np.random.choice(
             all_index, train_size + test_size, replace=False
         )
-        train_index, test_index = train_test_split(selected_index, test_size=test_size)
+        train_index, test_index = train_test_split(
+            selected_index, test_size=test_size)
         audit_index = get_split(
             all_index,
             selected_index,
@@ -254,7 +253,8 @@ def prepare_datasets(dataset_size: int, num_datasets: int, configs: dict):
             {"train": train_index, "test": test_index, "audit": audit_index}
         )
 
-    dataset_splits = {"split": index_list, "split_method": configs["split_method"]}
+    dataset_splits = {"split": index_list,
+                      "split_method": configs["split_method"]}
     return dataset_splits
 
 
@@ -389,7 +389,8 @@ def prepare_models(
         meta_data = {}
         baseline_time = time.time()
         train_loader = torch.utils.data.DataLoader(
-            torch.utils.data.Subset(dataset, data_split["split"][split]["train"]),
+            torch.utils.data.Subset(
+                dataset, data_split["split"][split]["train"]),
             batch_size=configs["batch_size"],
             shuffle=True,
             num_workers=4,
@@ -398,7 +399,8 @@ def prepare_models(
             prefetch_factor=16
         )
         test_loader = torch.utils.data.DataLoader(
-            torch.utils.data.Subset(dataset, data_split["split"][split]["test"]),
+            torch.utils.data.Subset(
+                dataset, data_split["split"][split]["test"]),
             batch_size=configs["test_batch_size"],
             shuffle=False,
             num_workers=4,
@@ -417,7 +419,8 @@ def prepare_models(
         model = train(get_model(configs["model_name"]), train_loader, configs)
         # Test performance on the training dataset and test dataset
         test_loss, test_acc = inference(model, test_loader, configs["device"])
-        train_loss, train_acc = inference(model, train_loader, configs["device"])
+        train_loss, train_acc = inference(
+            model, train_loader, configs["device"])
         model_list.append(copy.deepcopy(model))
         logging.info(
             "Prepare %s-th target model costs %s seconds ",
@@ -470,9 +473,11 @@ def get_info_source_population_attack(
         List(nn.Module): List of target models we want to audit
         List(nn.Module): List of reference models (which is the target model based on population attack)
     """
-    train_data, train_targets = get_dataset_subset(dataset, data_split["train"])
+    train_data, train_targets = get_dataset_subset(
+        dataset, data_split["train"])
     test_data, test_targets = get_dataset_subset(dataset, data_split["test"])
-    audit_data, audit_targets = get_dataset_subset(dataset, data_split["audit"])
+    audit_data, audit_targets = get_dataset_subset(
+        dataset, data_split["audit"])
     target_dataset = Dataset(
         data_dict={
             "train": {"x": train_data, "y": train_targets},
@@ -526,7 +531,8 @@ def get_info_source_reference_attack(
     """
 
     # Construct the target dataset and target models
-    train_data, train_targets = get_dataset_subset(dataset, data_split["train"])
+    train_data, train_targets = get_dataset_subset(
+        dataset, data_split["train"])
     test_data, test_targets = get_dataset_subset(dataset, data_split["test"])
     target_dataset = Dataset(
         data_dict={
@@ -565,7 +571,8 @@ def get_info_source_reference_attack(
     ]
 
     # Train additional reference models
-    num_reference_models = configs["num_reference_models"] - len(reference_models)
+    num_reference_models = configs["num_reference_models"] - \
+        len(reference_models)
     for reference_idx in range(num_reference_models):
         reference_data_idx = get_split(
             data_split["audit"],
@@ -589,7 +596,8 @@ def get_info_source_reference_attack(
         reference_model = get_model(configs["model_name"])
         reference_model = train(reference_model, reference_loader, configs)
         # Test performance on the training dataset and test dataset
-        train_loss, train_acc = inference(model, reference_loader, configs["device"])
+        train_loss, train_acc = inference(
+            model, reference_loader, configs["device"])
 
         logging.info(
             f"Prepare {reference_idx}-th reference model costs {time.time()-start_time} seconds: Train accuracy (on auditing dataset) {train_acc}, Train Loss {train_loss}"
@@ -781,4 +789,5 @@ def prepare_priavcy_risk_report(
                 f"{len(audit_results)} results are not enough for {configs['privacy_game']})"
             )
     else:
-        raise NotImplementedError(f"{configs['privacy_game']} is not implemented yet")
+        raise NotImplementedError(
+            f"{configs['privacy_game']} is not implemented yet")

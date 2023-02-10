@@ -25,7 +25,8 @@ def check_configs(configs: dict):
     if privacy_game in ["privacy_loss_model", "avg_privacy_loss_training_algo"]:
         num_target_model = configs["train"]["num_target_model"]
         if privacy_game == "privacy_loss_model" and num_target_model != 1:
-            raise ValueError("privacy_loss_model game only supports one target model")
+            raise ValueError(
+                "privacy_loss_model game only supports one target model")
         if privacy_game == "avg_privacy_loss_training_algo":
             if num_target_model <= 1:
                 raise ValueError(
@@ -90,9 +91,11 @@ def get_split(
         np.ndarray: List of index
     """
     if split_method in "no_overlapping":
-        selected_index = np.array([i for i in all_index if i not in used_index])
+        selected_index = np.array(
+            [i for i in all_index if i not in used_index])
         if size <= len(selected_index):
-            selected_index = np.random.choice(selected_index, size, replace=False)
+            selected_index = np.random.choice(
+                selected_index, size, replace=False)
         else:
             raise ValueError("Not enough remaining data points.")
     elif split_method == "uniform":

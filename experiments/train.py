@@ -7,6 +7,8 @@ from torch import nn
 from util import get_optimizer
 
 # Train Function
+
+
 def train(model: torch.nn.Module, train_loader: torch.utils.data.DataLoader, configs: dict):
     """Train the model based on on the train loader
     Args:
@@ -35,7 +37,8 @@ def train(model: torch.nn.Module, train_loader: torch.utils.data.DataLoader, con
         # Loop over the training set
         for data, target in train_loader:
             # Move data to the device
-            data, target = data.to(device, non_blocking=True), target.to(device,non_blocking=True)
+            data, target = data.to(device, non_blocking=True), target.to(
+                device, non_blocking=True)
             # Cast target to long tensor
             target = target.long()
 

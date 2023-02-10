@@ -8,16 +8,7 @@ audit: # Configurations for auditing
   device: cpu # String for indicating on which device we conduct the membership inference attack and train reference models.
   audit_batch_size: 1000 # Integer number for indicating the batch size for computing signals in the privacy meter.
   algorithm: population # String for indicating the membership inference attack. We currently support population, reference.
-  num_reference_models: 10 # Integer number for indicating how many reference models we need to train for auditing, if the reference attack is used.
-  batch_size: 64 # Integer number for indicating the batch size of training the reference models if reference attack is used.
-  f_reference_dataset: 1 # Float number for indicating the ratio between the reference train dataset and the target train dataset.
-  optimizer: Adam # String which indicates the optimizer for training reference models. We support Adam and SGD.
-  learning_rate: 0.001 # Float number for indicating learning rate for training the reference model.
-  weight_decay: 0 # Float number for indicating weight decay for training the reference model.
-  model_name: CNN # String for indicating the model type. We support CNN, alexnet. More model type can be added in model.py.
-  epochs: 30 # Integer number for indicating the epochs for training target model.
-  report_log: report_reference # String that indicates the folder where we save the and auditing report.
-  split_method: uniform # String for indicating the splitting methods for reference dataset. We support uniform and leave_one_out.
+  report_log: report_population # String that indicates the folder where we save the and auditing report.
 
 train: # Configuration for training
   type: pytorch # Training framework (we only support pytorch now).

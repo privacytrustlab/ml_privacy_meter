@@ -22,13 +22,13 @@ train: # Configuration for training
   model_name: CNN # String for indicating the model type. We support CNN. More model types can be added in model.py.
   device: cpu # String for indicating the device we want to use for training models.
   data_idx: 1 # Integer number for indicating the model index or data index.
-  num_in_models: 40 # Integer number that indicates how many target models trained on idx
-  num_out_models: 40 # Integer number that indicates how many target models not trained on idx
-
+  num_in_models: 10 # Integer number that indicates how many target models trained on idx
+  num_out_models: 10 # Integer number that indicates how many target models not trained on idx
+  model_idx: 1
 data: # Configuration for data
   dataset: cifar10 # String indicates the name of the dataset
   f_train: 0.3 # Float number from 0 to 1 indicating the fraction of the train dataset
   f_test: 0.3 # Float number from 0 to 1 indicating the fraction of the test dataset
-  split_method: leave_one_out # String for indicating the methods of splitting the dataset between train, test, and auditing; Take value from uniform and leave_one_out
+  split_method: uniform # String for indicating the methods of splitting the dataset between train, test, and auditing; Take value from uniform
   f_audit: 0.3 # Float from 0 to 1, indicating the fraction of the auditing dataset
   data_dir: ../data # String about where to save the data.

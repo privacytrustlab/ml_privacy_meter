@@ -1,16 +1,15 @@
 tensorflow>=2.4.0
 torch==1.13.0
-matplotlib
-numpy
+matplotlib==3.6.3
+numpy==1.24.2
 scikit-learn
-seaborn
+seaborn==0.12.2
 setuptools
-scipy
+scipy==1.10.0
 pandas
 jinja2
 pillow
-opacus
+opacus==1.3.0
 torchvision==0.14.0
-PyYAML
-# git+https://github.com/wbaek/torchskeleton.git@v0.2.1_dawnbench_cifar10_release
-pytest
+PyYAML==6.0
+pytest==7.2.1
