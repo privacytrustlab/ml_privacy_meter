@@ -12,7 +12,6 @@
 ![Stargazers](https://img.shields.io/github/stars/privacytrustlab/ml_privacy_meter?style=social)
 ![License](https://img.shields.io/github/license/privacytrustlab/ml_privacy_meter)
 
-
 ## What is privacy meter?
 
 Privacy Meter is an open-source library to audit data privacy in statistical and machine learning algorithms. The tool can help in data protection impact assessment process by providing a quantitative analysis of fundamental privacy risks of a (machine learning) model. It uses state-of-the-art inference techniques to audit a wide range of machine learning algorithms for classification, regression, computer vision, and natural language processing. Privacy Meter generates extensive reports about the aggregate and individual privacy risks for data records in the training set, at multiple levels of access to the model.
@@ -26,9 +25,14 @@ Data Protection regulations, such as GDPR, and AI governance frameworks require 
 ML Privacy Meter is a Python library (`privacy_meter`) that enables quantifying the privacy risks of machine learning models. The tool provides privacy risk scores which help in identifying data records among the training data that are at high risk of being leaked through the model parameters or predictions.
 
 ## Overview
-The core of the privacy meter consists of three parts. 
 
+The core of the privacy meter consists of three parts: `Information Source`, `Metric` and `Metric Results`.
 
+<p align="center" width="100%">
+    <img width="80%" src="source/_static/privacy_meter_architecture.png">
+</p>
+
+Kindly refer to the tutorial on the population attack ([here](tutorials/population_metric.ipynb)) to gain familiarity with the utilization of each component.
 
 ## Installation
 
@@ -48,30 +52,32 @@ conda install privacy-meter
 
 ## Quickstart
 
-We provide examples of how to run privacy meter on standard datasets and models in experiments folder. Run the following code for your first membership inference attack on CIFAR10.
+We provide examples of how to run privacy meter on standard datasets and models in the [experiments](experiments/) folder. Run the following code for your first membership inference attack on CIFAR10.
 
 ```
-cd experments
+cd experiments
 python main.py --cf config_models.yaml
 ```
 
-## User manual
+Kindly proceed to the experiments folder ([here](experiments/)) to perform privacy audits on various objects, such as models, algorithms, and data points, using the CIFAR10 dataset.
 
-We provide comprehensive tutorials for users to get ideas about the privacy meter.
+## User manual
 
 ### Basic Usage
 
-1. Auditing privacy risk for a trained model
+We have comprehensive tutorials available in the tutorials folder to aid users in comprehending the privacy meter and also offer a default implementation for automatic privacy auditing in the experiments folder. To maximize the benefits of these resources, we recommend following this suggested order:
 
-2. Auditing privacy risk for a training algorithm
-
-3. Auditing the privacy risk for a specific data point (memorization)
-
-4. Auditing the privacy risk for a training algorithm with a fixed dataset (leave-one-out attack).
+1. [Acquire a fundamental understanding of the privacy meter by executing a population attack on the CIFAR10 dataset.](tutorials/population_metric.ipynb)
+2. [Enhance your knowledge by conducting a reference attack on the CIFAR10 dataset.](tutorials/reference_metric.ipynb)
+3. [Automate the privacy auditing process on the CIFAR10 dataset.](experiments/)
 
 ### Advanced Usage
 
-We provide tutorials in the tutorial folder, which helps the user to extend our privacy meter attack ML models implemented by other libraries, HuggingFace, and OpenVino. In addition, we also provide tutorials about the white-box attack.
+Users have the capability to extend our privacy meter to fit their specific needs. By utilizing the code in the experiments folder, one can perform privacy audits on customized training algorithms, datasets, and settings based on different privacy games (See instructions [here](experiments/README.md)). Furthermore, our framework can be extended to include white-box attacks and models developed by other libraries. For more information on this, please refer to the tutorials covering the following topics:
+
+1. [Implementing a simple white-box attack using the privacy meter.](tutorials/white_box_attack.ipynb)
+2. [Expanding the privacy meter to encompass OpenVION models.](tutorials/openvino_models.ipynb)
+3. [Integrating the privacy meter with HuggingFace models.](tutorials/hf_causal_language_models.ipynb)
 
 ## Video (Talks)
 
@@ -85,7 +91,7 @@ If you wish to add new ways of analyzing the privacy risk or add new model suppo
 
 ## Contact / Feedback
 
-Please feel free to join our [Slack Channel](https://join.slack.com/t/privacy-meter/shared_invite/zt-1oge6ovjq-SS4UZnBVB115Tx8Nn3TVhA) to provide your feedbacks and your thoughts on the project!
+Please feel free to join our [Slack Channel](https://join.slack.com/t/privacy-meter/shared_invite/zt-1oge6ovjq-SS4UZnBVB115Tx8Nn3TVhA) to provide your feedback and your thoughts on the project!
 
 ## Citing Privacy Meter
 
