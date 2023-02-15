@@ -45,7 +45,7 @@ tensorflow-estimator==2.1.0
 termcolor==1.1.0
 typed-ast==1.4.1
 urllib3==1.26.5
-Werkzeug==0.16.0
+Werkzeug==2.2.3
 wrapt==1.11.2
 setuptools~=52.0.0
 tensorflow~=2.1.0
