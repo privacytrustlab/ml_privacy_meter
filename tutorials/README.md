@@ -6,10 +6,10 @@ To help you get started with the Privacy Meter, we have included the following t
 
 You can access these tutorials on Colab for a seamless experience.
 
-| Tutorial                                                                                                                                                               | <img src="https://www.tensorflow.org/images/colab_logo_32px.png" />                                                                      |
-| ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| Tutorial                                                                                     | <img src="https://www.tensorflow.org/images/colab_logo_32px.png" />                                                                    |
+| -------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
 | [Running the Population Metric](population_metric.ipynb)                                     | [Run](https://colab.research.google.com/github/privacytrustlab/ml_privacy_meter/blob/master/tutorials/population_metric.ipynb)         |
-| [Running the Reference Metric](whit_box_attack.ipynb)                                        | [Run](https://colab.research.google.com/github/privacytrustlab/ml_privacy_meter/blob/master/tutorials/whit_box_attack.ipynb)           |
+| [Running the White-box Attack based on Population Metric](white_box_attack.ipynb)             | [Run](https://colab.research.google.com/github/privacytrustlab/ml_privacy_meter/blob/master/tutorials/white_box_attack.ipynb)           |
 | [Running the Reference Metric](reference_metric.ipynb)                                       | [Run](https://colab.research.google.com/github/privacytrustlab/ml_privacy_meter/blob/master/tutorials/reference_metric.ipynb)          |
 | [Evaluating the Average Privacy Loss of a Training Algorithm](avg_loss_training_algo.ipynb)  | [Run](https://colab.research.google.com/github/privacytrustlab/ml_privacy_meter/blob/master/tutorials/avg_loss_training_algo.ipynb)    |
 | [Running the Shadow Metric ](shadow_metric.ipynb)                                            | [Run](https://colab.research.google.com/github/privacytrustlab/ml_privacy_meter/blob/master/tutorials/shadow_metric.ipynb)             |
