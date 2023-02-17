@@ -1,12 +1,10 @@
 from abc import ABC, abstractmethod
-
 from typing import List, Tuple
 
 import numpy as np
 
 from privacy_meter.dataset import Dataset
 from privacy_meter.model import Model
-
 
 ########################################################################################################################
 # SIGNAL CLASS
@@ -19,12 +17,13 @@ class Signal(ABC):
     """
 
     @abstractmethod
-    def __call__(self,
-                 models: List[Model],
-                 datasets: List[Dataset],
-                 model_to_split_mapping: List[Tuple[int, str, str, str]],
-                 extra: dict
-                 ):
+    def __call__(
+        self,
+        models: List[Model],
+        datasets: List[Dataset],
+        model_to_split_mapping: List[Tuple[int, str, str, str]],
+        extra: dict,
+    ):
         """Built-in call method.
 
         Args:
@@ -58,12 +57,13 @@ class DatasetSample(Signal):
     This particular class is used to get a given point from the Dataset.
     """
 
-    def __call__(self,
-                 models: List[Model],
-                 datasets: List[Dataset],
-                 model_to_split_mapping: List[Tuple[int, str, str, str]],
-                 extra: dict
-                 ):
+    def __call__(
+        self,
+        models: List[Model],
+        datasets: List[Dataset],
+        model_to_split_mapping: List[Tuple[int, str, str, str]],
+        extra: dict,
+    ):
         """Built-in call method.
 
         Args:
@@ -83,9 +83,17 @@ class DatasetSample(Signal):
             The sample point from the dataset.
         """
 
-        dataset_index, split_name, input_feature, output_feature = model_to_split_mapping[extra["model_num"]]
-        x = datasets[dataset_index].get_feature(split_name, input_feature)[extra["point_num"]]
+        (
+            dataset_index,
+            split_name,
+            input_feature,
+            output_feature,
+        ) = model_to_split_mapping[extra["model_num"]]
+        x = datasets[dataset_index].get_feature(split_name, input_feature)[
+            extra["point_num"]
+        ]
         return x
+
 
 ########################################################################################################################
 # MODEL_LOGIT CLASS
@@ -98,12 +106,13 @@ class ModelLogits(Signal):
     This particular class is used to get the output of a model.
     """
 
-    def __call__(self,
-                 models: List[Model],
-                 datasets: List[Dataset],
-                 model_to_split_mapping: List[Tuple[int, str, str, str]],
-                 extra: dict
-                 ):
+    def __call__(
+        self,
+        models: List[Model],
+        datasets: List[Dataset],
+        model_to_split_mapping: List[Tuple[int, str, str, str]],
+        extra: dict,
+    ):
         """Built-in call method.
 
         Args:
@@ -127,11 +136,17 @@ class ModelLogits(Signal):
         # Compute the signal for each model
         for k, model in enumerate(models):
             # Extract the features to be used
-            dataset_index, split_name, input_feature, output_feature = model_to_split_mapping[k]
+            (
+                dataset_index,
+                split_name,
+                input_feature,
+                output_feature,
+            ) = model_to_split_mapping[k]
             x = datasets[dataset_index].get_feature(split_name, input_feature)
             # Compute the signal
             results.append(model.get_logits(x))
         return results
+
 
 ########################################################################################################################
 # MODEL_INTERMEDIATE_OUTPUT CLASS
@@ -145,12 +160,13 @@ class ModelIntermediateOutput(Signal):
     This particular class is used to get the value of an intermediate layer of model.
     """
 
-    def __call__(self,
-                 models: List[Model],
-                 datasets: List[Dataset],
-                 model_to_split_mapping: List[Tuple[int, str, str, str]],
-                 extra: dict
-                 ):
+    def __call__(
+        self,
+        models: List[Model],
+        datasets: List[Dataset],
+        model_to_split_mapping: List[Tuple[int, str, str, str]],
+        extra: dict,
+    ):
         """Built-in call method.
 
         Args:
@@ -170,18 +186,24 @@ class ModelIntermediateOutput(Signal):
             The signal value.
         """
 
-        if 'layers' not in list(extra):
+        if "layers" not in list(extra):
             raise TypeError('extra parameter "layers" is required')
 
         results = []
         # Compute the signal for each model
         for k, model in enumerate(models):
             # Extract the features to be used
-            dataset_index, split_name, input_feature, output_feature = model_to_split_mapping[k]
+            (
+                dataset_index,
+                split_name,
+                input_feature,
+                output_feature,
+            ) = model_to_split_mapping[k]
             x = datasets[dataset_index].get_feature(split_name, input_feature)
             # Compute the signal
             results.append(model.get_intermediate_outputs(extra["layers"], x))
         return results
+
 
 ########################################################################################################################
 # MODEL_LOSS CLASS
@@ -195,12 +217,13 @@ class ModelLoss(Signal):
     This particular class is used to get the loss of a model.
     """
 
-    def __call__(self,
-                 models: List[Model],
-                 datasets: List[Dataset],
-                 model_to_split_mapping: List[Tuple[int, str, str, str]],
-                 extra: dict
-                 ):
+    def __call__(
+        self,
+        models: List[Model],
+        datasets: List[Dataset],
+        model_to_split_mapping: List[Tuple[int, str, str, str]],
+        extra: dict,
+    ):
         """Built-in call method.
 
         Args:
@@ -224,7 +247,12 @@ class ModelLoss(Signal):
         # Compute the signal for each model
         for k, model in enumerate(models):
             # Extract the features to be used
-            dataset_index, split_name, input_feature, output_feature = model_to_split_mapping[k]
+            (
+                dataset_index,
+                split_name,
+                input_feature,
+                output_feature,
+            ) = model_to_split_mapping[k]
             x = datasets[dataset_index].get_feature(split_name, input_feature)
 
             # Check if output feature has been provided, else pass None
@@ -236,6 +264,7 @@ class ModelLoss(Signal):
             # Compute the signal for each sample
             results.append(model.get_loss(x, y))
         return results
+
 
 ########################################################################################################################
 # MODEL_GRADIENT CLASS
@@ -249,12 +278,13 @@ class ModelGradient(Signal):
     This particular class is used to get the gradient of a model.
     """
 
-    def __call__(self,
-                 models: List[Model],
-                 datasets: List[Dataset],
-                 model_to_split_mapping: List[Tuple[int, str, str, str]],
-                 extra: dict
-                 ):
+    def __call__(
+        self,
+        models: List[Model],
+        datasets: List[Dataset],
+        model_to_split_mapping: List[Tuple[int, str, str, str]],
+        extra: dict,
+    ):
         """Built-in call method.
 
         Args:
@@ -278,15 +308,16 @@ class ModelGradient(Signal):
         # Compute the signal for each model
         for k, model in enumerate(models):
             # Extract the features to be used
-            dataset_index, split_name, input_feature, output_feature = model_to_split_mapping[k]
+            (
+                dataset_index,
+                split_name,
+                input_feature,
+                output_feature,
+            ) = model_to_split_mapping[k]
             x = datasets[dataset_index].get_feature(split_name, input_feature)
             y = datasets[dataset_index].get_feature(split_name, output_feature)
-            # Compute the signal for each sample
-            for (sample_x, sample_y) in zip(x, y):
-                xx, yy = np.expand_dims(sample_x, axis=0), np.expand_dims(sample_y, axis=0)
-                results.append(model.get_grad(xx, yy))
+            results.append(model.get_grad(x, y))
         return results
-
 
 
 ########################################################################################################################
@@ -301,12 +332,13 @@ class GroupInfo(Signal):
     This particular class is used to get the group membership of data records.
     """
 
-    def __call__(self,
-                 models: List[Model],
-                 datasets: List[Dataset],
-                 model_to_split_mapping: List[Tuple[int, str, str, str]],
-                 extra: dict
-                 ):
+    def __call__(
+        self,
+        models: List[Model],
+        datasets: List[Dataset],
+        model_to_split_mapping: List[Tuple[int, str, str, str]],
+        extra: dict,
+    ):
         """Built-in call method.
 
         Args:
@@ -340,18 +372,14 @@ class ModelGradientNorm(Signal):
     Dataset.
     This particular class is used to get the gradient norm of a model.
     """
-    def __init__(self,is_features=True,layer_number=10) -> None:
-        super().__init__()
-        self.is_features = is_features
-        self.layer_number = layer_number
 
-
-    def __call__(self,
-                 models: List[Model],
-                 datasets: List[Dataset],
-                 model_to_split_mapping: List[Tuple[int, str, str, str]],
-                 extra: dict
-                 ):
+    def __call__(
+        self,
+        models: List[Model],
+        datasets: List[Dataset],
+        model_to_split_mapping: List[Tuple[int, str, str, str]],
+        extra: dict,
+    ):
         """Built-in call method.
 
         Args:
@@ -375,9 +403,17 @@ class ModelGradientNorm(Signal):
         # Compute the signal for each model
         for k, model in enumerate(models):
             # Extract the features to be used
-            dataset_index, split_name, input_feature, output_feature = model_to_split_mapping[k]
+            (
+                dataset_index,
+                split_name,
+                input_feature,
+                output_feature,
+            ) = model_to_split_mapping[k]
             x = datasets[dataset_index].get_feature(split_name, input_feature)
             y = datasets[dataset_index].get_feature(split_name, output_feature)
-            results.append(model.get_gradnorm(x, y,is_features=self.is_features,layer_number=self.layer_number))
+            results.append(
+                model.get_gradnorm(
+                    x, y
+                )
+            )
         return results
-

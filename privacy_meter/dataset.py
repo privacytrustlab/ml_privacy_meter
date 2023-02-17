@@ -1,5 +1,5 @@
 from itertools import product
-from typing import Union, Dict
+from typing import Dict, Union
 
 import numpy as np
 
@@ -14,14 +14,15 @@ class Dataset:
     input/output features, and to split a dataset easily.
     """
 
-    def __init__(self,
-                 data_dict: dict,
-                 default_input: str,
-                 default_output: str,
-                 default_group: str=None,
-                 preproc_fn_dict: dict = None,
-                 preprocessed: bool = False
-                 ):
+    def __init__(
+        self,
+        data_dict: dict,
+        default_input: str,
+        default_output: str,
+        default_group: str = None,
+        preproc_fn_dict: dict = None,
+        preprocessed: bool = False,
+    ):
         """Constructor
 
         Args:
@@ -29,7 +30,7 @@ class Dataset:
             default_input: The key of the data_dict that should be used by default to get the input of a model.
             default_output: The key of the data_dict that should be used by default to get the expected output
                 of a model.
-            default_group: The key of the data_dict that shouuld be used by default to get the group of the data points. 
+            default_group: The key of the data_dict that shouuld be used by default to get the group of the data points.
                 This is to contruct class dependent threshold.
             preproc_fn_dict: Contains optional preprocessing functions for each feature.
             preprocessed: Indicates if the preprocessing of preproc_fn_dict has already been applied.
@@ -59,12 +60,7 @@ class Dataset:
                 fn = self.preproc_fn_dict[feature]
                 self.data_dict[split][feature] = fn(self.data_dict[split][feature])
 
-    def get_feature(self,
-                    split_name: str,
-                    feature_name: str,
-                    indices: list = None
-                    ):
-
+    def get_feature(self, split_name: str, feature_name: str, indices: list = None):
         """Returns a specific feature from samples of a specific split.
 
         Args:
@@ -78,11 +74,11 @@ class Dataset:
 
         # Two placeholders can be used to trigger either the default input or the default output, as specified during
         # object creation
-        if feature_name == '<default_input>':
+        if feature_name == "<default_input>":
             feature_name = self.default_input
-        elif feature_name == '<default_output>':
+        elif feature_name == "<default_output>":
             feature_name = self.default_output
-        elif feature_name == '<default_group>':
+        elif feature_name == "<default_group>":
             feature_name = self.default_group
 
         # If 'indices' is not specified, returns the entire array. Else just return those indices
@@ -91,15 +87,16 @@ class Dataset:
         else:
             return self.data_dict[split_name][feature_name][indices]
 
-    def subdivide(self,
-                  num_splits: int,
-                  split_names: list = None,
-                  method: str = 'independent',
-                  split_size: Union[int, Dict[str, int]] = None,
-                  delete_original: bool = False,
-                  in_place: bool = True,
-                  return_results: bool = False
-                  ):
+    def subdivide(
+        self,
+        num_splits: int,
+        split_names: list = None,
+        method: str = "independent",
+        split_size: Union[int, Dict[str, int]] = None,
+        delete_original: bool = False,
+        in_place: bool = True,
+        return_results: bool = False,
+    ):
         """Subdivides the splits contained in split_names into sub-splits, e.g. for shadow model training.
 
         Args:
@@ -131,27 +128,44 @@ class Dataset:
         for split in split_names:
 
             if split_size is not None:
-                parsed_split_size = split_size if isinstance(split_size, int) else split_size[split]
+                parsed_split_size = (
+                    split_size if isinstance(split_size, int) else split_size[split]
+                )
 
             # If method is random, then each sub-split is a random subset of the original split.
-            if method == 'random':
-                assert split_size is not None, 'Argument split_size is required when method is "random" or "hybrid"'
-                indices = np.random.randint(self.data_dict[split][self.features[0]].shape[0], size=(num_splits, parsed_split_size))
+            if method == "random":
+                assert (
+                    split_size is not None
+                ), 'Argument split_size is required when method is "random" or "hybrid"'
+                indices = np.random.randint(
+                    self.data_dict[split][self.features[0]].shape[0],
+                    size=(num_splits, parsed_split_size),
+                )
 
             # If method is independent, then the sub-splits are a partition of the original split.
-            elif method == 'independent':
+            elif method == "independent":
                 indices = np.arange(self.data_dict[split][self.features[0]].shape[0])
                 np.random.shuffle(indices)
                 indices = np.array_split(indices, num_splits)
 
             # If method is hybrid, then each sub-split is a random subset of the original split, with the guarantee that
             # the 1st one is not overlapping with the others
-            elif method == 'hybrid':
-                assert split_size is not None, 'Argument split_size is required when method is "random" or "hybrid"'
-                available_indices = np.arange(self.data_dict[split][self.features[0]].shape[0])
-                indices_a = np.random.choice(available_indices, size=(1, parsed_split_size), replace=False)
+            elif method == "hybrid":
+                assert (
+                    split_size is not None
+                ), 'Argument split_size is required when method is "random" or "hybrid"'
+                available_indices = np.arange(
+                    self.data_dict[split][self.features[0]].shape[0]
+                )
+                indices_a = np.random.choice(
+                    available_indices, size=(1, parsed_split_size), replace=False
+                )
                 available_indices = np.setdiff1d(available_indices, indices_a.flatten())
-                indices_b = np.random.choice(available_indices, size=(num_splits-1, parsed_split_size), replace=True)
+                indices_b = np.random.choice(
+                    available_indices,
+                    size=(num_splits - 1, parsed_split_size),
+                    replace=True,
+                )
                 indices = np.concatenate((indices_a, indices_b))
 
             else:
@@ -160,14 +174,18 @@ class Dataset:
             for split_n in range(num_splits):
                 # Fill the dictionary if in_place is True
                 if in_place:
-                    self.data_dict[f'{split}{split_n:03d}'] = {}
+                    self.data_dict[f"{split}{split_n:03d}"] = {}
                     for feature in self.features:
-                        self.data_dict[f'{split}{split_n:03d}'][feature] = self.data_dict[split][feature][indices[split_n]]
+                        self.data_dict[f"{split}{split_n:03d}"][
+                            feature
+                        ] = self.data_dict[split][feature][indices[split_n]]
                 # Create new dictionaries if return_results is True
                 if return_results:
-                    new_datasets_dict[split_n][f'{split}'] = {}
+                    new_datasets_dict[split_n][f"{split}"] = {}
                     for feature in self.features:
-                        new_datasets_dict[split_n][f'{split}'][feature] = self.data_dict[split][feature][indices[split_n]]
+                        new_datasets_dict[split_n][f"{split}"][
+                            feature
+                        ] = self.data_dict[split][feature][indices[split_n]]
 
             # delete_original indicates if the original split should be deleted.
             if delete_original:
@@ -185,7 +203,7 @@ class Dataset:
                     default_output=self.default_output,
                     default_group=self.default_group,
                     preproc_fn_dict=self.preproc_fn_dict,
-                    preprocessed=True
+                    preprocessed=True,
                 )
                 for i in range(num_splits)
             ]
@@ -196,9 +214,9 @@ class Dataset:
         """
         txt = [
             f'{" DATASET OBJECT ":=^48}',
-            f'Splits            = {self.splits}',
-            f'Features          = {self.features}',
-            f'Default features  = {self.default_input} --> {self.default_output}',
-            '=' * 48
+            f"Splits            = {self.splits}",
+            f"Features          = {self.features}",
+            f"Default features  = {self.default_input} --> {self.default_output}",
+            "=" * 48,
         ]
-        return '\n'.join(txt)
+        return "\n".join(txt)

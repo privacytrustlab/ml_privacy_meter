@@ -28,4 +28,4 @@ def default_quantile():
     Returns:
         arr: Numpy array, indicating the default fprs
     """
-    return np.logspace(-5,0,100)
+    return np.logspace(-5, 0, 100)
