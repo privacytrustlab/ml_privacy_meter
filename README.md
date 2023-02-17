@@ -41,14 +41,18 @@ Privacy Meter supports Python `>=3.6` and works with `tensorflow>=2.4.0` and `to
 You can install `privacy-meter` using `pip` for the latest stable version of the tool:
 
 ```bash
-pip install privacy-meter
+pip install git+https://github.com/privacytrustlab/ml_privacy_meter.git
 ```
 
-Alternatively, one can install it via conda:
+<!-- ```bash
+pip install privacy-meter
+``` -->
+
+<!-- Alternatively, one can install it via conda:
 
 ```bash
 conda install privacy-meter
-```
+``` -->
 
 ## Quickstart
 
