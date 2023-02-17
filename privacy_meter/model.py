@@ -534,6 +534,7 @@ class PytorchModelTensor(Model):
         self.model_obj.to(self.device)
         logits = self.model_obj(batch_samples).detach().numpy()
         self.model_obj.to("cpu")
+
         return logits
 
     def get_loss(self, batch_samples, batch_labels, per_point=True):
@@ -552,6 +553,7 @@ class PytorchModelTensor(Model):
         with torch.no_grad():
             if per_point:
                 loss_list = []
+
                 batched_samples = torch.split(batch_samples, self.batch_size)
                 batched_labels = torch.split(batch_labels, self.batch_size)
                 for x, y in zip(batched_samples, batched_labels):
@@ -647,9 +649,11 @@ class PytorchModelTensor(Model):
             )
 
             self.grad_sampler_model.zero_grad()
+            
         grad_norm = np.concatenate(grad_norm)
         self.model_obj.to("cpu")
         self.grad_sampler_model.to("cpu")
+
         return grad_norm
 
     def get_intermediate_outputs(self, layers, batch_samples, forward_pass=True):
