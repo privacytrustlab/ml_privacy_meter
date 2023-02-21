@@ -1,8 +1,8 @@
 # Project Name
 
-This repository contains pointers to the implementations of research papers and code for generating all the figures and results presented in the papers.
+We provide ways to reproduce the existing attacks' results in published papers in the [benchmark folder](../benchmark/README.md). Additionally, this file contains pointers to the code for generating all figures in the papers published by our group.
 
-## Table of Implementations
+## Implementations
 
 | Paper Title | Code Implementation |
 | --- | --- |
