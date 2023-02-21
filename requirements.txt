@@ -2,7 +2,7 @@ tensorflow>=2.4.0
 torch==1.13.0
 matplotlib==3.6.3
 numpy==1.24.2
-scikit-learn==67.1.0
+scikit-learn==1.2.1
 seaborn==0.12.2
 setuptools
 scipy==1.10.0

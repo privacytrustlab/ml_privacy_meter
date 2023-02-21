@@ -1,7 +1,7 @@
 """This test is for testing functions in datasets.py."""
 import sys
 
-sys.path.append("../../experiments")
+sys.path.append("../experiments")
 import os
 
 import numpy as np

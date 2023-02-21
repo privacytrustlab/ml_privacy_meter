@@ -4,7 +4,7 @@ import sys
 import numpy as np
 import pytest
 
-sys.path.append("../../experiments")
+sys.path.append("../experiments")
 from util import (
     get_split,
     load_models_by_conditions,

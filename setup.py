@@ -31,7 +31,7 @@ setup(
     maintainer_email="hongyan@comp.nus.edu.sg",
     license="MIT",
     packages=["privacy_meter"],
-    python_requires=">=3.9.0",
+    python_requires=">=3.8.0",
     include_package_data=True,
     classifiers=[
         "License :: OSI Approved :: MIT License",
