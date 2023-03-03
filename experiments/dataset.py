@@ -68,3 +68,15 @@ def get_dataset_subset(dataset: torchvision.datasets, index: List(int)):
     targets = list(np.array(dataset.targets)[index])
     targets = torch.tensor(targets, dtype=torch.long)
     return data, targets
+
+
+def get_dataloader(dataset: torchvision.datasets, batch_size: int, loader_type='torch', shuffle: bool=True):
+    if loader_type == 'torch':
+        return torch.utils.data.DataLoader(dataset,
+            batch_size=batch_size,
+            shuffle=shuffle,
+            num_workers=4,
+            pin_memory=True,
+            persistent_workers=True,
+            prefetch_factor=16
+        )

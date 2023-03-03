@@ -11,7 +11,7 @@ import torchvision
 from sklearn.model_selection import train_test_split
 from torch import nn
 
-from dataset import get_dataset_subset
+from dataset import get_dataset_subset, get_dataloader
 from models import get_model
 
 
@@ -388,26 +388,10 @@ def prepare_models(
     for split in range(len(data_split["split"])):
         meta_data = {}
         baseline_time = time.time()
-        train_loader = torch.utils.data.DataLoader(
-            torch.utils.data.Subset(
-                dataset, data_split["split"][split]["train"]),
-            batch_size=configs["batch_size"],
-            shuffle=True,
-            num_workers=4,
-            pin_memory=True,
-            persistent_workers=True,
-            prefetch_factor=16
-        )
-        test_loader = torch.utils.data.DataLoader(
-            torch.utils.data.Subset(
-                dataset, data_split["split"][split]["test"]),
-            batch_size=configs["test_batch_size"],
-            shuffle=False,
-            num_workers=4,
-            pin_memory=True,
-            persistent_workers=True,
-            prefetch_factor=16
-        )
+        train_loader = get_dataloader(torch.utils.data.Subset(
+                dataset, data_split["split"][split]["train"]), batch_size=configs["batch_size"], shuffle=True)
+        test_loader = get_dataloader(torch.utils.data.Subset(
+                dataset, data_split["split"][split]["test"]), batch_size=configs["test_batch_size"], shuffle=False)
 
         print(50 * "-")
         print(
@@ -584,15 +568,8 @@ def get_info_source_reference_attack(
         print(f"Training  {reference_idx}-th reference model")
         start_time = time.time()
 
-        reference_loader = torch.utils.data.DataLoader(
-            torch.utils.data.Subset(dataset, reference_data_idx),
-            batch_size=configs["batch_size"],
-            shuffle=True,
-            num_workers=4,
-            pin_memory=True,
-            persistent_workers=True,
-            prefetch_factor=16
-        )
+        reference_loader = get_dataloader(torch.utils.data.Subset(dataset, reference_data_idx), batch_size=configs["batch_size"], shuffle=True)
+
         reference_model = get_model(configs["model_name"])
         reference_model = train(reference_model, reference_loader, configs)
         # Test performance on the training dataset and test dataset
