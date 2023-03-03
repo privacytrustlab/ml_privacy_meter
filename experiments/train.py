@@ -5,11 +5,14 @@ import torch
 from torch import nn
 
 from util import get_optimizer
+import time
 
 # Train Function
 
 
-def train(model: torch.nn.Module, train_loader: torch.utils.data.DataLoader, configs: dict):
+def train(
+    model: torch.nn.Module, train_loader: torch.utils.data.DataLoader, configs: dict
+):
     """Train the model based on on the train loader
     Args:
         model(nn.Module): Model for evaluation.
@@ -33,12 +36,14 @@ def train(model: torch.nn.Module, train_loader: torch.utils.data.DataLoader, con
     epochs = configs.get("epochs", 1)
     # Loop over each epoch
     for epoch_idx in range(epochs):
+        start_time = time.time()
         train_loss = 0
         # Loop over the training set
         for data, target in train_loader:
             # Move data to the device
             data, target = data.to(device, non_blocking=True), target.to(
-                device, non_blocking=True)
+                device, non_blocking=True
+            )
             # Cast target to long tensor
             target = target.long()
 
@@ -61,7 +66,8 @@ def train(model: torch.nn.Module, train_loader: torch.utils.data.DataLoader, con
 
         # Print the epoch and loss summary
         print(f"Epoch: {epoch_idx+1}/{epochs} |", end=" ")
-        print(f"Loss: {train_loss/len(train_loader):.8f}")
+        print(f"Loss: {train_loss/len(train_loader):.8f} ", end=" ")
+        print(f"One step uses {time.time() - start_time:.2f} seconds")
 
     # Move the model back to the CPU
     model.to("cpu")

@@ -241,8 +241,7 @@ def prepare_datasets(dataset_size: int, num_datasets: int, configs: dict):
         selected_index = np.random.choice(
             all_index, train_size + test_size, replace=False
         )
-        train_index, test_index = train_test_split(
-            selected_index, test_size=test_size)
+        train_index, test_index = train_test_split(selected_index, test_size=test_size)
         audit_index = get_split(
             all_index,
             selected_index,
@@ -253,8 +252,7 @@ def prepare_datasets(dataset_size: int, num_datasets: int, configs: dict):
             {"train": train_index, "test": test_index, "audit": audit_index}
         )
 
-    dataset_splits = {"split": index_list,
-                      "split_method": configs["split_method"]}
+    dataset_splits = {"split": index_list, "split_method": configs["split_method"]}
     return dataset_splits
 
 
@@ -359,6 +357,39 @@ def prepare_datasets_for_sample_privacy_risk(
     return dataset_splits
 
 
+def prepare_datasets_for_online_attack(
+    dataset_size: int,
+    num_models: int,
+    configs: dict,
+    keep_ratio: float,
+    model_metadata_dict: dict,
+) -> dict:
+    """Prepare the datasets for online attacks. Each data point will be randomly chosen by half of the models with probability keep_ratio and the rest of the models will be trained on the rest of the dataset.
+    The partioning method is from https://github.com/tensorflow/privacy/blob/master/research/mi_lira_2021/train.py
+    Args:
+        dataset_size (int): Size of the whole dataset
+        num_models (int): Number of additional target models
+        configs (dict): Data split configuration
+        keep_ratio (float): Indicate the probability of keeping the target point for training the model.
+        model_metadata_dict (dict): Metadata for existing models.
+
+    Returns:
+        dict: Data split information.
+        list: List of boolean indicating whether the model is trained on the target point.
+    """
+    index_list = []
+    all_index = np.arange(dataset_size)
+    selected_matrix = np.random.uniform(0, 1, size=(num_models, dataset_size))
+    order = selected_matrix.argsort(0)
+    keep = order < int(keep_ratio * num_models)
+    for i in range(num_models):
+        index_list.append(
+            {"train": all_index[keep[i]], "test": all_index[~keep[i]], "audit": []}
+        )
+    dataset_splits = {"split": index_list, "split_method": f"random_{keep_ratio}"}
+    return dataset_splits, keep
+
+
 def prepare_models(
     log_dir: str,
     dataset: torchvision.datasets,
@@ -388,10 +419,16 @@ def prepare_models(
     for split in range(len(data_split["split"])):
         meta_data = {}
         baseline_time = time.time()
-        train_loader = get_dataloader(torch.utils.data.Subset(
-                dataset, data_split["split"][split]["train"]), batch_size=configs["batch_size"], shuffle=True)
-        test_loader = get_dataloader(torch.utils.data.Subset(
-                dataset, data_split["split"][split]["test"]), batch_size=configs["test_batch_size"], shuffle=False)
+        train_loader = get_dataloader(
+            torch.utils.data.Subset(dataset, data_split["split"][split]["train"]),
+            batch_size=configs["batch_size"],
+            shuffle=True,
+        )
+        test_loader = get_dataloader(
+            torch.utils.data.Subset(dataset, data_split["split"][split]["test"]),
+            batch_size=configs["test_batch_size"],
+            shuffle=False,
+        )
 
         print(50 * "-")
         print(
@@ -403,8 +440,7 @@ def prepare_models(
         model = train(get_model(configs["model_name"]), train_loader, configs)
         # Test performance on the training dataset and test dataset
         test_loss, test_acc = inference(model, test_loader, configs["device"])
-        train_loss, train_acc = inference(
-            model, train_loader, configs["device"])
+        train_loss, train_acc = inference(model, train_loader, configs["device"])
         model_list.append(copy.deepcopy(model))
         logging.info(
             "Prepare %s-th target model costs %s seconds ",
@@ -457,11 +493,9 @@ def get_info_source_population_attack(
         List(nn.Module): List of target models we want to audit
         List(nn.Module): List of reference models (which is the target model based on population attack)
     """
-    train_data, train_targets = get_dataset_subset(
-        dataset, data_split["train"])
+    train_data, train_targets = get_dataset_subset(dataset, data_split["train"])
     test_data, test_targets = get_dataset_subset(dataset, data_split["test"])
-    audit_data, audit_targets = get_dataset_subset(
-        dataset, data_split["audit"])
+    audit_data, audit_targets = get_dataset_subset(dataset, data_split["audit"])
     target_dataset = Dataset(
         data_dict={
             "train": {"x": train_data, "y": train_targets},
@@ -515,8 +549,7 @@ def get_info_source_reference_attack(
     """
 
     # Construct the target dataset and target models
-    train_data, train_targets = get_dataset_subset(
-        dataset, data_split["train"])
+    train_data, train_targets = get_dataset_subset(dataset, data_split["train"])
     test_data, test_targets = get_dataset_subset(dataset, data_split["test"])
     target_dataset = Dataset(
         data_dict={
@@ -555,8 +588,7 @@ def get_info_source_reference_attack(
     ]
 
     # Train additional reference models
-    num_reference_models = configs["num_reference_models"] - \
-        len(reference_models)
+    num_reference_models = configs["num_reference_models"] - len(reference_models)
     for reference_idx in range(num_reference_models):
         reference_data_idx = get_split(
             data_split["audit"],
@@ -568,13 +600,16 @@ def get_info_source_reference_attack(
         print(f"Training  {reference_idx}-th reference model")
         start_time = time.time()
 
-        reference_loader = get_dataloader(torch.utils.data.Subset(dataset, reference_data_idx), batch_size=configs["batch_size"], shuffle=True)
+        reference_loader = get_dataloader(
+            torch.utils.data.Subset(dataset, reference_data_idx),
+            batch_size=configs["batch_size"],
+            shuffle=True,
+        )
 
         reference_model = get_model(configs["model_name"])
         reference_model = train(reference_model, reference_loader, configs)
         # Test performance on the training dataset and test dataset
-        train_loss, train_acc = inference(
-            model, reference_loader, configs["device"])
+        train_loss, train_acc = inference(model, reference_loader, configs["device"])
 
         logging.info(
             f"Prepare {reference_idx}-th reference model costs {time.time()-start_time} seconds: Train accuracy (on auditing dataset) {train_acc}, Train Loss {train_loss}"
@@ -766,5 +801,4 @@ def prepare_priavcy_risk_report(
                 f"{len(audit_results)} results are not enough for {configs['privacy_game']})"
             )
     else:
-        raise NotImplementedError(
-            f"{configs['privacy_game']} is not implemented yet")
+        raise NotImplementedError(f"{configs['privacy_game']} is not implemented yet")

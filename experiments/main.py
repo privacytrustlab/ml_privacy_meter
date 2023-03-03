@@ -5,19 +5,22 @@ import os
 import pickle
 import time
 from pathlib import Path
-
+from scipy.stats import norm
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import seaborn as sns
 import torch
 import yaml
+from sklearn.metrics import auc, roc_curve
+
 from core import (
     load_dataset_for_existing_models,
     load_existing_models,
     load_existing_target_model,
     prepare_datasets,
     prepare_datasets_for_sample_privacy_risk,
+    prepare_datasets_for_online_attack,
     prepare_information_source,
     prepare_models,
     prepare_priavcy_risk_report,
@@ -48,8 +51,7 @@ def setup_log(name: str, save_file: bool) -> logging.Logger:
     my_logger = logging.getLogger(name)
     my_logger.setLevel(logging.INFO)
     if save_file:
-        log_format = logging.Formatter(
-            "%(asctime)s %(levelname)-8s %(message)s")
+        log_format = logging.Formatter("%(asctime)s %(levelname)-8s %(message)s")
         filename = f"log_{name}.log"
         log_handler = logging.FileHandler(filename, mode="w")
         log_handler.setLevel(logging.INFO)
@@ -60,12 +62,11 @@ def setup_log(name: str, save_file: bool) -> logging.Logger:
 
 
 if __name__ == "__main__":
-
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--cf",
         type=str,
-        default="config_samples.yaml",
+        default="config_models_lira.yaml",
         help="Yaml file which contains the configurations",
     )
 
@@ -100,13 +101,15 @@ if __name__ == "__main__":
         model_metadata_list = {"model_metadata": {}, "current_idx": 0}
     # Load the dataset
     baseline_time = time.time()
-    dataset = get_dataset(configs["data"]["dataset"],
-                          configs["data"]["data_dir"])
+    dataset = get_dataset(configs["data"]["dataset"], configs["data"]["data_dir"])
 
     privacy_game = configs["audit"]["privacy_game"]
 
     # Check the auditing game.
-    if privacy_game in ["avg_privacy_loss_training_algo", "privacy_loss_model"]:
+    if (
+        privacy_game in ["avg_privacy_loss_training_algo", "privacy_loss_model"]
+        and "online" not in configs["audit"]["algorithm"]
+    ):
         # Load the trained models from disk
         if model_metadata_list["current_idx"] > 0:
             target_model_idx_list = load_existing_target_model(
@@ -155,8 +158,7 @@ if __name__ == "__main__":
             *data_split_info["split"],
             *trained_target_dataset_list,
         ]
-        target_model_idx_list = [
-            *new_target_model_idx_list, *target_model_idx_list]
+        target_model_idx_list = [*new_target_model_idx_list, *target_model_idx_list]
 
         logger.info(
             "Prepare the target model costs %0.5f seconds", time.time() - baseline_time
@@ -264,7 +266,10 @@ if __name__ == "__main__":
             in_model_idx_list = [*new_matched_in_idx, *in_model_idx_list]
         in_model_list_pm = [
             PytorchModelTensor(
-                model_obj=model, loss_fn=nn.CrossEntropyLoss(), batch_size=1000
+                model_obj=model,
+                loss_fn=nn.CrossEntropyLoss(),
+                batch_size=1000,
+                device=configs["audit"]["device"],
             )
             for model in model_in_list
         ]
@@ -274,8 +279,7 @@ if __name__ == "__main__":
             )
         elif configs["data"]["split_method"] == "leave_one_out":
             out_model_idx_list = load_leave_one_out_models(
-                model_metadata_list, [configs["train"]
-                                      ["data_idx"]], in_model_idx_list
+                model_metadata_list, [configs["train"]["data_idx"]], in_model_idx_list
             )
         else:
             raise ValueError("The split method is not supported")
@@ -313,30 +317,28 @@ if __name__ == "__main__":
 
         out_model_list_pm = [
             PytorchModelTensor(
-                model_obj=model, loss_fn=nn.CrossEntropyLoss(), batch_size=1000
+                model_obj=model,
+                loss_fn=nn.CrossEntropyLoss(),
+                batch_size=1000,
+                device=configs["audit"]["device"],
             )
             for model in model_out_list
         ]
 
         # Test the models' performance on the data indicated by the audit.idx
-        data, targets = get_dataset_subset(
-            dataset, [configs["audit"]["data_idx"]])
+        data, targets = get_dataset_subset(dataset, [configs["audit"]["data_idx"]])
         in_signal = np.array(
-            [model.get_loss(data, targets).item()
-             for model in in_model_list_pm]
+            [model.get_loss(data, targets).item() for model in in_model_list_pm]
         )
         out_signal = np.array(
-            [model.get_loss(data, targets).item()
-             for model in out_model_list_pm]
+            [model.get_loss(data, targets).item() for model in out_model_list_pm]
         )
 
         # Rescale the loss
         in_signal = in_signal + 1e-17  # avoid nan
-        in_signal = np.log(
-            np.divide(np.exp(-in_signal), (1 - np.exp(-in_signal))))
+        in_signal = np.log(np.divide(np.exp(-in_signal), (1 - np.exp(-in_signal))))
         out_signal = out_signal + 1e-17  # avoid nan
-        out_signal = np.log(
-            np.divide(np.exp(-out_signal), (1 - np.exp(-out_signal))))
+        out_signal = np.log(np.divide(np.exp(-out_signal), (1 - np.exp(-out_signal))))
 
         # Generate the privacy risk report
         labels = np.concatenate(
@@ -362,8 +364,7 @@ if __name__ == "__main__":
         plt.grid()
         plt.xlabel("Signal value")
         plt.ylabel("Number of Models")
-        plt.title(
-            f"Signal histogram for data point {configs['audit']['data_idx']}")
+        plt.title(f"Signal histogram for data point {configs['audit']['data_idx']}")
         plt.savefig(
             f"{log_dir}/{configs['audit']['report_log']}/individual_pr_{configs['train']['data_idx']}_{configs['audit']['data_idx']}.png"
         )
@@ -403,5 +404,130 @@ if __name__ == "__main__":
             bbox=dict(facecolor="white", alpha=0.5),
         )
         plt.savefig(
-            fname=f"{log_dir}/{configs['audit']['report_log']}/individual_pr_roc_{configs['train']['data_idx']}_{configs['audit']['data_idx']}.png", dpi=1000)
+            fname=f"{log_dir}/{configs['audit']['report_log']}/individual_pr_roc_{configs['train']['data_idx']}_{configs['audit']['data_idx']}.png",
+            dpi=1000,
+        )
+        plt.clf()
+
+    elif "online" in configs["audit"]["algorithm"]:
+        # TODO: split the dataset
+        # construct a set of datasets
+
+        data_split_info, keep_matrix = prepare_datasets_for_online_attack(
+            len(dataset),
+            (
+                configs["train"]["num_in_models"]
+                + configs["train"]["num_out_models"]
+                + configs["train"]["num_target_model"]
+            ),
+            configs["data"],
+            configs["train"]["num_in_models"]
+            / (configs["train"]["num_in_models"] + configs["train"]["num_out_models"]),
+            model_metadata_list,
+        )
+
+        # (model_list, model_metadata_dict, trained_model_idx_list) = prepare_models(
+        #     log_dir,
+        #     dataset,
+        #     data_split_info,
+        #     configs["train"],
+        #     model_metadata_list,
+        # )
+        data, targets = get_dataset_subset(dataset, np.arange(len(dataset)))
+        signals = []
+        for idx in [0, 1, 2, 3, 4, 5, 6]:
+            print("load the model")
+            model_pm = PytorchModelTensor(
+                model_obj=load_existing_models(
+                    model_metadata_list,
+                    [idx],
+                    configs["train"]["model_name"],
+                )[0],
+                loss_fn=nn.CrossEntropyLoss(),
+                device=configs["audit"]["device"],
+                batch_size=10000,
+            )
+            print("compute the signal")
+            signals.append(model_pm.get_loss(data, targets))
+
+        # Get the logits for each model
+        signals = np.array(signals)
+        signals = signals + 1e-45
+        signals = np.log(np.divide(np.exp(-signals), (1 - np.exp(-signals))))
+
+        # target model
+        target_signal = signals[-1:, :]
+        reference_signals = signals[:-1, :]
+        reference_keep_matrix = keep_matrix[:-1, :]
+        membership = keep_matrix[-1:, :]
+
+        in_signals = []
+        out_signals = []
+
+        for data_idx in range(len(dataset)):
+            in_signals.append(
+                reference_signals[reference_keep_matrix[:, data_idx], data_idx]
+            )
+            out_signals.append(
+                reference_signals[~reference_keep_matrix[:, data_idx], data_idx]
+            )
+
+        in_size = min(min(map(len, in_signals)), configs["train"]["num_in_models"])
+        out_size = min(min(map(len, out_signals)), configs["train"]["num_out_models"])
+
+        in_signals = np.array([x[:in_size] for x in in_signals])
+        out_signals = np.array([x[:out_size] for x in out_signals])
+
+        mean_in = np.median(in_signals, 1)
+        mean_out = np.median(out_signals, 1)
+        fix_variance = True
+        if fix_variance:
+            std_in = np.std(in_signals)
+            std_out = np.std(in_signals)
+        else:
+            std_in = np.std(in_signals, 1)
+            std_out = np.std(out_signals, 1)
+
+        prediction = []
+        answers = []
+        for ans, sc in zip(membership, target_signal):
+            pr_in = -norm.logpdf(sc, mean_in, std_in + 1e-30)
+            pr_out = -norm.logpdf(sc, mean_out, std_out + 1e-30)
+            score = pr_in - pr_out
+            prediction.extend(score)
+            answers.extend(ans)
+
+        prediction = np.array(prediction)
+        answers = np.array(answers, dtype=bool)
+
+        # Last step: compute the metrics
+        fpr_list, tpr_list, _ = roc_curve(answers, -prediction)
+        acc = np.max(1 - (fpr_list + (1 - tpr_list)) / 2)
+        roc_auc = auc(fpr_list, tpr_list)
+
+        low = tpr_list[np.where(fpr_list < 0.001)[0][-1]]
+        print("AUC %.4f, Accuracy %.4f, TPR@0.1%%FPR of %.4f" % (roc_auc, acc, low))
+        range01 = np.linspace(0, 1)
+        plt.fill_between(fpr_list, tpr_list, alpha=0.15)
+        plt.plot(range01, range01, "--", label="Random guess")
+        plt.plot(fpr_list, tpr_list, label="ROC curve")
+        plt.xlim([0, 1])
+        plt.ylim([0, 1])
+        plt.grid()
+        plt.legend()
+        plt.xlabel("False positive rate (FPR)")
+        plt.ylabel("True positive rate (TPR)")
+        plt.title("ROC curve")
+        plt.text(
+            0.7,
+            0.3,
+            f"AUC = {roc_auc:.03f}",
+            horizontalalignment="center",
+            verticalalignment="center",
+            bbox=dict(facecolor="white", alpha=0.5),
+        )
+        plt.savefig(
+            fname=f"{log_dir}/{configs['audit']['report_log']}/online_attack.png",
+            dpi=1000,
+        )
         plt.clf()

@@ -25,8 +25,7 @@ def check_configs(configs: dict):
     if privacy_game in ["privacy_loss_model", "avg_privacy_loss_training_algo"]:
         num_target_model = configs["train"]["num_target_model"]
         if privacy_game == "privacy_loss_model" and num_target_model != 1:
-            raise ValueError(
-                "privacy_loss_model game only supports one target model")
+            raise ValueError("privacy_loss_model game only supports one target model")
         if privacy_game == "avg_privacy_loss_training_algo":
             if num_target_model <= 1:
                 raise ValueError(
@@ -51,7 +50,7 @@ def get_optimizer(model: torch.nn.Module, configs: dict) -> torch.optim.Optimize
     optimizer = configs.get("optimizer", "SGD")
     learning_rate = configs.get("learning_rate", 0.001)
     weight_decay = configs.get("weight_decay", 0)
-
+    momentum = configs.get("momentum", 0)
     print(f"Load the optimizer {optimizer}: ", end=" ")
     print(f"learning rate {learning_rate}", end=" ")
     print(f"weight decay {weight_decay} ")
@@ -61,6 +60,7 @@ def get_optimizer(model: torch.nn.Module, configs: dict) -> torch.optim.Optimize
             model.parameters(),
             lr=learning_rate,
             weight_decay=weight_decay,
+            momentum=momentum,
         )
     if optimizer == "Adam":
         return torch.optim.Adam(
@@ -91,11 +91,9 @@ def get_split(
         np.ndarray: List of index
     """
     if split_method in "no_overlapping":
-        selected_index = np.array(
-            [i for i in all_index if i not in used_index])
+        selected_index = np.array([i for i in all_index if i not in used_index])
         if size <= len(selected_index):
-            selected_index = np.random.choice(
-                selected_index, size, replace=False)
+            selected_index = np.random.choice(selected_index, size, replace=False)
         else:
             raise ValueError("Not enough remaining data points.")
     elif split_method == "uniform":

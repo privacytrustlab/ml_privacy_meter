@@ -37,10 +37,8 @@ def get_dataset(dataset_name: str, data_dir: str) -> torchvision.datasets:
             test_data = torchvision.datasets.CIFAR10(
                 root=path, train=False, download=True, transform=transform
             )
-            all_features = np.concatenate(
-                [all_data.data, test_data.data], axis=0)
-            all_targets = np.concatenate(
-                [all_data.targets, test_data.targets], axis=0)
+            all_features = np.concatenate([all_data.data, test_data.data], axis=0)
+            all_targets = np.concatenate([all_data.targets, test_data.targets], axis=0)
 
             all_data.data = all_features
             all_data.targets = all_targets
@@ -70,13 +68,19 @@ def get_dataset_subset(dataset: torchvision.datasets, index: List(int)):
     return data, targets
 
 
-def get_dataloader(dataset: torchvision.datasets, batch_size: int, loader_type='torch', shuffle: bool=True):
-    if loader_type == 'torch':
-        return torch.utils.data.DataLoader(dataset,
+def get_dataloader(
+    dataset: torchvision.datasets,
+    batch_size: int,
+    loader_type="torch",
+    shuffle: bool = True,
+):
+    if loader_type == "torch":
+        return torch.utils.data.DataLoader(
+            dataset,
             batch_size=batch_size,
             shuffle=shuffle,
             num_workers=4,
             pin_memory=True,
             persistent_workers=True,
-            prefetch_factor=16
+            prefetch_factor=16,
         )
