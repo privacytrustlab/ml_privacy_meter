@@ -410,8 +410,7 @@ if __name__ == "__main__":
         plt.clf()
 
     elif "online" in configs["audit"]["algorithm"]:
-        # TODO: split the dataset
-        # construct a set of datasets
+        # The following code is modified from the original code in the repo: https://github.com/tensorflow/privacy/tree/master/research/mi_lira_2021
 
         data_split_info, keep_matrix = prepare_datasets_for_online_attack(
             len(dataset),
