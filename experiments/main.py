@@ -13,7 +13,7 @@ import seaborn as sns
 import torch
 import yaml
 from sklearn.metrics import auc, roc_curve
-
+from argument import get_signal_on_argumented_data
 from core import (
     load_dataset_for_existing_models,
     load_existing_models,
@@ -66,7 +66,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--cf",
         type=str,
-        default="config_models_lira.yaml",
+        default="config_models_online.yaml",
         help="Yaml file which contains the configurations",
     )
 
@@ -410,6 +410,7 @@ if __name__ == "__main__":
         plt.clf()
 
     elif "online" in configs["audit"]["algorithm"]:
+        print("Online attack")
         # The following code is modified from the original code in the repo: https://github.com/tensorflow/privacy/tree/master/research/mi_lira_2021
 
         data_split_info, keep_matrix = prepare_datasets_for_online_attack(
@@ -424,6 +425,9 @@ if __name__ == "__main__":
             / (configs["train"]["num_in_models"] + configs["train"]["num_out_models"]),
             model_metadata_list,
         )
+        data, targets = get_dataset_subset(
+            dataset, np.arange(len(dataset))
+        )  # dataset on which we want to attack
 
         # (model_list, model_metadata_dict, trained_model_idx_list) = prepare_models(
         #     log_dir,
@@ -432,9 +436,18 @@ if __name__ == "__main__":
         #     configs["train"],
         #     model_metadata_list,
         # )
-        data, targets = get_dataset_subset(dataset, np.arange(len(dataset)))
+
+        # signals = []
+        # for model in model_list:
+        #     model_pm = PytorchModelTensor(
+        #         model_obj=model,
+        #         loss_fn=nn.CrossEntropyLoss(),
+        #         device=configs["audit"]["device"],
+        #         batch_size=10000,
+        #     )
+        #     signals.append(model_pm.get_loss(data, targets))
         signals = []
-        for idx in [0, 1, 2, 3, 4, 5, 6]:
+        for idx in range(17):
             print("load the model")
             model_pm = PytorchModelTensor(
                 model_obj=load_existing_models(
@@ -447,11 +460,15 @@ if __name__ == "__main__":
                 batch_size=10000,
             )
             print("compute the signal")
-            signals.append(model_pm.get_loss(data, targets))
+            signals.append(
+                get_signal_on_argumented_data(model_pm, data, targets, method='argumented')
+            )
 
-        # Get the logits for each model
+            # signals.append(model_pm.get_loss(data, targets))
+
+        # # Get the logits for each model
         signals = np.array(signals)
-        signals = signals + 1e-45
+        signals = signals + 1e-7
         signals = np.log(np.divide(np.exp(-signals), (1 - np.exp(-signals))))
 
         # target model
