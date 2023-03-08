@@ -26,3 +26,5 @@ train: # Configuration for training
 data: # Configuration for data
   dataset: cifar10 # String indicates the name of the dataset
   data_dir: ../data
+  keep_ratio: 0.5 # the ratio of keeping the point for the training dataset.
+  dataset_size: 50000 # the size of the whole dataset used.

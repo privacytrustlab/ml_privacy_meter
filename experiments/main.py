@@ -412,57 +412,61 @@ if __name__ == "__main__":
     elif "online" in configs["audit"]["algorithm"]:
         print("Online attack")
         # The following code is modified from the original code in the repo: https://github.com/tensorflow/privacy/tree/master/research/mi_lira_2021
-
+        # TODO: update the implementation.....
+        p_ratio = configs["data"]["keep_ratio"]
+        # To reproduce the results in the paper, we only use the cifar10 train dataset for training the models.
+        dataset_size = configs["data"]["dataset_size"]
         data_split_info, keep_matrix = prepare_datasets_for_online_attack(
-            len(dataset),
-            (
+            dataset_size,
+            num_models=(
                 configs["train"]["num_in_models"]
                 + configs["train"]["num_out_models"]
                 + configs["train"]["num_target_model"]
             ),
-            configs["data"],
-            configs["train"]["num_in_models"]
-            / (configs["train"]["num_in_models"] + configs["train"]["num_out_models"]),
-            model_metadata_list,
+            configs=configs["data"],
+            keep_ratio=p_ratio,
+            model_metadata_dict=model_metadata_list,
         )
         data, targets = get_dataset_subset(
-            dataset, np.arange(len(dataset))
-        )  # dataset on which we want to attack
+            dataset, np.arange(dataset_size)
+        )  # only the train dataset we want to attack
 
-        # (model_list, model_metadata_dict, trained_model_idx_list) = prepare_models(
-        #     log_dir,
-        #     dataset,
-        #     data_split_info,
-        #     configs["train"],
-        #     model_metadata_list,
-        # )
+        (model_list, model_metadata_dict, trained_model_idx_list) = prepare_models(
+            log_dir,
+            dataset,
+            data_split_info,
+            configs["train"],
+            model_metadata_list,
+        )
 
-        # signals = []
-        # for model in model_list:
-        #     model_pm = PytorchModelTensor(
-        #         model_obj=model,
-        #         loss_fn=nn.CrossEntropyLoss(),
-        #         device=configs["audit"]["device"],
-        #         batch_size=10000,
-        #     )
-        #     signals.append(model_pm.get_loss(data, targets))
         signals = []
-        for idx in range(17):
-            print("load the model")
+        for model in model_list:
             model_pm = PytorchModelTensor(
-                model_obj=load_existing_models(
-                    model_metadata_list,
-                    [idx],
-                    configs["train"]["model_name"],
-                )[0],
+                model_obj=model,
                 loss_fn=nn.CrossEntropyLoss(),
                 device=configs["audit"]["device"],
                 batch_size=10000,
             )
-            print("compute the signal")
-            signals.append(
-                get_signal_on_argumented_data(model_pm, data, targets, method='argumented')
-            )
+            signals.append(model_pm.get_loss(data, targets))
+        # signals = []
+        # for idx in range(17):
+        #     print("load the model")
+        #     model_pm = PytorchModelTensor(
+        #         model_obj=load_existing_models(
+        #             model_metadata_list,
+        #             [idx],
+        #             configs["train"]["model_name"],
+        #         )[0],
+        #         loss_fn=nn.CrossEntropyLoss(),
+        #         device=configs["audit"]["device"],
+        #         batch_size=10000,
+        #     )
+        #     print("compute the signal")
+        #     signals.append(
+        #         get_signal_on_argumented_data(
+        #             model_pm, data, targets, method="argumented"
+        #         )
+        #     )
 
             # signals.append(model_pm.get_loss(data, targets))
 
