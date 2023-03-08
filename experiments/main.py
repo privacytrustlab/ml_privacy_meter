@@ -445,7 +445,13 @@ if __name__ == "__main__":
                 device=configs["audit"]["device"],
                 batch_size=10000,
             )
-            signals.append(model_pm.get_loss(data, targets))
+            signals.append(
+                get_signal_on_argumented_data(
+                    model_pm, data, targets, method="argumented"
+                )
+            )
+        # will remove later
+        # model_pm.get_loss(data, targets))
         # signals = []
         # for idx in range(17):
         #     print("load the model")
