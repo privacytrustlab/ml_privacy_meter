@@ -412,9 +412,7 @@ if __name__ == "__main__":
     elif "online" in configs["audit"]["algorithm"]:
         print("Online attack")
         # The following code is modified from the original code in the repo: https://github.com/tensorflow/privacy/tree/master/research/mi_lira_2021
-        # TODO: update the implementation.....
         p_ratio = configs["data"]["keep_ratio"]
-        # To reproduce the results in the paper, we only use the cifar10 train dataset for training the models.
         dataset_size = configs["data"]["dataset_size"]
         data_split_info, keep_matrix = prepare_datasets_for_online_attack(
             dataset_size,
@@ -468,8 +466,6 @@ if __name__ == "__main__":
         #         )
         #     )
 
-            # signals.append(model_pm.get_loss(data, targets))
-
         # # Get the logits for each model
         signals = np.array(signals)
         signals = signals + 1e-7
@@ -484,7 +480,7 @@ if __name__ == "__main__":
         in_signals = []
         out_signals = []
 
-        for data_idx in range(len(dataset)):
+        for data_idx in range(dataset_size):
             in_signals.append(
                 reference_signals[reference_keep_matrix[:, data_idx], data_idx]
             )
@@ -514,7 +510,10 @@ if __name__ == "__main__":
             pr_in = -norm.logpdf(sc, mean_in, std_in + 1e-30)
             pr_out = -norm.logpdf(sc, mean_out, std_out + 1e-30)
             score = pr_in - pr_out
-            prediction.extend(score)
+            if len(score.shape) == 2:  # the score is of size (data_size, num_arguments)
+                prediction.extend(score.mean(1))
+            else:
+                prediction.extend(score)
             answers.extend(ans)
 
         prediction = np.array(prediction)

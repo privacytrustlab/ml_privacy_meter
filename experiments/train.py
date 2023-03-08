@@ -6,6 +6,7 @@ from torch import nn
 
 from util import get_optimizer
 import time
+from torch.optim import lr_scheduler
 
 # Train Function
 
@@ -31,9 +32,11 @@ def train(
     # Set the loss function and optimizer
     criterion = nn.CrossEntropyLoss()
     optimizer = get_optimizer(model, configs)
-
     # Get the number of epochs for training
     epochs = configs.get("epochs", 1)
+    # Set the learning rate scheduler
+    scheduler = lr_scheduler.CosineAnnealingLR(optimizer, epochs)
+
     # Loop over each epoch
     for epoch_idx in range(epochs):
         start_time = time.time()
@@ -64,6 +67,7 @@ def train(
             # Add the loss to the total loss
             train_loss += loss.item()
 
+        scheduler.step()
         # Print the epoch and loss summary
         print(f"Epoch: {epoch_idx+1}/{epochs} |", end=" ")
         print(f"Loss: {train_loss/len(train_loader):.8f} ", end=" ")

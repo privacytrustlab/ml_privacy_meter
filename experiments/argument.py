@@ -18,7 +18,6 @@ def get_signal_on_argumented_data(model_pm, data, targets, method=None):
                     this_x = aug_pad[:, :, dx : dx + 32, dy : dy + 32]
                     logits = model_pm.get_loss(this_x, targets)
                     outs.append(logits)
-        # TODO: squeeze it to 1-dim
         return np.transpose(np.array(outs), (1,0)) # (batch size, number of aug)
 
     else:
