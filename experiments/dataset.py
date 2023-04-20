@@ -6,7 +6,40 @@ from ast import List
 import numpy as np
 import torch
 import torchvision
+import torchvision.transforms
+import torchvision.transforms as transforms
+from argument import get_argumented_data
+from torch.utils.data import DataLoader, Dataset
 from torchvision import transforms
+from torchvision.datasets import CIFAR10
+
+
+class CustomCIFAR10(Dataset):
+    def __init__(self, dataset, method):
+        self.dataset = dataset
+        self.method = method
+
+    def __len__(self):
+        return len(self.dataset)
+    
+    def __getitem__(self, index):
+        """
+        Modify this method to implement your custom logic for loading data
+        """
+        img, target = self.dataset[index]
+        img, target = get_argumented_data(img, target, self.method)
+        return img, target
+
+
+class InfiniteRepeatDataset(Dataset):
+    def __init__(self, dataset):
+        self.dataset = dataset
+
+    def __len__(self):
+        return len(self.dataset)
+
+    def __getitem__(self, idx):
+        return self.dataset[idx % len(self.dataset)]
 
 
 def get_dataset(dataset_name: str, data_dir: str) -> torchvision.datasets:
@@ -30,7 +63,12 @@ def get_dataset(dataset_name: str, data_dir: str) -> torchvision.datasets:
 
     else:
         if dataset_name == "cifar10":
-            transform = transforms.Compose([transforms.ToTensor()])
+            transform = transforms.Compose(
+                [
+                    transforms.ToTensor(),
+                    transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5]),
+                ]
+            )
             all_data = torchvision.datasets.CIFAR10(
                 root=path, train=True, download=True, transform=transform
             )
@@ -39,7 +77,6 @@ def get_dataset(dataset_name: str, data_dir: str) -> torchvision.datasets:
             )
             all_features = np.concatenate([all_data.data, test_data.data], axis=0)
             all_targets = np.concatenate([all_data.targets, test_data.targets], axis=0)
-
             all_data.data = all_features
             all_data.targets = all_targets
             with open(f"{path}.pkl", "wb") as file:
@@ -73,10 +110,13 @@ def get_dataloader(
     batch_size: int,
     loader_type="torch",
     shuffle: bool = True,
+    # argumentation: str = None,
 ):
     if loader_type == "torch":
+        # if argumentation is None:
+        repeated_data = InfiniteRepeatDataset(dataset)
         return torch.utils.data.DataLoader(
-            dataset,
+            repeated_data,
             batch_size=batch_size,
             shuffle=shuffle,
             num_workers=4,
@@ -84,3 +124,14 @@ def get_dataloader(
             persistent_workers=True,
             prefetch_factor=16,
         )
+        # else:
+        #     repeated_data = InfiniteRepeatDataset(dataset, argumentation)
+        #     return torch.utils.data.DataLoader(
+        #         repeated_data,
+        #         batch_size=batch_size,
+        #         shuffle=shuffle,
+        #         num_workers=4,
+        #         pin_memory=True,
+        #         persistent_workers=True,
+        #         prefetch_factor=16,
+        #     )

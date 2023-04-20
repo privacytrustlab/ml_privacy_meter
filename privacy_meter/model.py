@@ -109,9 +109,8 @@ class PytorchModel(Model):
 
         # Add hooks to the layers (to access their value during a forward pass)
         self.intermediate_outputs = {}
-        for (i, l) in enumerate(list(self.model_obj._modules.keys())):
-            getattr(self.model_obj, l).register_forward_hook(
-                self.__forward_hook(l))
+        for i, l in enumerate(list(self.model_obj._modules.keys())):
+            getattr(self.model_obj, l).register_forward_hook(self.__forward_hook(l))
 
         # Create a second loss function, per point
         self.loss_fn_no_reduction = deepcopy(loss_fn)
@@ -150,8 +149,7 @@ class PytorchModel(Model):
             )
         else:
             return self.loss_fn(
-                self.model_obj(torch.Tensor(batch_samples)
-                               ), torch.Tensor(batch_labels)
+                self.model_obj(torch.Tensor(batch_samples)), torch.Tensor(batch_labels)
             ).item()
 
     def get_grad(self, batch_samples, batch_labels):
@@ -166,8 +164,7 @@ class PytorchModel(Model):
             A list of gradients of the model loss (one item per layer) with respect to the model parameters.
         """
         loss = self.loss_fn(
-            self.model_obj(torch.Tensor(batch_samples)
-                           ), torch.Tensor(batch_labels)
+            self.model_obj(torch.Tensor(batch_samples)), torch.Tensor(batch_labels)
         )
         loss.backward()
         return [p.grad.numpy() for p in self.model_obj.parameters()]
@@ -604,7 +601,9 @@ class PytorchModelTensor(Model):
                     ],
                     axis=1,
                 )
-                .detach().cpu().numpy()
+                .detach()
+                .cpu()
+                .numpy()
             )
             # grad = self.grad_sampler_model.conv1.weight.grad_sample.reshape(len(y),-1)
             grad_list.append(grad)
@@ -639,17 +638,23 @@ class PytorchModelTensor(Model):
             loss = self.loss_fn(self.grad_sampler_model(x), y).sum()
             loss.backward()
             grad_norm.append(
-                torch.norm(torch.cat(
-                    [
-                        p.grad_sample.reshape(len(y), -1)
-                        for p in self.grad_sampler_model.parameters()
-                    ],
-                    axis=1,
-                ), dim=1).detach().cpu().numpy()
+                torch.norm(
+                    torch.cat(
+                        [
+                            p.grad_sample.reshape(len(y), -1)
+                            for p in self.grad_sampler_model.parameters()
+                        ],
+                        axis=1,
+                    ),
+                    dim=1,
+                )
+                .detach()
+                .cpu()
+                .numpy()
             )
 
             self.grad_sampler_model.zero_grad()
-            
+
         grad_norm = np.concatenate(grad_norm)
         self.model_obj.to("cpu")
         self.grad_sampler_model.to("cpu")
@@ -680,3 +685,134 @@ class PytorchModelTensor(Model):
             self.intermediate_outputs[layer_name].detach().numpy()
             for layer_name in layer_names
         ]
+
+
+class Sklearn_Model(Model):
+    """Inherits from the Model class, an interface to query a model without any assumption on how it is implemented.
+    This particular class is to be used with tensorflow models.
+    """
+
+    def __init__(self, model_obj, loss_fn):
+        """Constructor
+
+        Args:
+            model_obj: Model object.
+            loss_fn: Loss function.
+        """
+
+        # Imports tensorflow with global scope
+        globals()["tf"] = __import__("tensorflow")
+
+        # Initializes the parent model
+        super().__init__(model_obj, loss_fn)
+
+    def get_logits(self, batch_samples):
+        """Function to get the model output from a given input.
+
+        Args:
+            batch_samples: Model input.
+
+        Returns:
+            Model output.
+        """
+        return self.model_obj.predict_proba(batch_samples)[:, -1]
+
+    def get_loss(self, batch_samples, batch_labels, per_point=True):
+        """Function to get the model loss on a given input and an expected output.
+
+        Args:
+            batch_samples: Model input.
+            batch_labels: Model expected output.
+            per_point: Boolean indicating if loss should be returned per point or reduced.
+
+        Returns:
+            The loss value, as defined by the loss_fn attribute.
+        """
+        return self.loss_fn(batch_labels, self.get_logits(batch_samples))
+
+    def get_grad(self, batch_samples, batch_labels):
+        return None
+
+    def get_intermediate_outputs(self, layers, batch_samples, forward_pass=True):
+        return None
+
+    def __tf_list_to_np_list(self, x):
+        if isinstance(x, list):
+            return [self.__tf_list_to_np_list(y) for y in x]
+        else:
+            return x.numpy()
+
+
+class Fairlearn_Model(Model):
+    """Inherits from the Model class, an interface to query a model without any assumption on how it is implemented.
+    This particular class is to be used with tensorflow models.
+    """
+
+    def __init__(self, model_obj, loss_fn):
+        """Constructor
+
+        Args:
+            model_obj: Model object.
+            loss_fn: Loss function.
+        """
+
+        # Imports tensorflow with global scope
+        globals()["tf"] = __import__("tensorflow")
+
+        # Initializes the parent model
+        super().__init__(model_obj, loss_fn)
+
+    def get_logits(self, batch_samples):
+        """Function to get the model output from a given input.
+
+        Args:
+            batch_samples: Model input.
+
+        Returns:
+            Model output.
+        """
+        logits = []
+        for i in range(len(self.model_obj.predictors_)):
+            logits.append(
+                self.model_obj.weights_[i]
+                * self.model_obj.predictors_[i].predict_proba(batch_samples)[:, -1]
+            )
+
+        return np.mean(logits, axis=0)
+
+    def get_loss(self, batch_samples, batch_labels, per_point=True):
+        """Function to get the model loss on a given input and an expected output.
+
+        Args:
+            batch_samples: Model input.
+            batch_labels: Model expected output.
+            per_point: Boolean indicating if loss should be returned per point or reduced.
+
+        Returns:
+            The loss value, as defined by the loss_fn attribute.
+        """
+        loss = []
+        for i in range(len(self.model_obj.predictors_)):
+            loss.append(
+                self.model_obj.weights_[i]
+                * self.loss_fn(
+                    batch_labels,
+                    self.model_obj.predictors_[i].predict_proba(batch_samples)[:, -1],
+                )
+            )
+
+        return np.mean(loss, axis=0)
+
+        # return self.loss_fn(batch_labels, self.get_logits(batch_samples))
+
+    def get_grad(self, batch_samples, batch_labels):
+        return None
+
+    def get_intermediate_outputs(self, layers, batch_samples, forward_pass=True):
+        return None
+
+    def __tf_list_to_np_list(self, x):
+        if isinstance(x, list):
+            return [self.__tf_list_to_np_list(y) for y in x]
+        else:
+            return x.numpy()

@@ -357,40 +357,6 @@ def prepare_datasets_for_sample_privacy_risk(
     return dataset_splits
 
 
-# def prepare_datasets_for_online_attack(
-#     dataset_size: int,
-#     num_models: int,
-#     configs: dict,
-#     keep_ratio: float,
-#     model_metadata_dict: dict,
-# ) -> dict:
-#     """Prepare the datasets for online attacks. Each data point will be randomly chosen by half of the models with probability keep_ratio and the rest of the models will be trained on the rest of the dataset.
-#     The partioning method is from https://github.com/tensorflow/privacy/blob/master/research/mi_lira_2021/train.py
-#     Args:
-#         dataset_size (int): Size of the whole dataset
-#         used_dataset_size (int): Size of the whole dataset used for training the models
-#         num_models (int): Number of additional target models
-#         configs (dict): Data split configuration
-#         keep_ratio (float): Indicate the probability of keeping the target point for training the model.
-#         model_metadata_dict (dict): Metadata for existing models.
-
-#     Returns:
-#         dict: Data split information.
-#         list: List of boolean indicating whether the model is trained on the target point.
-#     """
-#     index_list = []
-#     all_index = np.arange(dataset_size)
-#     selected_matrix = np.random.uniform(0, 1, size=(num_models, dataset_size))
-#     order = selected_matrix.argsort(0)
-#     keep = order < int(keep_ratio * num_models)
-#     for i in range(num_models):
-#         index_list.append(
-#             {"train": all_index[keep[i]], "test": all_index[~keep[i]], "audit": []}
-#         )
-#     dataset_splits = {"split": index_list, "split_method": f"random_{keep_ratio}"}
-#     return dataset_splits, keep
-
-
 def prepare_datasets_for_online_attack(
     dataset_size: int,
     num_models: int,
@@ -402,27 +368,23 @@ def prepare_datasets_for_online_attack(
     The partioning method is from https://github.com/tensorflow/privacy/blob/master/research/mi_lira_2021/train.py
     Args:
         dataset_size (int): Size of the whole dataset
+        used_dataset_size (int): Size of the whole dataset used for training the models
         num_models (int): Number of additional target models
         configs (dict): Data split configuration
         keep_ratio (float): Indicate the probability of keeping the target point for training the model.
         model_metadata_dict (dict): Metadata for existing models.
-
     Returns:
         dict: Data split information.
         list: List of boolean indicating whether the model is trained on the target point.
     """
     index_list = []
     all_index = np.arange(dataset_size)
-    keep = np.random.uniform(0, 1, size=(num_models, dataset_size)) <= keep_ratio
+    selected_matrix = np.random.uniform(0, 1, size=(num_models, dataset_size))
+    order = selected_matrix.argsort(0)
+    keep = order < int(keep_ratio * num_models)
     for i in range(num_models):
         index_list.append(
             {"train": all_index[keep[i]], "test": all_index[~keep[i]], "audit": []}
-        )
-        print(
-            "Generate the dataset with train length",
-            len(all_index[keep[i]]),
-            "test length",
-            len(all_index[~keep[i]]),
         )
     dataset_splits = {"split": index_list, "split_method": f"random_{keep_ratio}"}
     return dataset_splits, keep
@@ -465,7 +427,6 @@ def prepare_models(
         test_loader = get_dataloader(
             torch.utils.data.Subset(dataset, data_split["split"][split]["test"]),
             batch_size=configs["test_batch_size"],
-            shuffle=False,
         )
 
         print(50 * "-")
@@ -475,7 +436,7 @@ def prepare_models(
         )
 
         # Train the target model based on the configurations.
-        model = train(get_model(configs["model_name"]), train_loader, configs)
+        model = train(get_model(configs["model_name"]), train_loader, configs, test_loader)
         # Test performance on the training dataset and test dataset
         test_loss, test_acc = inference(model, test_loader, configs["device"])
         train_loss, train_acc = inference(model, train_loader, configs["device"])

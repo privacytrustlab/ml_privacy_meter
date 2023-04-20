@@ -10,7 +10,7 @@ audit: # Configurations for auditing
   device: cuda:0
 train: # Configuration for training
   type: pytorch # Training framework (we only support pytorch now).
-  epochs: 100 # Integer number for indicating the epochs for training target model.
+  epochs: 50 #100 # Integer number for indicating the epochs for training target model.
   batch_size: 256 # Integer number for indicating batch size for training the target model.
   test_batch_size: 10000 # Integer number for indicating batch size for evaluating the target model.
   optimizer: SGD # String which indicates the optimizer. We support Adam and SGD.
@@ -22,7 +22,7 @@ train: # Configuration for training
   num_in_models: 8 # Integer number that indicates how many target models trained on idx
   num_out_models: 8 # Integer number that indicates how many target models not trained on idx
   num_target_model: 1 # Number of total models we want to test
-
+  
 data: # Configuration for data
   dataset: cifar10 # String indicates the name of the dataset
   data_dir: ../data
