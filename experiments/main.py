@@ -337,9 +337,9 @@ if __name__ == "__main__":
 
         # Rescale the loss
         in_signal = in_signal + 1e-17  # avoid nan
-        in_signal = np.log(np.divide(np.exp(-in_signal), (1 - np.exp(-in_signal))))
+        in_signal = - np.log(np.divide(np.exp(-in_signal), (1 - np.exp(-in_signal))))
         out_signal = out_signal + 1e-17  # avoid nan
-        out_signal = np.log(np.divide(np.exp(-out_signal), (1 - np.exp(-out_signal))))
+        out_signal = - np.log(np.divide(np.exp(-out_signal), (1 - np.exp(-out_signal))))
 
         # Generate the privacy risk report
         labels = np.concatenate(
@@ -430,47 +430,47 @@ if __name__ == "__main__":
             dataset, np.arange(dataset_size)
         )  # only the train dataset we want to attack
 
-        # (model_list, model_metadata_dict, trained_model_idx_list) = prepare_models(
-        #     log_dir,
-        #     dataset,
-        #     data_split_info,
-        #     configs["train"],
-        #     model_metadata_list,
-        # )
+        (model_list, model_metadata_dict, trained_model_idx_list) = prepare_models(
+            log_dir,
+            dataset,
+            data_split_info,
+            configs["train"],
+            model_metadata_list,
+        )
 
-        # signals = []
-        # for model in model_list:
-        #     model_pm = PytorchModelTensor(
-        #         model_obj=model,
-        #         loss_fn=nn.CrossEntropyLoss(),
-        #         device=configs["audit"]["device"],
-        #         batch_size=10000,
-        #     )
-        #     signals.append(
-        #         get_signal_on_argumented_data(
-        #             model_pm, data, targets, method="argumented"
-        #         )
-        #     )
-        # # will remove later
         signals = []
-        for idx in range(17):
-            print("load the model")
+        for model in model_list:
             model_pm = PytorchModelTensor(
-                model_obj=load_existing_models(
-                    model_metadata_list,
-                    [idx],
-                    configs["train"]["model_name"],
-                )[0],
+                model_obj=model,
                 loss_fn=nn.CrossEntropyLoss(),
                 device=configs["audit"]["device"],
                 batch_size=10000,
             )
-            print("compute the signal")
             signals.append(
                 get_signal_on_argumented_data(
                     model_pm, data, targets, method="argumented"
                 )
             )
+        # # # will remove later
+        # signals = []
+        # for idx in range(17):
+        #     print("load the model")
+        #     model_pm = PytorchModelTensor(
+        #         model_obj=load_existing_models(
+        #             model_metadata_list,
+        #             [idx],
+        #             configs["train"]["model_name"],
+        #         )[0],
+        #         loss_fn=nn.CrossEntropyLoss(),
+        #         device=configs["audit"]["device"],
+        #         batch_size=10000,
+        #     )
+        #     print("compute the signal")
+        #     signals.append(
+        #         get_signal_on_argumented_data(
+        #             model_pm, data, targets, method="argumented"
+        #         )
+        #     )
 
         # # Get the logits for each model
         signals = np.array(signals)
