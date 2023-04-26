@@ -8,12 +8,12 @@ from pathlib import Path
 import numpy as np
 import torch
 import torchvision
+from dataset import get_dataloader, get_dataset_subset
+from models import get_model
 from sklearn.model_selection import train_test_split
 from torch import nn
-
-from dataset import get_dataset_subset, get_dataloader
-from models import get_model
-
+from train import inference, train
+from util import get_split, load_models_by_conditions, load_models_by_model_idx
 
 from privacy_meter import audit_report
 from privacy_meter.audit import MetricEnum
@@ -22,8 +22,6 @@ from privacy_meter.constants import InferenceGame
 from privacy_meter.dataset import Dataset
 from privacy_meter.information_source import InformationSource
 from privacy_meter.model import PytorchModelTensor
-from train import inference, train
-from util import get_split, load_models_by_conditions, load_models_by_model_idx
 
 
 def load_existing_target_model(
@@ -317,7 +315,22 @@ def prepare_datasets_for_sample_privacy_risk(
                 )
 
     # We generate a list of dataset which is the same as the training dataset of the models indicated by the matched_in_idx but excluding the target point.
-    elif split_method == "leave_one_out":
+    elif split_method == "leave_one_out" and data_type == "include":
+        train_index = np.random.choice(
+            all_index_exclude_z,
+            int((configs["f_train"]) * dataset_size) - 1,
+            replace=False,
+        )
+        for _ in range(num_models):
+            index_list.append(
+                {
+                    "train": np.append(train_index, data_idx),
+                    "test": all_index,
+                    "audit": all_index,
+                }
+            )
+
+    elif split_method == "leave_one_out" and data_type == "exclude":
         assert (
             matched_in_idx is not None
         ), "Please indicate the in-world model metdadata"
@@ -436,7 +449,9 @@ def prepare_models(
         )
 
         # Train the target model based on the configurations.
-        model = train(get_model(configs["model_name"]), train_loader, configs, test_loader)
+        model = train(
+            get_model(configs["model_name"]), train_loader, configs, test_loader
+        )
         # Test performance on the training dataset and test dataset
         test_loss, test_acc = inference(model, test_loader, configs["device"])
         train_loss, train_acc = inference(model, train_loader, configs["device"])

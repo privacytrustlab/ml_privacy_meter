@@ -253,7 +253,7 @@ if __name__ == "__main__":
                 configs["train"]["data_idx"],
                 configs["data"],
                 "include",
-                "uniform",
+                "leave_one_out",
                 model_metadata_list,
             )
             new_in_model_list, model_metadata_list, new_matched_in_idx = prepare_models(
@@ -475,7 +475,7 @@ if __name__ == "__main__":
         # # Get the logits for each model
         signals = np.array(signals)
         signals = signals + 1e-7
-        signals = np.log(np.divide(np.exp(-signals), (1 - np.exp(-signals))))
+        signals = - np.log(np.divide(np.exp(-signals), (1 - np.exp(-signals))))
 
         # target model
         target_signal = signals[-1:, :]
