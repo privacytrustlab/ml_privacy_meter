@@ -4,18 +4,17 @@ from ast import Tuple
 
 import numpy as np
 import torch
-from ema import EMA
 from torch import nn
 from torch.optim import lr_scheduler
 from util import get_optimizer
 from argument import get_argumented_data
+
 
 def lr_update(step, total_epoch, train_size, initial_lr):
     # this is from https://github.com/tensorflow/privacy/blob/4e1fc252e4c64132ad6fcd838e93f071f38dedd7/research/mi_lira_2021/train.py#L58
     progress = step / (total_epoch * train_size)
     lr = initial_lr * np.cos(progress * (7 * np.pi) / (2 * 8))
     lr = lr * np.clip(progress * 100, 0, 1)
-    # print(lr)
     return lr
 
 
@@ -51,21 +50,19 @@ def train(
             step * 256, epochs, len(train_loader) * 256, 0.1
         ),
     )
-    model_ema = EMA(model, decay=0.99)
 
     # Loop over each epoch
     for epoch_idx in range(epochs):
         start_time = time.time()
         train_loss, train_acc = 0, 0
         # Loop over the training set
-        model_ema.train()
         model.train()
         for data, target in train_loader:
             # Move data to the device
             data, target = data.to(device, non_blocking=True), target.to(
                 device, non_blocking=True
             )
-            data, target = get_argumented_data(data, target, method='argumented')
+            data, target = get_argumented_data(data, target, method="argumented")
 
             # Cast target to long tensor
             target = target.long()
@@ -85,32 +82,18 @@ def train(
             # Take a step using optimizer
             optimizer.step()
             scheduler.step()
-            model_ema.update()
 
             # Add the loss to the total loss
             train_loss += loss.item()
 
         model.eval()
-        model_ema.eval()
         with torch.no_grad():
-            # with ema.swap(model):
-            (
-                ema_test_loss,
-                ema_test_acc,
-            ) = (
-                0,
-                0,
-            )
             test_loss, test_acc = 0, 0
             for data, target in test_loader:
                 data, target = data.to(device), target.to(device)
                 # Cast target to long tensor
                 target = target.long()
                 # Computing output and loss
-                ema_output = model_ema(data)
-                ema_test_loss += criterion(ema_output, target).item()
-                ema_pred = ema_output.data.max(1, keepdim=True)[1]
-                ema_test_acc += ema_pred.eq(target.data.view_as(ema_pred)).sum()
                 output = model(data)
                 test_loss += criterion(output, target).item()
                 # Computing accuracy
@@ -119,20 +102,15 @@ def train(
         print(f"Epoch: {epoch_idx+1}/{epochs} |", end=" ")
         print(f"Train Loss: {train_loss/len(train_loader):.8f} ", end=" ")
         print(f"Test Loss: {test_loss/len(test_loader):.8f} ", end=" ")
-        print(f"EMA Test Loss: {ema_test_loss/len(test_loader):.8f} ", end=" ")
         print(f"Train Acc: {float(train_acc)/len(train_loader.dataset):.8f} ", end=" ")
         print(f"Test Acc: {float(test_acc)/len(test_loader.dataset):.8f} ", end=" ")
-        print(
-            f"EMA Test Acc: {float(ema_test_acc)/len(test_loader.dataset):.8f} ",
-            end=" ",
-        )
         print(f"One step uses {time.time() - start_time:.2f} seconds")
 
     # Move the model back to the CPU
     model.to("cpu")
 
     # Return the model
-    return model_ema
+    return model
 
 
 # Test Function
