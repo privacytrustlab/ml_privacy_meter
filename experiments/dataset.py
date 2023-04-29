@@ -21,7 +21,7 @@ class CustomCIFAR10(Dataset):
 
     def __len__(self):
         return len(self.dataset)
-    
+
     def __getitem__(self, index):
         """
         Modify this method to implement your custom logic for loading data
@@ -42,7 +42,7 @@ class InfiniteRepeatDataset(Dataset):
         return self.dataset[idx % len(self.dataset)]
 
 
-def get_dataset(dataset_name: str, data_dir: str) -> torchvision.datasets:
+def get_dataset(dataset_name: str, data_dir: str):
     """Load the dataset from the pickle file or download it from the internet.
     Args:
         dataset_name (str): Dataset name
@@ -110,10 +110,8 @@ def get_dataloader(
     batch_size: int,
     loader_type="torch",
     shuffle: bool = True,
-    # argumentation: str = None,
 ):
     if loader_type == "torch":
-        # if argumentation is None:
         repeated_data = InfiniteRepeatDataset(dataset)
         return torch.utils.data.DataLoader(
             repeated_data,
@@ -124,14 +122,3 @@ def get_dataloader(
             persistent_workers=True,
             prefetch_factor=16,
         )
-        # else:
-        #     repeated_data = InfiniteRepeatDataset(dataset, argumentation)
-        #     return torch.utils.data.DataLoader(
-        #         repeated_data,
-        #         batch_size=batch_size,
-        #         shuffle=shuffle,
-        #         num_workers=4,
-        #         pin_memory=True,
-        #         persistent_workers=True,
-        #         prefetch_factor=16,
-        #     )

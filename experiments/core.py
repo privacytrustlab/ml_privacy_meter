@@ -26,7 +26,7 @@ from privacy_meter.model import PytorchModelTensor
 
 def load_existing_target_model(
     dataset_size: int, model_metadata_dict: dict, configs: dict
-) -> List(int):
+):
     """Return a list of model's index that matches the configuration.
 
     Args:
@@ -62,7 +62,7 @@ def load_existing_target_model(
 
 def load_existing_reference_models(
     model_metadata_dict: dict, configs: dict, target_idx: int
-) -> List(int):
+):
     """Return a list of reference model's index that matches the configuration.
 
     Args:
@@ -102,7 +102,7 @@ def check_reference_model_dataset(
     target_idx: int,
     splitting_method: str,
     data_idx=None,
-) -> List(int):
+):
     """Filter out the reference models that does not satisfy the splitting method.
 
     Args:
@@ -142,7 +142,7 @@ def check_reference_model_dataset(
 
 def load_existing_models(
     model_metadata_dict: dict, matched_idx: List(int), model_name: str
-) -> List(nn.Module):
+):
     """Load existing models from dicks for matched_idx.
 
     Args:
@@ -159,6 +159,7 @@ def load_existing_models(
             model = get_model(model_name)
             with open(f"{metadata['model_path']}", "rb") as file:
                 model_weight = pickle.load(file)
+            print(model_weight.keys())
             model.load_state_dict(model_weight)
             model_list.append(model)
         return model_list
@@ -168,7 +169,7 @@ def load_existing_models(
 
 def load_dataset_for_existing_models(
     dataset_size: int, model_metadata_dict: dict, matched_idx: List(int), configs: dict
-) -> List(dict):
+):
     """Load the dataset index list for the existing models.
 
     Args:
@@ -263,7 +264,7 @@ def prepare_datasets_for_sample_privacy_risk(
     split_method: str,
     model_metadata_dict: dict,
     matched_in_idx: List(int) = None,
-) -> dict:
+):
     """Prepare the datasets for auditing the priavcy risk for a data point. We prepare the dataset with or without the target point for training a set of models with or without the target point.
 
     Args:
@@ -373,19 +374,15 @@ def prepare_datasets_for_sample_privacy_risk(
 def prepare_datasets_for_online_attack(
     dataset_size: int,
     num_models: int,
-    configs: dict,
     keep_ratio: float,
-    model_metadata_dict: dict,
-) -> dict:
+):
     """Prepare the datasets for online attacks. Each data point will be randomly chosen by half of the models with probability keep_ratio and the rest of the models will be trained on the rest of the dataset.
     The partioning method is from https://github.com/tensorflow/privacy/blob/master/research/mi_lira_2021/train.py
     Args:
         dataset_size (int): Size of the whole dataset
         used_dataset_size (int): Size of the whole dataset used for training the models
         num_models (int): Number of additional target models
-        configs (dict): Data split configuration
         keep_ratio (float): Indicate the probability of keeping the target point for training the model.
-        model_metadata_dict (dict): Metadata for existing models.
     Returns:
         dict: Data split information.
         list: List of boolean indicating whether the model is trained on the target point.

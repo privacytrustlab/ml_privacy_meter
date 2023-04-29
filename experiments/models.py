@@ -3,6 +3,7 @@ import torch.nn.functional as F
 from torch import nn
 from wide_resnet import WideResNet
 
+
 class Net(nn.Module):
     """Simple CNN for CIFAR10 dataset."""
 
