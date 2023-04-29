@@ -49,6 +49,7 @@ def load_existing_target_model(
         conditions = {
             "optimizer": configs["train"]["optimizer"],
             "batch_size": configs["train"]["batch_size"],
+            "model_name": configs["train"]["model_name"],
             "epochs": configs["train"]["epochs"],
             "learning_rate": configs["train"]["learning_rate"],
             "weight_decay": configs["train"]["weight_decay"],
@@ -159,7 +160,6 @@ def load_existing_models(
             model = get_model(model_name)
             with open(f"{metadata['model_path']}", "rb") as file:
                 model_weight = pickle.load(file)
-            print(model_weight.keys())
             model.load_state_dict(model_weight)
             model_list.append(model)
         return model_list
@@ -480,6 +480,11 @@ def prepare_models(
         meta_data["learning_rate"] = configs["learning_rate"]
         meta_data["weight_decay"] = configs["weight_decay"]
         meta_data["model_path"] = f"{log_dir}/model_{model_idx}.pkl"
+        meta_data["train_acc"] = train_acc
+        meta_data["test_acc"] = test_acc
+        meta_data["train_loss"] = train_loss
+        meta_data["test_loss"] = test_loss
+
         model_metadata_dict["model_metadata"][model_idx] = meta_data
         with open(f"{log_dir}/models_metadata.pkl", "wb") as f:
             pickle.dump(model_metadata_dict, f)

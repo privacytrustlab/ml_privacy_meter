@@ -97,12 +97,13 @@ def get_dataset_subset(dataset: torchvision.datasets, index: List(int)):
         index (list): List of index.
     """
     assert max(index) < len(dataset) and min(index) >= 0, "Index out of range"
-    data = (
-        torch.from_numpy(dataset.data[index]).float().permute(0, 3, 1, 2) / 255
-    )  # channel first
-    targets = list(np.array(dataset.targets)[index])
-    targets = torch.tensor(targets, dtype=torch.long)
-    return data, targets
+    data_loader = get_dataloader(
+        torch.utils.data.Subset(dataset, index),
+        batch_size=len(index),
+        shuffle=False,
+    )
+    for data, targets in data_loader:
+        return data, targets
 
 
 def get_dataloader(

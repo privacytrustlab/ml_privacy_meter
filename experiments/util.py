@@ -34,7 +34,7 @@ def check_configs(configs: dict):
                 )
 
 
-def get_optimizer(model: torch.nn.Module, configs: dict) -> torch.optim.Optimizer:
+def get_optimizer(model: torch.nn.Module, configs: dict):
     """Get the optimizer for the given model
 
     Args:
@@ -52,8 +52,8 @@ def get_optimizer(model: torch.nn.Module, configs: dict) -> torch.optim.Optimize
     weight_decay = configs.get("weight_decay", 0)
     momentum = configs.get("momentum", 0)
     print(f"Load the optimizer {optimizer}: ", end=" ")
-    print(f"learning rate {learning_rate}", end=" ")
-    print(f"weight decay {weight_decay} ")
+    print(f"Learning rate {learning_rate}", end=" ")
+    print(f"Weight decay {weight_decay} ")
 
     if optimizer == "SGD":
         return torch.optim.SGD(
@@ -62,8 +62,12 @@ def get_optimizer(model: torch.nn.Module, configs: dict) -> torch.optim.Optimize
             weight_decay=weight_decay,
             momentum=momentum,
         )
-    if optimizer == "Adam":
+    elif optimizer == "Adam":
         return torch.optim.Adam(
+            model.parameters(), lr=learning_rate, weight_decay=weight_decay
+        )
+    elif optimizer == "AdamW":
+        return torch.optim.AdamW(
             model.parameters(), lr=learning_rate, weight_decay=weight_decay
         )
 
@@ -75,7 +79,7 @@ def get_optimizer(model: torch.nn.Module, configs: dict) -> torch.optim.Optimize
 
 def get_split(
     all_index: List(int), used_index: List(int), size: int, split_method: str
-) -> np.ndarray:
+):
     """Select points based on the splitting methods
 
     Args:
@@ -114,7 +118,7 @@ def load_models_by_conditions(
     conditions: dict,
     num_models: int,
     exclude_idx: List(int) = [],
-) -> List(int):
+):
     """Load existing models metadata index based on the conditions
 
     Args:
@@ -152,7 +156,7 @@ def load_models_by_conditions(
 
 def load_models_by_model_idx(
     model_metadata_dict: dict, model_idx_list: List(int)
-) -> List(int):
+):
     """Load existing models metadata index based on the model index.
 
     Args:
@@ -173,7 +177,7 @@ def load_models_by_model_idx(
 
 def load_models_with_data_idx_list(
     model_metadata_dict: dict, data_idx_list: List(int)
-) -> List(int):
+):
     """Load existing metadata index of models which are trained on the data index list.
 
     Args:
@@ -197,7 +201,7 @@ def load_models_with_data_idx_list(
 
 def load_models_without_data_idx_list(
     model_metadata_dict: dict, data_idx_list: List(int)
-) -> List(int):
+):
     """Load existing metadata index of models which are not trained on the data index list.
 
     Args:
@@ -221,7 +225,7 @@ def load_models_without_data_idx_list(
 
 def load_leave_one_out_models(
     model_metadata_dict: dict, data_idx_list: List(int), reference_model_idx: List(int)
-) -> List(int):
+):
     """Load existing models which has one data point left out.
     Args:
         model_metadata_dict (dict): Model metadata dict.

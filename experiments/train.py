@@ -4,10 +4,10 @@ from ast import Tuple
 
 import numpy as np
 import torch
+from argument import get_argumented_data
 from torch import nn
 from torch.optim import lr_scheduler
 from util import get_optimizer
-from argument import get_argumented_data
 
 
 def lr_update(step, total_epoch, train_size, initial_lr):
@@ -86,24 +86,27 @@ def train(
             # Add the loss to the total loss
             train_loss += loss.item()
 
-        model.eval()
-        with torch.no_grad():
-            test_loss, test_acc = 0, 0
-            for data, target in test_loader:
-                data, target = data.to(device), target.to(device)
-                # Cast target to long tensor
-                target = target.long()
-                # Computing output and loss
-                output = model(data)
-                test_loss += criterion(output, target).item()
-                # Computing accuracy
-                pred = output.data.max(1, keepdim=True)[1]
-                test_acc += pred.eq(target.data.view_as(pred)).sum()
         print(f"Epoch: {epoch_idx+1}/{epochs} |", end=" ")
         print(f"Train Loss: {train_loss/len(train_loader):.8f} ", end=" ")
-        print(f"Test Loss: {test_loss/len(test_loader):.8f} ", end=" ")
         print(f"Train Acc: {float(train_acc)/len(train_loader.dataset):.8f} ", end=" ")
-        print(f"Test Acc: {float(test_acc)/len(test_loader.dataset):.8f} ", end=" ")
+
+        if test_loader is not None:
+            model.eval()
+            with torch.no_grad():
+                test_loss, test_acc = 0, 0
+                for data, target in test_loader:
+                    data, target = data.to(device), target.to(device)
+                    # Cast target to long tensor
+                    target = target.long()
+                    # Computing output and loss
+                    output = model(data)
+                    test_loss += criterion(output, target).item()
+                    # Computing accuracy
+                    pred = output.data.max(1, keepdim=True)[1]
+                    test_acc += pred.eq(target.data.view_as(pred)).sum()
+
+            print(f"Test Loss: {test_loss/len(test_loader):.8f} ", end=" ")
+            print(f"Test Acc: {float(test_acc)/len(test_loader.dataset):.8f} ", end=" ")
         print(f"One step uses {time.time() - start_time:.2f} seconds")
 
     # Move the model back to the CPU
