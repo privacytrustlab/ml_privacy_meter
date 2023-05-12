@@ -60,7 +60,7 @@ We provide examples of how to run privacy meter on standard datasets and models 
 
 ```
 cd experiments
-python main.py --cf config_models.yaml
+python main.py --cf config_models_population.yaml
 ```
 
 Kindly proceed to the experiments folder ([here](experiments/)) to perform privacy audits on various objects, such as models, algorithms, and data points, using the CIFAR10 dataset.
