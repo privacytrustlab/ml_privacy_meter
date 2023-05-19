@@ -153,7 +153,7 @@ def load_existing_models(
     model_metadata_dict: dict,
     matched_idx: List(int),
     model_name: str,
-    dataset_list=None,
+    # dataset_list=None,
     dataset=None,
 ):
     """Load existing models from dicks for matched_idx.
@@ -169,15 +169,15 @@ def load_existing_models(
     """
     model_list = []
     if len(matched_idx) > 0:
-        for idx, metadata_idx in enumerate(matched_idx):
+        for metadata_idx in matched_idx:
             metadata = model_metadata_dict["model_metadata"][metadata_idx]
             if model_name != "speedyresnet":
                 model = get_model(model_name)
             else:
                 data = get_cifar10_data(
                     dataset,
-                    dataset_list[idx]["train"],
-                    dataset_list[idx]["test"],
+                    [0],
+                    [0],
                 )
                 model = NetworkEMA(make_net(data))
             with open(f"{metadata['model_path']}", "rb") as file:
@@ -397,6 +397,7 @@ def prepare_datasets_for_online_attack(
     dataset_size: int,
     num_models: int,
     keep_ratio: float,
+    is_uniform: bool,
 ):
     """Prepare the datasets for online attacks. Each data point will be randomly chosen by half of the models with probability keep_ratio and the rest of the models will be trained on the rest of the dataset.
     The partioning method is from https://github.com/tensorflow/privacy/blob/master/research/mi_lira_2021/train.py
@@ -405,19 +406,36 @@ def prepare_datasets_for_online_attack(
         used_dataset_size (int): Size of the whole dataset used for training the models
         num_models (int): Number of additional target models
         keep_ratio (float): Indicate the probability of keeping the target point for training the model.
+        is_uniform (bool): Indicate whether to perform the splitting in a uniform way.
     Returns:
         dict: Data split information.
         list: List of boolean indicating whether the model is trained on the target point.
     """
     index_list = []
     all_index = np.arange(dataset_size)
-    selected_matrix = np.random.uniform(0, 1, size=(num_models, dataset_size))
-    order = selected_matrix.argsort(0)
-    keep = order < int(keep_ratio * num_models)
+    if is_uniform:
+        keep = np.random.uniform(0, 1, size=(num_models, dataset_size)) <= keep_ratio
+    else:
+        selected_matrix = np.random.uniform(0, 1, size=(num_models, dataset_size))
+        order = selected_matrix.argsort(0)
+        keep = order < int(keep_ratio * num_models)
     for i in range(num_models):
-        index_list.append(
-            {"train": all_index[keep[i]], "test": all_index[~keep[i]], "audit": []}
-        )
+        if np.sum(~keep[i]) % 2 == 0:
+            # This is for speedyresnet
+            index_list.append(
+                {"train": all_index[keep[i]], "test": all_index[~keep[i]], "audit": []}
+            )
+        else:
+            train_index = all_index[keep[i]]
+            test_index = all_index[~keep[i]]
+            index_list.append(
+                {
+                    "train": np.append(train_index, test_index[0]),
+                    "test": test_index[1:],
+                    "audit": [],
+                }
+            )
+
     dataset_splits = {"split": index_list, "split_method": f"random_{keep_ratio}"}
     return dataset_splits, keep
 
@@ -485,7 +503,9 @@ def prepare_models(
                 data_split["split"][split]["train"],
                 data_split["split"][split]["test"],
             )
-            print_training_details(logging_columns_list, column_heads_only=True) ## print out the training column heads before we print the actual content for each run.
+            print_training_details(
+                logging_columns_list, column_heads_only=True
+            )  ## print out the training column heads before we print the actual content for each run.
             model, train_acc, train_loss, test_acc, test_loss = fast_train_fun(
                 data,
                 make_net(data),
@@ -687,7 +707,9 @@ def get_info_source_reference_attack(
             )
         else:
             data = get_cifar10_data(dataset, reference_data_idx, reference_data_idx)
-            print_training_details(logging_columns_list, column_heads_only=True) ## print out the training column heads before we print the actual content for each run.
+            print_training_details(
+                logging_columns_list, column_heads_only=True
+            )  ## print out the training column heads before we print the actual content for each run.
             reference_model, train_acc, train_loss, _, _ = fast_train_fun(
                 data, make_net(data)
             )

@@ -119,7 +119,7 @@ def get_dataset_subset(
             input_list.append(inputs)
             targets_list.append(targets)
         inputs = torch.cat(input_list, dim=0)
-        targets = torch.cat(targets_list, dim=0)
+        targets = torch.cat(targets_list, dim=0).max(dim=1)[1]
         return inputs, targets
 
 

@@ -68,7 +68,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--cf",
         type=str,
-        default="experiments/config_models_reference.yaml",
+        default="experiments/config_models_online.yaml",
         help="Yaml file which contains the configurations",
     )
 
@@ -128,7 +128,7 @@ if __name__ == "__main__":
                 model_metadata_list,
                 target_model_idx_list,
                 configs["train"]["model_name"],
-                trained_target_dataset_list,
+                # trained_target_dataset_list,
                 dataset,
             )
             num_target_models = configs["train"]["num_target_model"] - len(
@@ -186,7 +186,7 @@ if __name__ == "__main__":
             configs["audit"],
             model_metadata_list,
             target_model_idx_list,
-            configs["train"]["model_name"]
+            configs["train"]["model_name"],
         )
         logger.info(
             "Prepare the information source costs %0.5f seconds",
@@ -249,6 +249,7 @@ if __name__ == "__main__":
             model_metadata_list,
             in_model_idx_list,
             configs["train"]["model_name"],
+            dataset,
         )
         # Train additional models if the existing models are not enough
         if len(in_model_idx_list) < configs["train"]["num_in_models"]:
@@ -294,6 +295,7 @@ if __name__ == "__main__":
             model_metadata_list,
             out_model_idx_list,
             configs["train"]["model_name"],
+            dataset,
         )
         # Train additional models if the existing models are not enough
         if len(out_model_idx_list) < configs["train"]["num_out_models"]:
@@ -332,19 +334,21 @@ if __name__ == "__main__":
         ]
 
         # Test the models' performance on the data indicated by the audit.idx
-        data, targets = get_dataset_subset(dataset, [configs["audit"]["data_idx"]], configs["audit"]["model_name"])
+        data, targets = get_dataset_subset(
+            dataset, [configs["audit"]["data_idx"]], configs["audit"]["model_name"]
+        )
         in_signal = np.array(
-            [model.get_loss(data, targets).item() for model in in_model_list_pm]
+            [model.get_rescaled_logits(data, targets).item() for model in in_model_list_pm]
         )
         out_signal = np.array(
-            [model.get_loss(data, targets).item() for model in out_model_list_pm]
+            [model.get_rescaled_logits(data, targets).item() for model in out_model_list_pm]
         )
 
-        # Rescale the loss
-        in_signal = in_signal + 1e-17  # avoid nan
-        in_signal = -np.log(np.divide(np.exp(-in_signal), (1 - np.exp(-in_signal))))
-        out_signal = out_signal + 1e-17  # avoid nan
-        out_signal = -np.log(np.divide(np.exp(-out_signal), (1 - np.exp(-out_signal))))
+        # # Rescale the loss
+        # in_signal = in_signal + 1e-17  # avoid nan
+        # in_signal = -np.log(np.divide(np.exp(-in_signal), (1 - np.exp(-in_signal))))
+        # out_signal = out_signal + 1e-17  # avoid nan
+        # out_signal = -np.log(np.divide(np.exp(-out_signal), (1 - np.exp(-out_signal))))
 
         # Generate the privacy risk report
         labels = np.concatenate(
@@ -428,6 +432,7 @@ if __name__ == "__main__":
                 + configs["train"]["num_target_model"]
             ),
             keep_ratio=p_ratio,
+            is_uniform=False,
         )
         data, targets = get_dataset_subset(
             dataset, np.arange(dataset_size), configs["train"]["model_name"]
@@ -456,11 +461,6 @@ if __name__ == "__main__":
                 )
         else:
             signals = []
-            all_data = get_cifar10_data(
-                dataset, np.arange(dataset_size), np.arange(dataset_size)
-            )
-            data = all_data["train"]["images"]
-            targets = all_data["train"]["targets"]
             for idx in range(model_metadata_list["current_idx"]):
                 print("load the model")
                 model_pm = PytorchModelTensor(
@@ -468,6 +468,7 @@ if __name__ == "__main__":
                         model_metadata_list,
                         [idx],
                         configs["train"]["model_name"],
+                        dataset,
                     )[0],
                     loss_fn=nn.CrossEntropyLoss(),
                     device=configs["audit"]["device"],
@@ -482,8 +483,6 @@ if __name__ == "__main__":
 
         # # Get the logits for each model
         signals = np.array(signals)
-        signals = signals + 1e-7
-        signals = -np.log(np.divide(np.exp(-signals), (1 - np.exp(-signals))))
 
         # target model
         target_signal = signals[-1:, :]
@@ -504,9 +503,9 @@ if __name__ == "__main__":
 
         in_size = min(min(map(len, in_signals)), configs["train"]["num_in_models"])
         out_size = min(min(map(len, out_signals)), configs["train"]["num_out_models"])
-
-        in_signals = np.array([x[:in_size] for x in in_signals])
-        out_signals = np.array([x[:out_size] for x in out_signals])
+        print(in_size, out_size)
+        in_signals = np.array([x[:in_size] for x in in_signals]).astype("float32")
+        out_signals = np.array([x[:out_size] for x in out_signals]).astype("float32")
 
         mean_in = np.median(in_signals, 1)
         mean_out = np.median(out_signals, 1)
@@ -535,7 +534,6 @@ if __name__ == "__main__":
 
         prediction = np.array(prediction)
         answers = np.array(answers, dtype=bool)
-
         # Last step: compute the metrics
         fpr_list, tpr_list, _ = roc_curve(answers, -prediction)
         acc = np.max(1 - (fpr_list + (1 - tpr_list)) / 2)

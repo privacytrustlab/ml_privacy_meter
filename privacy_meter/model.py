@@ -5,6 +5,7 @@ import numpy as np
 import tensorflow as tf
 import torch
 from opacus import GradSampleModule  # For speeding up the gradient computation
+from scipy.special import softmax
 
 ########################################################################################################################
 # MODEL CLASS
@@ -529,10 +530,17 @@ class PytorchModelTensor(Model):
             Model output.
         """
         self.model_obj.to(self.device)
-        logits = self.model_obj(batch_samples).detach().numpy()
+        self.model_obj.eval()
+        with torch.no_grad():
+            logits_list = []
+            batched_samples = torch.split(batch_samples, self.batch_size)
+            for x in batched_samples:
+                x = x.to(self.device)
+                out = self.model_obj(x)
+                logits_list.append(out.detach())  # to avoid the OOM
+            all_logits = torch.cat(logits_list).detach().cpu().numpy()
         self.model_obj.to("cpu")
-
-        return logits
+        return all_logits
 
     def get_loss(self, batch_samples, batch_labels, per_point=True):
         """Function to get the model loss on a given input and an expected output.
@@ -685,6 +693,40 @@ class PytorchModelTensor(Model):
             self.intermediate_outputs[layer_name].detach().numpy()
             for layer_name in layer_names
         ]
+
+    def get_rescaled_logits(self, batch_samples, batch_labels):
+        """Function to get the model rescaled logits on a given input and an expected output.
+        The rescaled logits is proposed in https://arxiv.org/abs/2112.03570.
+
+        Args:
+            batch_samples: Model input.
+            batch_labels: Model expected output.
+            per_point: Boolean indicating if loss should be returned per point or reduced.
+
+        Returns:
+            The loss value, as defined by the loss_fn attribute.
+        """
+        self.model_obj.to(self.device)
+        self.model_obj.eval()
+        with torch.no_grad():
+            rescaled_list = []
+            batched_samples = torch.split(batch_samples, self.batch_size)
+            batched_labels = torch.split(batch_labels, self.batch_size)
+            for x, y in zip(batched_samples, batched_labels):
+                COUNT = len(x)
+                x = x.to(self.device)
+                y = y.to(self.device)
+                pred = self.model_obj(x)
+                y = y.to("cpu")
+                confi = softmax(pred.detach().cpu().numpy(), axis=1)
+                confi_corret = confi[np.arange(COUNT), y]
+                confi[np.arange(COUNT), y] = 0
+                confi_wrong = np.sum(confi, axis=1)
+                logit = np.log(confi_corret + 1e-45) - np.log(confi_wrong + 1e-45)
+                rescaled_list.append(logit)
+            all_rescaled_logits = np.concatenate(rescaled_list)
+        self.model_obj.to("cpu")
+        return all_rescaled_logits
 
 
 class Sklearn_Model(Model):

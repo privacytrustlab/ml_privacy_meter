@@ -1,11 +1,12 @@
-import torch
 import numpy as np
+import torch
 
 
 def get_signal_on_argumented_data(model_pm, data, targets, method=None):
     if method is None:
-        return model_pm.get_loss(data, targets)
+        return model_pm.get_rescaled_logits(data, targets)
     elif method == "argumented":
+        # implement your own way of using the argumented data for inferring membership
         reflect = True
         shift = 0
         stride = 1
@@ -16,9 +17,9 @@ def get_signal_on_argumented_data(model_pm, data, targets, method=None):
             for dx in range(0, 2 * shift + 1, stride):
                 for dy in range(0, 2 * shift + 1, stride):
                     this_x = aug_pad[:, :, dx : dx + 32, dy : dy + 32]
-                    logits = model_pm.get_loss(this_x, targets)
+                    logits = model_pm.get_rescaled_logits(this_x, targets)
                     outs.append(logits)
-        return np.transpose(np.array(outs), (1,0)) # (batch size, number of aug)
+        return np.transpose(np.array(outs), (1, 0))  # (batch size, number of aug)
 
     else:
         raise NotImplementedError
