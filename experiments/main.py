@@ -25,6 +25,7 @@ from core import (
     prepare_priavcy_risk_report,
 )
 from dataset import get_dataset, get_dataset_subset
+from fast_train import get_cifar10_data
 from scipy.stats import norm
 from sklearn.metrics import auc, roc_curve
 from torch import nn
@@ -67,7 +68,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--cf",
         type=str,
-        default="config_models_online.yaml",
+        default="experiments/config_models_reference.yaml",
         help="Yaml file which contains the configurations",
     )
 
@@ -116,16 +117,19 @@ if __name__ == "__main__":
             target_model_idx_list = load_existing_target_model(
                 len(dataset), model_metadata_list, configs
             )
-            trained_target_models_list = load_existing_models(
-                model_metadata_list,
-                target_model_idx_list,
-                configs["train"]["model_name"],
-            )
             trained_target_dataset_list = load_dataset_for_existing_models(
                 len(dataset),
                 model_metadata_list,
                 target_model_idx_list,
                 configs["data"],
+            )
+
+            trained_target_models_list = load_existing_models(
+                model_metadata_list,
+                target_model_idx_list,
+                configs["train"]["model_name"],
+                trained_target_dataset_list,
+                dataset,
             )
             num_target_models = configs["train"]["num_target_model"] - len(
                 trained_target_dataset_list
@@ -182,6 +186,7 @@ if __name__ == "__main__":
             configs["audit"],
             model_metadata_list,
             target_model_idx_list,
+            configs["train"]["model_name"]
         )
         logger.info(
             "Prepare the information source costs %0.5f seconds",
@@ -327,7 +332,7 @@ if __name__ == "__main__":
         ]
 
         # Test the models' performance on the data indicated by the audit.idx
-        data, targets = get_dataset_subset(dataset, [configs["audit"]["data_idx"]])
+        data, targets = get_dataset_subset(dataset, [configs["audit"]["data_idx"]], configs["audit"]["model_name"])
         in_signal = np.array(
             [model.get_loss(data, targets).item() for model in in_model_list_pm]
         )
@@ -425,29 +430,55 @@ if __name__ == "__main__":
             keep_ratio=p_ratio,
         )
         data, targets = get_dataset_subset(
-            dataset, np.arange(dataset_size)
+            dataset, np.arange(dataset_size), configs["train"]["model_name"]
         )  # only the train dataset we want to attack
+        if model_metadata_list["current_idx"] == 0:
+            (model_list, model_metadata_dict, trained_model_idx_list) = prepare_models(
+                log_dir,
+                dataset,
+                data_split_info,
+                configs["train"],
+                model_metadata_list,
+            )
 
-        (model_list, model_metadata_dict, trained_model_idx_list) = prepare_models(
-            log_dir,
-            dataset,
-            data_split_info,
-            configs["train"],
-            model_metadata_list,
-        )
-        signals = []
-        for model in model_list:
-            model_pm = PytorchModelTensor(
-                model_obj=model,
-                loss_fn=nn.CrossEntropyLoss(),
-                device=configs["audit"]["device"],
-                batch_size=10000,
-            )
-            signals.append(
-                get_signal_on_argumented_data(
-                    model_pm, data, targets, method="argumented"
+            signals = []
+            for model in model_list:
+                model_pm = PytorchModelTensor(
+                    model_obj=model,
+                    loss_fn=nn.CrossEntropyLoss(),
+                    device=configs["audit"]["device"],
+                    batch_size=10000,
                 )
+                signals.append(
+                    get_signal_on_argumented_data(
+                        model_pm, data, targets, method="argumented"
+                    )
+                )
+        else:
+            signals = []
+            all_data = get_cifar10_data(
+                dataset, np.arange(dataset_size), np.arange(dataset_size)
             )
+            data = all_data["train"]["images"]
+            targets = all_data["train"]["targets"]
+            for idx in range(model_metadata_list["current_idx"]):
+                print("load the model")
+                model_pm = PytorchModelTensor(
+                    model_obj=load_existing_models(
+                        model_metadata_list,
+                        [idx],
+                        configs["train"]["model_name"],
+                    )[0],
+                    loss_fn=nn.CrossEntropyLoss(),
+                    device=configs["audit"]["device"],
+                    batch_size=10000,
+                )
+                print("compute the signal")
+                signals.append(
+                    get_signal_on_argumented_data(
+                        model_pm, data, targets, method="argumented"
+                    )
+                )
 
         # # Get the logits for each model
         signals = np.array(signals)

@@ -281,6 +281,7 @@ class ROCCurveReport(AuditReport):
             plt.savefig(fname=filename, dpi=1000)
         if show:
             plt.show()
+        print(f"AUC = {roc_auc:.03f}")
         plt.clf()
 
 

@@ -9,6 +9,7 @@ import torchvision
 import torchvision.transforms
 import torchvision.transforms as transforms
 from argument import get_argumented_data
+from fast_train import get_batches, get_cifar10_data
 from torch.utils.data import DataLoader, Dataset
 from torchvision import transforms
 from torchvision.datasets import CIFAR10
@@ -89,21 +90,37 @@ def get_dataset(dataset_name: str, data_dir: str):
     return all_data
 
 
-def get_dataset_subset(dataset: torchvision.datasets, index: List(int)):
+def get_dataset_subset(
+    dataset: torchvision.datasets, index: List(int), model_name="CNN"
+):
     """Get a subset of the dataset.
 
     Args:
         dataset (torchvision.datasets): Whole dataset.
         index (list): List of index.
+        model_name (str): name of the model.
     """
     assert max(index) < len(dataset) and min(index) >= 0, "Index out of range"
-    data_loader = get_dataloader(
-        torch.utils.data.Subset(dataset, index),
-        batch_size=len(index),
-        shuffle=False,
-    )
-    for data, targets in data_loader:
-        return data, targets
+    if model_name != "speedyresnet":  ## check if we need to change
+        data_loader = get_dataloader(
+            torch.utils.data.Subset(dataset, index),
+            batch_size=len(index),
+            shuffle=False,
+        )
+        for data, targets in data_loader:
+            return data, targets
+    else:
+        data = get_cifar10_data(dataset, index[:1], index)
+        input_list = []
+        targets_list = []
+        for inputs, targets in get_batches(
+            data, key="eval", batchsize=2500, shuffle=False
+        ):
+            input_list.append(inputs)
+            targets_list.append(targets)
+        inputs = torch.cat(input_list, dim=0)
+        targets = torch.cat(targets_list, dim=0)
+        return inputs, targets
 
 
 def get_dataloader(
