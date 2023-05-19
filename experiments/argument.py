@@ -3,9 +3,7 @@ import torch
 
 
 def get_signal_on_argumented_data(model_pm, data, targets, method=None):
-    if method is None:
-        return model_pm.get_rescaled_logits(data, targets)
-    elif method == "argumented":
+    if method == "argumented":
         # implement your own way of using the argumented data for inferring membership
         reflect = True
         shift = 0
@@ -22,7 +20,7 @@ def get_signal_on_argumented_data(model_pm, data, targets, method=None):
         return np.transpose(np.array(outs), (1, 0))  # (batch size, number of aug)
 
     else:
-        raise NotImplementedError
+        return model_pm.get_rescaled_logits(data, targets)
 
 
 def get_argumented_data(data, targets, method=None):

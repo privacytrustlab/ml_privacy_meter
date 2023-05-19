@@ -8,6 +8,9 @@ audit: # Configurations for auditing
   algorithm: online # String for indicating the membership inference attack. We currently support population, reference.
   report_log: report_online # String that indicates the folder where we save the and auditing report.
   device: cuda:1
+  fix_variance: True # Indicate hwether to fix the variance of the signals for all data points
+  offline: False # Indicate whether to use the offline setting
+  argumentation: none # Indicate whether to use argumentation for the query points
 
 train: # Configuration for training
   type: pytorch # Training framework (we only support pytorch now).
@@ -17,7 +20,7 @@ train: # Configuration for training
   optimizer: AdamW # String which indicates the optimizer. We support Adam and SGD.
   learning_rate: 0.1 # Float number for indicating learning rate for training the target model.
   weight_decay: 0.0005 # Float number for indicating weight decay for training the target model.
-  model_name: CNN # String for indicating the model type. We support CNN. More model types can be added in model.py.
+  model_name: speedyresnet # String for indicating the model type. We support CNN. More model types can be added in model.py.
   momentum: 0.9
   device: cuda:1 # String for indicating the device we want to use for training models.
   num_in_models: 8 # Integer number that indicates how many target models trained on idx

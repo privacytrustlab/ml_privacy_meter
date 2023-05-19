@@ -25,7 +25,7 @@ from core import (
     prepare_priavcy_risk_report,
 )
 from dataset import get_dataset, get_dataset_subset
-from fast_train import get_cifar10_data
+from plot import plot_roc, plot_signal_histogram
 from scipy.stats import norm
 from sklearn.metrics import auc, roc_curve
 from torch import nn
@@ -34,6 +34,7 @@ from util import (
     load_leave_one_out_models,
     load_models_with_data_idx_list,
     load_models_without_data_idx_list,
+    sweep,
 )
 
 from privacy_meter.audit import Audit
@@ -107,7 +108,9 @@ if __name__ == "__main__":
 
     privacy_game = configs["audit"]["privacy_game"]
 
-    # Check the auditing game.
+    ############################
+    # Privacy auditing for a model or an algorithm
+    ############################
     if (
         privacy_game in ["avg_privacy_loss_training_algo", "privacy_loss_model"]
         and "online" not in configs["audit"]["algorithm"]
@@ -227,12 +230,9 @@ if __name__ == "__main__":
             time.time() - baseline_time,
         )
 
-        logger.info(
-            "Run the priavcy meter for the all steps costs %0.5f seconds",
-            time.time() - start_time,
-        )
-
-    # Auditing the priavcy risk for an individual data point
+    ############################
+    # Privacy auditing for a sample
+    ############################
     elif configs["audit"]["privacy_game"] == "privacy_loss_sample":
         # Load existing models that match the requirement
         assert (
@@ -338,90 +338,40 @@ if __name__ == "__main__":
             dataset, [configs["audit"]["data_idx"]], configs["audit"]["model_name"]
         )
         in_signal = np.array(
-            [model.get_rescaled_logits(data, targets).item() for model in in_model_list_pm]
+            [
+                model.get_rescaled_logits(data, targets).item()
+                for model in in_model_list_pm
+            ]
         )
         out_signal = np.array(
-            [model.get_rescaled_logits(data, targets).item() for model in out_model_list_pm]
+            [
+                model.get_rescaled_logits(data, targets).item()
+                for model in out_model_list_pm
+            ]
         )
-
-        # # Rescale the loss
-        # in_signal = in_signal + 1e-17  # avoid nan
-        # in_signal = -np.log(np.divide(np.exp(-in_signal), (1 - np.exp(-in_signal))))
-        # out_signal = out_signal + 1e-17  # avoid nan
-        # out_signal = -np.log(np.divide(np.exp(-out_signal), (1 - np.exp(-out_signal))))
 
         # Generate the privacy risk report
-        labels = np.concatenate(
-            [np.ones(in_signal.shape[0]), np.zeros(out_signal.shape[0])]
+        plot_signal_histogram(
+            in_signal,
+            out_signal,
+            configs["train"]["data_idx"],
+            configs["audit"]["data_idx"],
+            f"{log_dir}/{configs['audit']['report_log']}/individual_pr_{configs['train']['data_idx']}_{configs['audit']['data_idx']}.png",
         )
-        histogram = sns.histplot(
-            data=pd.DataFrame(
-                {
-                    "Signal": np.concatenate([in_signal, out_signal]),
-                    "Membership": [
-                        f"In ({configs['train']['data_idx']})"
-                        if y == 1
-                        else f"Out ({configs['train']['data_idx']})"
-                        for y in labels
-                    ],
-                }
-            ),
-            x="Signal",
-            hue="Membership",
-            element="step",
-            kde=True,
-        )
-        plt.grid()
-        plt.xlabel("Signal value")
-        plt.ylabel("Number of Models")
-        plt.title(f"Signal histogram for data point {configs['audit']['data_idx']}")
-        plt.savefig(
-            f"{log_dir}/{configs['audit']['report_log']}/individual_pr_{configs['train']['data_idx']}_{configs['audit']['data_idx']}.png"
+        fpr_list, tpr_list, roc_auc = sweep(in_signal, out_signal)
+        plot_roc(
+            fpr_list,
+            tpr_list,
+            roc_auc,
+            f"{log_dir}/{configs['audit']['report_log']}/individual_pr_roc_{configs['train']['data_idx']}_{configs['audit']['data_idx']}.png",
         )
 
-        # Generate the ROC
-        all_signals = np.concatenate([in_signal, out_signal])
-        all_signals.sort()
-        tpr_list = []
-        fpr_list = []
-        for threshold in all_signals:
-            tp = np.sum(in_signal < threshold)
-            fp = np.sum(out_signal < threshold)
-            tn = np.sum(out_signal >= threshold)
-            fn = np.sum(in_signal >= threshold)
-            tpr = tp / (tp + fn)
-            fpr = fp / (fp + tn)
-            tpr_list.append(tpr)
-            fpr_list.append(fpr)
-        roc_auc = np.trapz(x=fpr_list, y=tpr_list)
-        range01 = np.linspace(0, 1)
-        plt.fill_between(fpr_list, tpr_list, alpha=0.15)
-        plt.plot(range01, range01, "--", label="Random guess")
-        plt.plot(fpr_list, tpr_list, label="ROC curve")
-        plt.xlim([0, 1])
-        plt.ylim([0, 1])
-        plt.grid()
-        plt.legend()
-        plt.xlabel("False positive rate (FPR)")
-        plt.ylabel("True positive rate (TPR)")
-        plt.title("ROC curve")
-        plt.text(
-            0.7,
-            0.3,
-            f"AUC = {roc_auc:.03f}",
-            horizontalalignment="center",
-            verticalalignment="center",
-            bbox=dict(facecolor="white", alpha=0.5),
-        )
-        plt.savefig(
-            fname=f"{log_dir}/{configs['audit']['report_log']}/individual_pr_roc_{configs['train']['data_idx']}_{configs['audit']['data_idx']}.png",
-            dpi=1000,
-        )
-        plt.clf()
-
+    ############################
+    # Privacy auditing for an model with online attack (i.e., adversary trains models with/without each target points)
+    ############################
     elif "online" in configs["audit"]["algorithm"]:
-        print("Online attack")
         # The following code is modified from the original code in the repo: https://github.com/tensorflow/privacy/tree/master/research/mi_lira_2021
+        baseline_time = time.time()
         p_ratio = configs["data"]["keep_ratio"]
         dataset_size = configs["data"]["dataset_size"]
         data_split_info, keep_matrix = prepare_datasets_for_online_attack(
@@ -437,6 +387,11 @@ if __name__ == "__main__":
         data, targets = get_dataset_subset(
             dataset, np.arange(dataset_size), configs["train"]["model_name"]
         )  # only the train dataset we want to attack
+        logger.info(
+            "Prepare the datasets costs %0.5f seconds",
+            time.time() - baseline_time,
+        )
+        baseline_time = time.time()
         if model_metadata_list["current_idx"] == 0:
             (model_list, model_metadata_dict, trained_model_idx_list) = prepare_models(
                 log_dir,
@@ -445,7 +400,11 @@ if __name__ == "__main__":
                 configs["train"],
                 model_metadata_list,
             )
-
+            logger.info(
+                "Prepare the models costs %0.5f seconds",
+                time.time() - baseline_time,
+            )
+            baseline_time = time.time()
             signals = []
             for model in model_list:
                 model_pm = PytorchModelTensor(
@@ -456,13 +415,21 @@ if __name__ == "__main__":
                 )
                 signals.append(
                     get_signal_on_argumented_data(
-                        model_pm, data, targets, method="argumented"
+                        model_pm,
+                        data,
+                        targets,
+                        method=configs["audit"]["argumentation"],
                     )
                 )
+            logger.info(
+                "Prepare the signals costs %0.5f seconds",
+                time.time() - baseline_time,
+            )
         else:
+            baseline_time = time.time()
             signals = []
             for idx in range(model_metadata_list["current_idx"]):
-                print("load the model")
+                print("load the model and compute signals for model %d" % idx)
                 model_pm = PytorchModelTensor(
                     model_obj=load_existing_models(
                         model_metadata_list,
@@ -474,17 +441,20 @@ if __name__ == "__main__":
                     device=configs["audit"]["device"],
                     batch_size=10000,
                 )
-                print("compute the signal")
                 signals.append(
                     get_signal_on_argumented_data(
-                        model_pm, data, targets, method="argumented"
+                        model_pm,
+                        data,
+                        targets,
+                        method=configs["audit"]["argumentation"],
                     )
                 )
-
-        # # Get the logits for each model
+            logger.info(
+                "Prepare the signals costs %0.5f seconds",
+                time.time() - baseline_time,
+            )
+        baseline_time = time.time()
         signals = np.array(signals)
-
-        # target model
         target_signal = signals[-1:, :]
         reference_signals = signals[:-1, :]
         reference_keep_matrix = keep_matrix[:-1, :]
@@ -503,13 +473,12 @@ if __name__ == "__main__":
 
         in_size = min(min(map(len, in_signals)), configs["train"]["num_in_models"])
         out_size = min(min(map(len, out_signals)), configs["train"]["num_out_models"])
-        print(in_size, out_size)
         in_signals = np.array([x[:in_size] for x in in_signals]).astype("float32")
         out_signals = np.array([x[:out_size] for x in out_signals]).astype("float32")
 
         mean_in = np.median(in_signals, 1)
         mean_out = np.median(out_signals, 1)
-        fix_variance = True
+        fix_variance = configs["audit"]["fix_variance"]
         if fix_variance:
             std_in = np.std(in_signals)
             std_out = np.std(in_signals)
@@ -520,12 +489,12 @@ if __name__ == "__main__":
         prediction = []
         answers = []
         for ans, sc in zip(membership, target_signal):
-            pr_in = -norm.logpdf(sc, mean_in, std_in + 1e-30)
+            if configs["audit"]["offline"]:
+                pr_in = 0
+            else:
+                pr_in = -norm.logpdf(sc, mean_in, std_in + 1e-30)
             pr_out = -norm.logpdf(sc, mean_out, std_out + 1e-30)
             score = pr_in - pr_out
-            print(
-                score.shape, pr_in.shape, sc.shape, mean_in.shape, target_signal.shape
-            )
             if len(score.shape) == 2:  # the score is of size (data_size, num_arguments)
                 prediction.extend(score.mean(1))
             else:
@@ -538,30 +507,23 @@ if __name__ == "__main__":
         fpr_list, tpr_list, _ = roc_curve(answers, -prediction)
         acc = np.max(1 - (fpr_list + (1 - tpr_list)) / 2)
         roc_auc = auc(fpr_list, tpr_list)
-
+        logger.info(
+            "Prepare the privacy risks results costs %0.5f seconds",
+            time.time() - baseline_time,
+        )
         low = tpr_list[np.where(fpr_list < 0.001)[0][-1]]
         print("AUC %.4f, Accuracy %.4f, TPR@0.1%%FPR of %.4f" % (roc_auc, acc, low))
-        range01 = np.linspace(0, 1)
-        plt.fill_between(fpr_list, tpr_list, alpha=0.15)
-        plt.plot(range01, range01, "--", label="Random guess")
-        plt.plot(fpr_list, tpr_list, label="ROC curve")
-        plt.xlim([0, 1])
-        plt.ylim([0, 1])
-        plt.grid()
-        plt.legend()
-        plt.xlabel("False positive rate (FPR)")
-        plt.ylabel("True positive rate (TPR)")
-        plt.title("ROC curve")
-        plt.text(
-            0.7,
-            0.3,
-            f"AUC = {roc_auc:.03f}",
-            horizontalalignment="center",
-            verticalalignment="center",
-            bbox=dict(facecolor="white", alpha=0.5),
+        plot_roc(
+            fpr_list,
+            tpr_list,
+            roc_auc,
+            f"{log_dir}/{configs['audit']['report_log']}/online_attack.png",
         )
-        plt.savefig(
-            fname=f"{log_dir}/{configs['audit']['report_log']}/online_attack.png",
-            dpi=1000,
-        )
-        plt.clf()
+
+    ############################
+    # END
+    ############################
+    logger.info(
+        "Run the priavcy meter for the all steps costs %0.5f seconds",
+        time.time() - start_time,
+    )

@@ -1,6 +1,7 @@
 """This file contains information about the utility functions."""
 from ast import List
 
+import matplotlib.pyplot as plt
 import numpy as np
 import torch
 
@@ -154,9 +155,7 @@ def load_models_by_conditions(
     return matched_idx
 
 
-def load_models_by_model_idx(
-    model_metadata_dict: dict, model_idx_list: List(int)
-):
+def load_models_by_model_idx(model_metadata_dict: dict, model_idx_list: List(int)):
     """Load existing models metadata index based on the model index.
 
     Args:
@@ -175,9 +174,7 @@ def load_models_by_model_idx(
     return model_idx_list
 
 
-def load_models_with_data_idx_list(
-    model_metadata_dict: dict, data_idx_list: List(int)
-):
+def load_models_with_data_idx_list(model_metadata_dict: dict, data_idx_list: List(int)):
     """Load existing metadata index of models which are trained on the data index list.
 
     Args:
@@ -253,3 +250,20 @@ def load_leave_one_out_models(
                 if set(diff) == set(data_idx_list) and meta_idx not in matched_idx:
                     matched_idx.append(meta_idx)
     return matched_idx
+
+
+def sweep(in_signal, out_signal):
+    all_signals = np.concatenate([in_signal, out_signal])
+    all_signals.sort()
+    tpr_list = []
+    fpr_list = []
+    for threshold in all_signals:
+        tp = np.sum(in_signal < threshold)
+        fp = np.sum(out_signal < threshold)
+        tn = np.sum(out_signal >= threshold)
+        fn = np.sum(in_signal >= threshold)
+        tpr = tp / (tp + fn)
+        fpr = fp / (fp + tn)
+        tpr_list.append(tpr)
+        fpr_list.append(fpr)
+    return fpr_list, tpr_list, np.trapz(x=fpr_list, y=tpr_list)
