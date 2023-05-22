@@ -41,7 +41,7 @@ if __name__ == "__main__":
 
     baseline_time = time.time()
     # Train the target model based on the configurations.
-    config = {"epochs": 100, "learning_rate": 0.1, "device": "cuda:1", "optimizer": "SGD", "weight_decay":0.0005, "momentum": 0.9}
+    config = {"epochs": 100, "learning_rate": 0.1, "device": "cuda:0", "optimizer": "SGD", "weight_decay":0.0005, "momentum": 0.9}
     model = train(get_model(model_name), train_loader, config, test_loader)
     
     # model = get_model(model_name)
@@ -59,15 +59,15 @@ if __name__ == "__main__":
     
     
     # Test performance on the training dataset and test dataset
-    test_loss, test_acc = inference(model, test_loader, "cuda:1")
-    train_loss, train_acc = inference(model, train_loader, "cuda:1")
+    test_loss, test_acc = inference(model, test_loader, "cuda:0")
+    train_loss, train_acc = inference(model, train_loader, "cuda:0")
     print(f"Train accuracy {train_acc}, Train Loss {train_loss}")
     print(f"Test accuracy {test_acc}, Test Loss {test_loss}")
     print(f"Baseline time {time.time() - baseline_time}")
     
     # Test performance on the training dataset and test dataset
-    test_loss, test_acc = inference(model, test_loader, "cuda:1")
-    train_loss, train_acc = inference(model, train_loader, "cuda:1")
+    test_loss, test_acc = inference(model, test_loader, "cuda:0")
+    train_loss, train_acc = inference(model, train_loader, "cuda:0")
     print(f"Train accuracy {train_acc}, Train Loss {train_loss}")
     print(f"Test accuracy {test_acc}, Test Loss {test_loss}")
     print(f"Baseline time {time.time() - baseline_time}")

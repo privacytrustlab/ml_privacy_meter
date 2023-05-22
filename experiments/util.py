@@ -96,7 +96,7 @@ def get_split(
         np.ndarray: List of index
     """
     if split_method in "no_overlapping":
-        selected_index = np.array([i for i in all_index if i not in used_index])
+        selected_index = np.setdiff1d(all_index, used_index, assume_unique=True)
         if size <= len(selected_index):
             selected_index = np.random.choice(selected_index, size, replace=False)
         else:

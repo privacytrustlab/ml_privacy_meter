@@ -1,13 +1,13 @@
 run: # Configurations for a specific run
   random_seed: 12345 # Integer number of specifying random seed
-  log_dir: demo_online # String for indicating where to save all the information, including models and computed signals. We can reuse the models saved in the same log_dir.
+  log_dir: demo_lira # String for indicating where to save all the information, including models and computed signals. We can reuse the models saved in the same log_dir.
   time_log: True # Indicate whether to log the time for each step
 
 audit: # Configurations for auditing
   privacy_game: privacy_loss_model # Indicate the privacy game from privacy_loss_model, avg_privacy_loss_training_algo, privacy_loss_sample
   algorithm: online # String for indicating the membership inference attack. We currently support population, reference.
-  report_log: report_online # String that indicates the folder where we save the and auditing report.
-  device: cuda:1
+  report_log: report_online_f # String that indicates the folder where we save the and auditing report.
+  device: cuda:0
   fix_variance: True # Indicate hwether to fix the variance of the signals for all data points
   offline: False # Indicate whether to use the offline setting
   argumentation: none # Indicate whether to use argumentation for the query points
@@ -22,9 +22,9 @@ train: # Configuration for training
   weight_decay: 0.0005 # Float number for indicating weight decay for training the target model.
   model_name: speedyresnet # String for indicating the model type. We support CNN. More model types can be added in model.py.
   momentum: 0.9
-  device: cuda:1 # String for indicating the device we want to use for training models.
-  num_in_models: 8 # Integer number that indicates how many target models trained on idx
-  num_out_models: 8 # Integer number that indicates how many target models not trained on idx
+  device: cuda:0 # String for indicating the device we want to use for training models.
+  num_in_models: 128 # Integer number that indicates how many target models trained on idx
+  num_out_models: 128 # Integer number that indicates how many target models not trained on idx
   num_target_model: 1 # Number of total models we want to test
 
 data: # Configuration for data
