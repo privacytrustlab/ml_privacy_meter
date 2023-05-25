@@ -2,6 +2,7 @@
 import os
 import pickle
 from ast import List
+import math
 
 import numpy as np
 import torch
@@ -113,8 +114,16 @@ def get_dataset_subset(
         data = get_cifar10_data(dataset, index[:1], index)
         input_list = []
         targets_list = []
+
+        MAX_BATCH_SIZE = 5000 # to avoid OOM
+        size = len(index)
+        list_divisors = list(set(
+            factor for i in range(1, int(math.sqrt(size)) + 1) if size % i == 0 for factor in (i, size // i) if
+            factor < MAX_BATCH_SIZE))
+        batch_size = max(list_divisors)
+
         for inputs, targets in get_batches(
-            data, key="eval", batchsize=2500, shuffle=False
+                data, key="eval", batchsize=batch_size, shuffle=False
         ):
             input_list.append(inputs)
             targets_list.append(targets)
