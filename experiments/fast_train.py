@@ -866,6 +866,7 @@ def fast_train_fun(data, net, hyp=hyp, batchsize=batchsize, eval_batchsize = 250
                 ),
                 is_final_entry=(epoch >= math.ceil(hyp["misc"]["train_epochs"] - 1)),
             )
+    net_ema.to("cpu") 
     return net_ema, train_acc, train_loss, ema_val_acc, val_loss
 
 
