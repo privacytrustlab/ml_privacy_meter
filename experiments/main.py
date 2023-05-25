@@ -272,7 +272,7 @@ if __name__ == "__main__":
             PytorchModelTensor(
                 model_obj=model,
                 loss_fn=nn.CrossEntropyLoss(),
-                batch_size=1000,
+                batch_size=configs["audit_batch_size"],
                 device=configs["audit"]["device"],
             )
             for model in model_in_list
@@ -324,7 +324,7 @@ if __name__ == "__main__":
             PytorchModelTensor(
                 model_obj=model,
                 loss_fn=nn.CrossEntropyLoss(),
-                batch_size=1000,
+                batch_size=configs["audit_batch_size"],
                 device=configs["audit"]["device"],
             )
             for model in model_out_list
@@ -408,7 +408,7 @@ if __name__ == "__main__":
                     model_obj=model,
                     loss_fn=nn.CrossEntropyLoss(),
                     device=configs["audit"]["device"],
-                    batch_size=10000,
+                    batch_size=configs["audit_batch_size"],
                 )
                 signals.append(
                     get_signal_on_argumented_data(
