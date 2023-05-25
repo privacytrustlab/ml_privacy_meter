@@ -1,19 +1,16 @@
 """This file contains functions for loading the dataset"""
+import math
 import os
 import pickle
 from ast import List
-import math
 
 import numpy as np
 import torch
 import torchvision
-import torchvision.transforms
 import torchvision.transforms as transforms
 from argument import get_argumented_data
 from fast_train import get_batches, get_cifar10_data
-from torch.utils.data import DataLoader, Dataset
-from torchvision import transforms
-from torchvision.datasets import CIFAR10
+from torch.utils.data import Dataset
 
 
 class CustomCIFAR10(Dataset):
@@ -115,15 +112,21 @@ def get_dataset_subset(
         input_list = []
         targets_list = []
 
-        MAX_BATCH_SIZE = 5000 # to avoid OOM
+        MAX_BATCH_SIZE = 5000  # to avoid OOM
         size = len(index)
-        list_divisors = list(set(
-            factor for i in range(1, int(math.sqrt(size)) + 1) if size % i == 0 for factor in (i, size // i) if
-            factor < MAX_BATCH_SIZE))
+        list_divisors = list(
+            set(
+                factor
+                for i in range(1, int(math.sqrt(size)) + 1)
+                if size % i == 0
+                for factor in (i, size // i)
+                if factor < MAX_BATCH_SIZE
+            )
+        )
         batch_size = max(list_divisors)
 
         for inputs, targets in get_batches(
-                data, key="eval", batchsize=batch_size, shuffle=False
+            data, key="eval", batchsize=batch_size, shuffle=False
         ):
             input_list.append(inputs)
             targets_list.append(targets)

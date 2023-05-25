@@ -1,4 +1,3 @@
-import json
 import os
 import subprocess
 from abc import ABC, abstractmethod
@@ -42,38 +41,38 @@ latex_jinja_env = jinja2.Environment(
 
 # Config the name for metric id.
 EXPLANATIONS = {
-  "metric": {
-    "shadow_metric": {
-      "name": "Shadow metric",
-      "details": "The shadow metric is a membership inference metric, that uses the algorithm described in \\cite{https://doi.org/10.48550/arxiv.1610.05820}"
+    "metric": {
+        "shadow_metric": {
+            "name": "Shadow metric",
+            "details": "The shadow metric is a membership inference metric, that uses the algorithm described in \\cite{https://doi.org/10.48550/arxiv.1610.05820}",
+        },
+        "population_metric": {
+            "name": "Population metric",
+            "details": "[TODO] Add details in explanations.json (you can also edit citations.bib).",
+        },
+        "reference_metric": {
+            "name": "Reference metric",
+            "details": "[TODO] Add details in explanations.json (you can also edit citations.bib).",
+        },
     },
-    "population_metric": {
-      "name": "Population metric",
-      "details": "[TODO] Add details in explanations.json (you can also edit citations.bib)."
+    "figure": {
+        "roc_curve": {
+            "name": "ROC curve",
+            "details": "shows the ROC (Receiver Operating Characteristic) curve, a graph illustrating the performance of a classification model at various decision thresholds. The AUC (Area Under the Curve), represented in blue, is a threshold-independant measure of the classifier performance.\n\nA higher AUC is an indicator of a system vulnerable to the chosen metric. For reference, a random classifier yields an AUC of 0.5, while a perfect classifier yields an AUC of 1.0",
+        },
+        "confusion_matrix": {
+            "name": "Confusion matrix",
+            "details": "shows the confusion matrix, a graph illustrating the performance of a classification model for a specific decision threshold.\n\nHigher values on the top-left to bottom-right diagonal is an indicator of a system vulnerable to the chosen metric, while higher values on the top-right to bottom-left diagonal is an indicator of a system less vulnerable to the chosen metric.",
+        },
+        "signal_histogram": {
+            "name": "Signal histogram",
+            "details": "shows the histogram of the signal used by the chosen metric, on both members and non-member samples.\n\nA clear separation between the two groups is an indicator of a system vulnerable to the chosen metric.",
+        },
+        "vulnerable_points": {
+            "name": "Vulnerable points",
+            "details": "shows points that are most vulnerable to the chosen metric.\n\nThe score depends on the chosen metric, but is always between 0 and 1, with 0 meaning low vulnerability and 1 high vulnerability.",
+        },
     },
-    "reference_metric": {
-      "name": "Reference metric",
-      "details": "[TODO] Add details in explanations.json (you can also edit citations.bib)."
-    }
-  },
-  "figure": {
-    "roc_curve": {
-      "name": "ROC curve",
-      "details": "shows the ROC (Receiver Operating Characteristic) curve, a graph illustrating the performance of a classification model at various decision thresholds. The AUC (Area Under the Curve), represented in blue, is a threshold-independant measure of the classifier performance.\n\nA higher AUC is an indicator of a system vulnerable to the chosen metric. For reference, a random classifier yields an AUC of 0.5, while a perfect classifier yields an AUC of 1.0"
-    },
-    "confusion_matrix": {
-      "name": "Confusion matrix",
-      "details": "shows the confusion matrix, a graph illustrating the performance of a classification model for a specific decision threshold.\n\nHigher values on the top-left to bottom-right diagonal is an indicator of a system vulnerable to the chosen metric, while higher values on the top-right to bottom-left diagonal is an indicator of a system less vulnerable to the chosen metric."
-    },
-    "signal_histogram": {
-      "name": "Signal histogram",
-      "details": "shows the histogram of the signal used by the chosen metric, on both members and non-member samples.\n\nA clear separation between the two groups is an indicator of a system vulnerable to the chosen metric."
-    },
-    "vulnerable_points": {
-      "name": "Vulnerable points",
-      "details": "shows points that are most vulnerable to the chosen metric.\n\nThe score depends on the chosen metric, but is always between 0 and 1, with 0 meaning low vulnerability and 1 high vulnerability."
-    }
-  }
 }
 
 ########################################################################################################################
@@ -552,7 +551,6 @@ class VulnerablePointsReport(AuditReport):
 
         # If we are creating a LaTex
         if save_tex:
-
             # Load template
             template = latex_jinja_env.get_template(
                 f"{REPORT_FILES_DIR}/vulnerable_points_template.tex"
@@ -717,7 +715,6 @@ class PDFReport(AuditReport):
         print(f'LaTex file created:\t{os.path.abspath(f"{filename_no_extension}.tex")}')
 
         if call_pdflatex:
-
             # Compile the .tex file to a .pdf file. Several rounds are required to get the references (to papers, to
             # page numbers, and to figure numbers)
 
