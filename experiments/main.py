@@ -63,6 +63,57 @@ def setup_log(name: str, save_file: bool):
 
     return my_logger
 
+def parse_extra(parser, configs):
+    """Using a parser and a base config, modify the config according to the parser
+    For bash experiments.
+    Args:
+        parser (Parser): Parser with the basic arguments
+        configs (dict): Dict that we want to change according to the parser
+    Returns:
+        configs: modified input config
+    """
+    for key in configs:
+        # Generate arguments for top-level keys
+        arg_name = '--{}'.format(key)
+        parser.add_argument(arg_name, dest=key, default=None,
+                            help='{} parameter'.format(arg_name))
+        for subkey in configs[key]:
+            # Generate arguments for second-level keys
+            arg_name = '--{}.{}'.format(key, subkey)
+            parser.add_argument(arg_name, dest=subkey, default=None,
+                                help='{} parameter'.format(arg_name))
+            if isinstance(configs[key][subkey], dict):
+                for subsubkey in configs[key][subkey]:
+                    # Generate arguments for eventual third-level keys
+                    arg_name = '--{}.{}.{}'.format(key, subkey, subsubkey)
+                    parser.add_argument(arg_name, dest=subsubkey, default=None,
+                                        help='{} parameter'.format(arg_name))
+    # Parse command-line arguments
+    args, unknown_args = parser.parse_known_args()
+    # Update configuration dictionary with command-line arguments
+    if args:
+        for key in configs:
+            if args.__dict__.get(key) is not None:
+                configs[key] = args.__dict__.get(key)
+            for subkey in configs[key]:
+                if args.__dict__.get(subkey) is not None:
+                    configs[key][subkey] = args.__dict__.get(subkey)
+                if isinstance(configs[key][subkey], dict):
+                    for subsubkey in configs[key][subkey]:
+                        arg_name = '{}.{}.{}'.format(key, subkey, subsubkey)
+                        if args.__dict__.get(subsubkey) is not None:
+                            configs[key][subkey][subsubkey] = args.__dict__.get(subsubkey)
+    return configs
+
+def metric_results(fpr_list, tpr_list):
+    acc = np.max(1 - (fpr_list + (1 - tpr_list)) / 2)
+    roc_auc = auc(fpr_list, tpr_list)
+
+    one_percent = tpr_list[np.where(fpr_list < 0.01)[0][-1]]
+    tenth_percent = tpr_list[np.where(fpr_list < 0.001)[0][-1]]
+    hundredth_percent = tpr_list[np.where(fpr_list < 0.0001)[0][-1]]
+
+    return roc_auc, acc, one_percent, tenth_percent, hundredth_percent
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -335,7 +386,7 @@ if __name__ == "__main__":
 
         # Test the models' performance on the data indicated by the audit.idx
         data, targets = get_dataset_subset(
-            dataset, [configs["audit"]["data_idx"]], configs["audit"]["model_name"]
+            dataset, [configs["audit"]["data_idx"]], configs["audit"]["model_name"], device=configs["audit"]["device"]
         )
         in_signal = np.array(
             [
@@ -374,18 +425,17 @@ if __name__ == "__main__":
         baseline_time = time.time()
         p_ratio = configs["data"]["keep_ratio"]
         dataset_size = configs["data"]["dataset_size"]
+        number_of_models_lira = configs["train"]["num_in_models"] + configs["train"]["num_out_models"] + configs["train"]["num_target_model"]
         data_split_info, keep_matrix = prepare_datasets_for_online_attack(
             dataset_size,
             num_models=(
-                configs["train"]["num_in_models"]
-                + configs["train"]["num_out_models"]
-                + configs["train"]["num_target_model"]
+                number_of_models_lira
             ),
             keep_ratio=p_ratio,
             is_uniform=False,
         )
         data, targets = get_dataset_subset(
-            dataset, np.arange(dataset_size), configs["train"]["model_name"]
+            dataset, np.arange(dataset_size), configs["train"]["model_name"], device=configs["train"]["device"]
         )  # only the train dataset we want to attack
         logger.info(
             "Prepare the datasets costs %0.5f seconds",
@@ -406,17 +456,17 @@ if __name__ == "__main__":
             )
             baseline_time = time.time()
             signals = []
-            for model in model_list:
-                model_pm = PytorchModelTensor(
+            for i, model in enumerate(model_list):
+                model_init = lambda: PytorchModelTensor(
                     model_obj=model,
                     loss_fn=nn.CrossEntropyLoss(),
                     device=configs["audit"]["device"],
-                    batch_size=10000,
+                    batch_size=int(configs["audit"]["audit_batch_size"]),
                 )
                 signals.append(
                     get_signal_on_argumented_data(
                         model_pm,
-                        data,
+                        data, # but we query a smaller dataset..
                         targets,
                         method=configs["audit"]["argumentation"],
                     )
@@ -428,7 +478,8 @@ if __name__ == "__main__":
         else:
             baseline_time = time.time()
             signals = []
-            for idx in range(model_metadata_list["current_idx"]):
+            number_of_models_lira = configs["train"]["num_in_models"] + configs["train"]["num_out_models"] + configs["train"]["num_target_model"]
+            for idx in range(number_of_models_lira): # we consider that we train lira online setting first.
                 print("load the model and compute signals for model %d" % idx)
                 model_pm = PytorchModelTensor(
                     model_obj=load_existing_models(
@@ -436,10 +487,11 @@ if __name__ == "__main__":
                         [idx],
                         configs["train"]["model_name"],
                         dataset,
+                        device=configs["audit"]["device"]
                     )[0],
                     loss_fn=nn.CrossEntropyLoss(),
                     device=configs["audit"]["device"],
-                    batch_size=10000,
+                    batch_size=int(configs["audit"]["audit_batch_size"]),
                 )
                 signals.append(
                     get_signal_on_argumented_data(
@@ -503,8 +555,9 @@ if __name__ == "__main__":
 
         prediction = np.array(prediction)
         answers = np.array(answers, dtype=bool)
+        print(prediction.shape, answers.shape, prediction, np.isnan(prediction).sum())
         # Last step: compute the metrics
-        fpr_list, tpr_list, _ = roc_curve(answers, -prediction)
+        fpr_list, tpr_list, _ = roc_curve(answers.ravel(), -prediction.ravel())
         acc = np.max(1 - (fpr_list + (1 - tpr_list)) / 2)
         roc_auc = auc(fpr_list, tpr_list)
         logger.info(
