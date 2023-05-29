@@ -63,48 +63,6 @@ def setup_log(name: str, save_file: bool):
 
     return my_logger
 
-def parse_extra(parser, configs):
-    """Using a parser and a base config, modify the config according to the parser
-    For bash experiments.
-    Args:
-        parser (Parser): Parser with the basic arguments
-        configs (dict): Dict that we want to change according to the parser
-    Returns:
-        configs: modified input config
-    """
-    for key in configs:
-        # Generate arguments for top-level keys
-        arg_name = '--{}'.format(key)
-        parser.add_argument(arg_name, dest=key, default=None,
-                            help='{} parameter'.format(arg_name))
-        for subkey in configs[key]:
-            # Generate arguments for second-level keys
-            arg_name = '--{}.{}'.format(key, subkey)
-            parser.add_argument(arg_name, dest=subkey, default=None,
-                                help='{} parameter'.format(arg_name))
-            if isinstance(configs[key][subkey], dict):
-                for subsubkey in configs[key][subkey]:
-                    # Generate arguments for eventual third-level keys
-                    arg_name = '--{}.{}.{}'.format(key, subkey, subsubkey)
-                    parser.add_argument(arg_name, dest=subsubkey, default=None,
-                                        help='{} parameter'.format(arg_name))
-    # Parse command-line arguments
-    args, unknown_args = parser.parse_known_args()
-    # Update configuration dictionary with command-line arguments
-    if args:
-        for key in configs:
-            if args.__dict__.get(key) is not None:
-                configs[key] = args.__dict__.get(key)
-            for subkey in configs[key]:
-                if args.__dict__.get(subkey) is not None:
-                    configs[key][subkey] = args.__dict__.get(subkey)
-                if isinstance(configs[key][subkey], dict):
-                    for subsubkey in configs[key][subkey]:
-                        arg_name = '{}.{}.{}'.format(key, subkey, subsubkey)
-                        if args.__dict__.get(subsubkey) is not None:
-                            configs[key][subkey][subsubkey] = args.__dict__.get(subsubkey)
-    return configs
-
 def metric_results(fpr_list, tpr_list):
     acc = np.max(1 - (fpr_list + (1 - tpr_list)) / 2)
     roc_auc = auc(fpr_list, tpr_list)
