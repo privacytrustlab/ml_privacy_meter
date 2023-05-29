@@ -63,16 +63,6 @@ def setup_log(name: str, save_file: bool):
 
     return my_logger
 
-def metric_results(fpr_list, tpr_list):
-    acc = np.max(1 - (fpr_list + (1 - tpr_list)) / 2)
-    roc_auc = auc(fpr_list, tpr_list)
-
-    one_percent = tpr_list[np.where(fpr_list < 0.01)[0][-1]]
-    tenth_percent = tpr_list[np.where(fpr_list < 0.001)[0][-1]]
-    hundredth_percent = tpr_list[np.where(fpr_list < 0.0001)[0][-1]]
-
-    return roc_auc, acc, one_percent, tenth_percent, hundredth_percent
-
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument(
