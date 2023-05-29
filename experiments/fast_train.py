@@ -582,7 +582,7 @@ def get_batches(data_dict, key, batchsize, epoch_fraction=1., cutmix_size=None, 
     if key == 'train':
         images = batch_crop(data_dict[key]['images'], crop_size) # TODO: hardcoded image size for now?
         images = batch_flip_lr(images)
-        images, targets = batch_cutmix(images, data_dict[key]['targets'], patch_size=cutmix_size)
+        images, targets = batch_cutmix(images, data_dict[key]['targets'], patch_size=cutmix_size, device=device)
     else:
         images = data_dict[key]['images']
         targets = data_dict[key]['targets']
