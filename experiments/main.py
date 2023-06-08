@@ -376,7 +376,6 @@ if __name__ == "__main__":
             num_models=(
                 configs["train"]["num_in_models"]
                 + configs["train"]["num_out_models"]
-                + configs["train"]["num_target_model"]
             ),
             keep_ratio=p_ratio,
             is_uniform=False,
@@ -452,20 +451,20 @@ if __name__ == "__main__":
             )
         baseline_time = time.time()
         signals = np.array(signals)
-        target_signal = signals[-1:, :]
-        reference_signals = signals[:-1, :]
-        reference_keep_matrix = keep_matrix[:-1, :]
-        membership = keep_matrix[-1:, :]
+        # target_signal = signals[-1:, :]
+        # reference_signals = signals[:-1, :]
+        # reference_keep_matrix = keep_matrix[:-1, :]
+        # membership = keep_matrix[-1:, :]
 
         in_signals = []
         out_signals = []
 
         for data_idx in range(dataset_size):
             in_signals.append(
-                reference_signals[reference_keep_matrix[:, data_idx], data_idx]
+                signals[keep_matrix[:, data_idx], data_idx]
             )
             out_signals.append(
-                reference_signals[~reference_keep_matrix[:, data_idx], data_idx]
+                signals[~keep_matrix[:, data_idx], data_idx]
             )
 
         in_size = min(min(map(len, in_signals)), configs["train"]["num_in_models"])
@@ -485,7 +484,7 @@ if __name__ == "__main__":
 
         prediction = []
         answers = []
-        for ans, sc in zip(membership, target_signal):
+        for ans, sc in zip(keep_matrix, signals):
             if configs["audit"]["offline"]:
                 pr_in = 0
             else:
@@ -494,9 +493,14 @@ if __name__ == "__main__":
             score = pr_in - pr_out
             if len(score.shape) == 2:  # the score is of size (data_size, num_arguments)
                 prediction.extend(score.mean(1))
+                fpr_list, tpr_list, _ = roc_curve(ans, -score.mean(1))
             else:
                 prediction.extend(score)
+                fpr_list, tpr_list, _ = roc_curve(ans, -score)
             answers.extend(ans)
+            acc = np.max(1 - (fpr_list + (1 - tpr_list)) / 2)
+            roc_auc = auc(fpr_list, tpr_list)
+            print(roc_auc)
 
         prediction = np.array(prediction)
         answers = np.array(answers, dtype=bool)
