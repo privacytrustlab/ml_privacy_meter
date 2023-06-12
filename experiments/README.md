@@ -47,3 +47,7 @@ python main.py --cf config_samples.yaml
 ```
 
 After the completion, you can locate the privacy risk report in the `demo/report_sample` folder.
+
+## Training model in the most efficient way
+
+We have incorporated the fast training library, ([hlb-CIFAR10](https://github.com/tysam-code/hlb-CIFAR10)), developed by [tysam-code](https://github.com/tysam-code), into Privacy Meter. This library achieves a remarkable training accuracy of 94% on CIFAR-10 in approximately 6.84 seconds on a single A100 GPU, setting a new world speed record. This integration enables users to efficiently evaluate the effectiveness of the newly proposed algorithm against existing attack algorithms using the CIFAR-10 dataset. To utilize this fast training library, simply specify the `model_name` as `speedyresnet` in the configuration file

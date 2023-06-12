@@ -375,7 +375,9 @@ if __name__ == "__main__":
             dataset_size,
             num_models=(
                 configs["train"]["num_in_models"]
-                + configs["train"]["num_out_models"]
+                + configs["train"][
+                    "num_out_models"
+                ]  # + configs["train"]["num_target_model"]
             ),
             keep_ratio=p_ratio,
             is_uniform=False,
@@ -389,6 +391,7 @@ if __name__ == "__main__":
         )
         baseline_time = time.time()
         if model_metadata_list["current_idx"] == 0:
+            # if the models are already trained and saved in the disk
             (model_list, model_metadata_dict, trained_model_idx_list) = prepare_models(
                 log_dir,
                 dataset,
@@ -451,27 +454,30 @@ if __name__ == "__main__":
             )
         baseline_time = time.time()
         signals = np.array(signals)
-        # target_signal = signals[-1:, :]
-        # reference_signals = signals[:-1, :]
-        # reference_keep_matrix = keep_matrix[:-1, :]
-        # membership = keep_matrix[-1:, :]
 
+        # number of models we want to consider as test
+        n_test = 1
+        target_signal = signals[-n_test:, :]
+        reference_signals = signals[:-n_test, :]
+        reference_keep_matrix = keep_matrix[:-n_test, :]
+        membership = keep_matrix[-n_test:, :]
+
+        print(reference_signals.shape, target_signal.shape)
         in_signals = []
         out_signals = []
 
         for data_idx in range(dataset_size):
             in_signals.append(
-                signals[keep_matrix[:, data_idx], data_idx]
+                reference_signals[reference_keep_matrix[:, data_idx], data_idx]
             )
             out_signals.append(
-                signals[~keep_matrix[:, data_idx], data_idx]
+                reference_signals[~reference_keep_matrix[:, data_idx], data_idx]
             )
 
         in_size = min(min(map(len, in_signals)), configs["train"]["num_in_models"])
         out_size = min(min(map(len, out_signals)), configs["train"]["num_out_models"])
         in_signals = np.array([x[:in_size] for x in in_signals]).astype("float32")
         out_signals = np.array([x[:out_size] for x in out_signals]).astype("float32")
-
         mean_in = np.median(in_signals, 1)
         mean_out = np.median(out_signals, 1)
         fix_variance = configs["audit"]["fix_variance"]
@@ -484,7 +490,7 @@ if __name__ == "__main__":
 
         prediction = []
         answers = []
-        for ans, sc in zip(keep_matrix, signals):
+        for ans, sc in zip(membership, target_signal):
             if configs["audit"]["offline"]:
                 pr_in = 0
             else:
