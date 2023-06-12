@@ -13,23 +13,6 @@ from fast_train import get_batches, get_cifar10_data
 from torch.utils.data import Dataset
 
 
-class CustomCIFAR10(Dataset):
-    def __init__(self, dataset, method):
-        self.dataset = dataset
-        self.method = method
-
-    def __len__(self):
-        return len(self.dataset)
-
-    def __getitem__(self, index):
-        """
-        Modify this method to implement your custom logic for loading data
-        """
-        img, target = self.dataset[index]
-        img, target = get_argumented_data(img, target, self.method)
-        return img, target
-
-
 class InfiniteRepeatDataset(Dataset):
     def __init__(self, dataset):
         self.dataset = dataset
@@ -81,6 +64,27 @@ def get_dataset(dataset_name: str, data_dir: str):
             with open(f"{path}.pkl", "wb") as file:
                 pickle.dump(all_data, file)
             print(f"Save data to {path}.pkl")
+        elif dataset_name == "cifar100":
+            transform = transforms.Compose(
+                [
+                    transforms.ToTensor(),
+                    transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5]),
+                ]
+            )
+            all_data = torchvision.datasets.CIFAR100(
+                root=path, train=True, download=True, transform=transform
+            )
+            test_data = torchvision.datasets.CIFAR100(
+                root=path, train=False, download=True, transform=transform
+            )
+            all_features = np.concatenate([all_data.data, test_data.data], axis=0)
+            all_targets = np.concatenate([all_data.targets, test_data.targets], axis=0)
+            all_data.data = all_features
+            all_data.targets = all_targets
+            with open(f"{path}.pkl", "wb") as file:
+                pickle.dump(all_data, file)
+            print(f"Save data to {path}.pkl")
+
         else:
             raise NotImplementedError(f"{dataset_name} is not implemented")
 

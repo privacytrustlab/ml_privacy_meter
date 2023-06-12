@@ -82,4 +82,6 @@ def get_model(model_type: str, num_classes: int = 10) -> nn.Module:
     if model_type == "wrn28-2":
         model = WideResNet(nin=3, nclass=10, depth=28, width=2)
         return model
+    if model_type == "CNN_100":
+        return Net(num_classes=100)
     raise NotImplementedError(f"{model_type} is not implemented")

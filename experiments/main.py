@@ -375,9 +375,8 @@ if __name__ == "__main__":
             dataset_size,
             num_models=(
                 configs["train"]["num_in_models"]
-                + configs["train"][
-                    "num_out_models"
-                ]  # + configs["train"]["num_target_model"]
+                + configs["train"]["num_out_models"]
+                + configs["train"]["num_target_model"]
             ),
             keep_ratio=p_ratio,
             is_uniform=False,
@@ -410,7 +409,7 @@ if __name__ == "__main__":
                     model_obj=model,
                     loss_fn=nn.CrossEntropyLoss(),
                     device=configs["audit"]["device"],
-                    batch_size=configs["audit_batch_size"],
+                    batch_size=configs["audit"]["audit_batch_size"],
                 )
                 signals.append(
                     get_signal_on_argumented_data(

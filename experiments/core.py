@@ -153,7 +153,6 @@ def load_existing_models(
     model_metadata_dict: dict,
     matched_idx: List(int),
     model_name: str,
-    # dataset_list=None,
     dataset=None,
 ):
     """Load existing models from dicks for matched_idx.
