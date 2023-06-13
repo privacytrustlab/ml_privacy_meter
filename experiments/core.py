@@ -156,7 +156,7 @@ def load_existing_models(
     model_name: str,
     dataset: torchvision.datasets,
     dataset_name: str,
-    device="cuda"
+    device="cuda",
 ):
     """Load existing models from dicks for matched_idx.
 
@@ -177,12 +177,7 @@ def load_existing_models(
             if model_name != "speedyresnet":
                 model = get_model(model_name, dataset_name)
             else:
-                data = get_cifar10_data(
-                    dataset,
-                    [0],
-                    [0],
-                    device=device
-                )
+                data = get_cifar10_data(dataset, [0], [0], device=device)
                 model = NetworkEMA(make_net(data, device=device))
             with open(f"{metadata['model_path']}", "rb") as file:
                 model_weight = pickle.load(file)
@@ -510,14 +505,14 @@ def prepare_models(
                 dataset,
                 data_split["split"][split]["train"],
                 data_split["split"][split]["test"],
-                device=configs["device"]
+                device=configs["device"],
             )
             print_training_details(logging_columns_list, column_heads_only=True)
             model, train_acc, train_loss, test_acc, test_loss = fast_train_fun(
                 data,
                 make_net(data, device=configs["device"]),
                 eval_batchsize=int(data_split["split"][split]["test"].shape[0] / 2),
-                device=configs["device"]
+                device=configs["device"],
             )
 
         else:
@@ -726,12 +721,14 @@ def get_info_source_reference_attack(
                 model, reference_loader, configs["device"]
             )
         else:
-            data = get_cifar10_data(dataset, reference_data_idx, reference_data_idx, device=device)
+            data = get_cifar10_data(
+                dataset, reference_data_idx, reference_data_idx, device=device
+            )
             print_training_details(
                 logging_columns_list, column_heads_only=True
             )  ## print out the training column heads before we print the actual content for each run.
             reference_model, train_acc, train_loss, _, _ = fast_train_fun(
-                data, make_net(data,device=configs["device"])
+                data, make_net(data, device=configs["device"])
             )
 
         logging.info(

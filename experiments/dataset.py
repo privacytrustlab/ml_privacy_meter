@@ -129,9 +129,14 @@ def get_dataset(dataset_name: str, data_dir: str):
                     .to_numpy()
                     .astype(np.float32)
                 )
-                y = pd.read_csv(
-                    "../data/texas/texas/100/labels", header=None, encoding="utf-8"
-                ).to_numpy().reshape(-1) -1
+                y = (
+                    pd.read_csv(
+                        "../data/texas/texas/100/labels", header=None, encoding="utf-8"
+                    )
+                    .to_numpy()
+                    .reshape(-1)
+                    - 1
+                )
 
                 all_data = TabularDataset(X, y)
                 with open(f"{path}.pkl", "wb") as file:
@@ -186,7 +191,7 @@ def get_dataset_subset(
         batch_size = max(list_divisors)
 
         for inputs, targets in get_batches(
-                data, key="eval", batchsize=batch_size, shuffle=False, device=device
+            data, key="eval", batchsize=batch_size, shuffle=False, device=device
         ):
             input_list.append(inputs)
             targets_list.append(targets)

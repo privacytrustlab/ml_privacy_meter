@@ -14,7 +14,7 @@ audit: # Configurations for auditing
   optimizer: Adam # String which indicates the optimizer for training reference models. We support Adam and SGD.
   learning_rate: 0.001 # Float number for indicating learning rate for training the reference model.
   weight_decay: 0 # Float number for indicating weight decay for training the reference model.
-  model_name: CNN # String for indicating the model type. We support CNN,alexnet. More model type can be added in model.py.
+  model_name: CNN # String for indicating the model type. We support CNN, wrn28-1, wrn28-2, wrn28-10, vgg16, nn and speedyresnet. More model types can be added in model.py.
   epochs: 1 # Integer number for indicating the epochs for training target model.
   report_log: report_reference_algorithm # String that indicates the folder where we save the and auditing report.
   split_method: uniform # String for indicating the splitting methods for reference dataset. We support uniform and leave_one_out.
@@ -32,7 +32,7 @@ train: # Configuration for training
   num_target_model: 10 #Integer number for indicating how many target models we want to audit for the privacy game
 
 data: # Configuration for data
-  dataset: cifar10 # String indicates the name of the dataset
+  dataset: cifar10 # String indicates the name of the dataset (i.e., cifar10, cifar100, purchase100, texas1000)
   f_train: 0.3 # Float number from 0 to 1 indicating the fraction of the train dataset
   f_test: 0.3 # Float number from 0 to 1 indicating the fraction of the test dataset
   split_method: no_overlapping # String for indicating the methods of splitting the dataset between train, test, and auditing.

@@ -18,13 +18,13 @@ train: # Configuration for training
   optimizer: AdamW # String which indicates the optimizer. We support Adam and SGD.
   learning_rate: 0.001 # Float number for indicating learning rate for training the target model.
   weight_decay: 0 # Float number for indicating weight decay for training the target model.
-  model_name: CNN # String for indicating the model type. We support CNN,wrn28-2 and speedyresnet. More model types can be added in model.py.
+  model_name: speedyresnet # String for indicating the model type. We support CNN, wrn28-1, wrn28-2, wrn28-10, vgg16, nn and speedyresnet. More model types can be added in model.py.
   device: cpu # String for indicating the device we want to use for training models.
   num_target_model: 1 #Integer number for indicating how many target models we want to audit for the privacy game
   model_idx: 0
 
 data: # Configuration for data
-  dataset: cifar10 # String indicates the name of the dataset
+  dataset: cifar10 # String indicates the name of the dataset (i.e., cifar10, cifar100, purchase100, texas1000)
   f_train: 0.5 # Float number from 0 to 1 indicating the fraction of the train dataset
   f_test: 0.5 # Float number from 0 to 1 indicating the fraction of the test dataset
   split_method: uniform # String for indicating the methods of splitting the dataset between train, test, and auditing.

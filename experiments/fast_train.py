@@ -147,7 +147,9 @@ def get_cifar10_data(dataset, train_index, test_index, device="cuda"):
     data["train"]["targets"] = F.one_hot(data["train"]["targets"]).half()
     data["eval"]["targets"] = F.one_hot(data["eval"]["targets"]).half()
 
-    if hyp["net"]["pad_amount"] > 0: # Note: if F.pad doesn't work with half(), it means it's on the cpu (only works with cuda)
+    if (
+        hyp["net"]["pad_amount"] > 0
+    ):  # Note: if F.pad doesn't work with half(), it means it's on the cpu (only works with cuda)
         data["train"]["images"] = F.pad(
             data["train"]["images"], (hyp["net"]["pad_amount"],) * 4, "reflect"
         )
@@ -560,8 +562,16 @@ class NetworkEMA(nn.Module):
 
 # TODO: Could we jit this in the (more distant) future? :)
 @torch.no_grad()
-def get_batches(data_dict, key, batchsize, epoch_fraction=1., cutmix_size=None, shuffle=True, device="cuda"):
-    num_epoch_examples = len(data_dict[key]['images'])
+def get_batches(
+    data_dict,
+    key,
+    batchsize,
+    epoch_fraction=1.0,
+    cutmix_size=None,
+    shuffle=True,
+    device="cuda",
+):
+    num_epoch_examples = len(data_dict[key]["images"])
     if shuffle:
         shuffled = torch.randperm(num_epoch_examples, device=device)
     else:
@@ -580,7 +590,9 @@ def get_batches(data_dict, key, batchsize, epoch_fraction=1., cutmix_size=None, 
             data_dict[key]["images"], crop_size
         )  # TODO: hardcoded image size for now?
         images = batch_flip_lr(images)
-        images, targets = batch_cutmix(images, data_dict[key]['targets'], patch_size=cutmix_size, device=device)
+        images, targets = batch_cutmix(
+            images, data_dict[key]["targets"], patch_size=cutmix_size, device=device
+        )
     else:
         images = data_dict[key]["images"]
         targets = data_dict[key]["targets"]
@@ -656,7 +668,9 @@ def print_training_details(
 ########################################
 
 
-def fast_train_fun(data, net, hyp=hyp, batchsize=batchsize, eval_batchsize = 2500, device="cuda"):
+def fast_train_fun(
+    data, net, hyp=hyp, batchsize=batchsize, eval_batchsize=2500, device="cuda"
+):
     # Initializing constants for the whole run.
     net_ema = None  ## Reset any existing network emas, we want to have _something_ to check for existence so we can initialize the EMA right from where the network is during training
     ## (as opposed to initializing the network_ema from the randomly-initialized starter network, then forcing it to play catch-up all of a sudden in the last several epochs)
@@ -756,7 +770,7 @@ def fast_train_fun(data, net, hyp=hyp, batchsize=batchsize, eval_batchsize = 250
                     batchsize=batchsize,
                     epoch_fraction=epoch_fraction,
                     cutmix_size=cutmix_size,
-                    device=device
+                    device=device,
                 )
             ):
                 ## Run everything through the network

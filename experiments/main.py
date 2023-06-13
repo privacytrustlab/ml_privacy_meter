@@ -60,6 +60,7 @@ def setup_log(name: str, save_file: bool):
 
     return my_logger
 
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument(
@@ -100,9 +101,7 @@ if __name__ == "__main__":
         model_metadata_list = {"model_metadata": {}, "current_idx": 0}
     # Load the dataset
     baseline_time = time.time()
-    dataset = get_dataset(
-        configs["data"]["dataset"], configs["data"]["data_dir"]
-    )
+    dataset = get_dataset(configs["data"]["dataset"], configs["data"]["data_dir"])
 
     privacy_game = configs["audit"]["privacy_game"]
 
@@ -156,7 +155,12 @@ if __name__ == "__main__":
         baseline_time = time.time()
 
         new_model_list, model_metadata_list, new_target_model_idx_list = prepare_models(
-            log_dir, dataset, data_split_info, configs["train"], model_metadata_list, configs["data"]["dataset"]
+            log_dir,
+            dataset,
+            data_split_info,
+            configs["train"],
+            model_metadata_list,
+            configs["data"]["dataset"],
         )
 
         # Combine the trained models with the existing models
@@ -189,7 +193,7 @@ if __name__ == "__main__":
             model_metadata_list,
             target_model_idx_list,
             configs["train"]["model_name"],
-            configs["data"]["dataset"]
+            configs["data"]["dataset"],
         )
         logger.info(
             "Prepare the information source costs %0.5f seconds",
@@ -269,7 +273,7 @@ if __name__ == "__main__":
                 data_split_info_in,
                 configs["train"],
                 model_metadata_list,
-                configs["data"]["dataset"]
+                configs["data"]["dataset"],
             )
             model_in_list = [*new_in_model_list, *model_in_list]
             in_model_idx_list = [*new_matched_in_idx, *in_model_idx_list]
@@ -277,7 +281,7 @@ if __name__ == "__main__":
             PytorchModelTensor(
                 model_obj=model,
                 loss_fn=nn.CrossEntropyLoss(),
-                batch_size=configs["audit_batch_size"],
+                batch_size=configs["audit"]["audit_batch_size"],
                 device=configs["audit"]["device"],
             )
             for model in model_in_list
@@ -322,7 +326,7 @@ if __name__ == "__main__":
                 data_split_info_out,
                 configs["train"],
                 model_metadata_list,
-                configs["data"]["dataset"]
+                configs["data"]["dataset"],
             )
             model_out_list = [*new_out_model_list, *model_out_list]
             out_model_idx_list = [*new_matched_out_idx, *out_model_idx_list]
@@ -331,7 +335,7 @@ if __name__ == "__main__":
             PytorchModelTensor(
                 model_obj=model,
                 loss_fn=nn.CrossEntropyLoss(),
-                batch_size=configs["audit_batch_size"],
+                batch_size=configs["audit"]["audit_batch_size"],
                 device=configs["audit"]["device"],
             )
             for model in model_out_list
@@ -339,7 +343,10 @@ if __name__ == "__main__":
 
         # Test the models' performance on the data indicated by the audit.idx
         data, targets = get_dataset_subset(
-            dataset, [configs["audit"]["data_idx"]], configs["audit"]["model_name"], device=configs["audit"]["device"]
+            dataset,
+            [configs["audit"]["data_idx"]],
+            configs["audit"]["model_name"],
+            device=configs["audit"]["device"],
         )
         in_signal = np.array(
             [
@@ -378,17 +385,22 @@ if __name__ == "__main__":
         baseline_time = time.time()
         p_ratio = configs["data"]["keep_ratio"]
         dataset_size = configs["data"]["dataset_size"]
-        number_of_models_lira = configs["train"]["num_in_models"] + configs["train"]["num_out_models"] + configs["train"]["num_target_model"]
+        number_of_models_lira = (
+            configs["train"]["num_in_models"]
+            + configs["train"]["num_out_models"]
+            + configs["train"]["num_target_model"]
+        )
         data_split_info, keep_matrix = prepare_datasets_for_online_attack(
             dataset_size,
-            num_models=(
-                number_of_models_lira
-            ),
+            num_models=(number_of_models_lira),
             keep_ratio=p_ratio,
             is_uniform=False,
         )
         data, targets = get_dataset_subset(
-            dataset, np.arange(dataset_size), configs["train"]["model_name"], device=configs["train"]["device"]
+            dataset,
+            np.arange(dataset_size),
+            configs["train"]["model_name"],
+            device=configs["train"]["device"],
         )  # only the train dataset we want to attack
         logger.info(
             "Prepare the datasets costs %0.5f seconds",
@@ -403,7 +415,7 @@ if __name__ == "__main__":
                 data_split_info,
                 configs["train"],
                 model_metadata_list,
-                configs["data"]["dataset"]
+                configs["data"]["dataset"],
             )
             logger.info(
                 "Prepare the models costs %0.5f seconds",
