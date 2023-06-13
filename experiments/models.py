@@ -1,10 +1,35 @@
 """This file contains the definition of models"""
+import torch
 import torch.nn.functional as F
+import torchvision
 from torch import nn
 from wide_resnet import WideResNet
 
+INPUT_OUTPUT_SHAPE = {
+    "cifar10": [3, 10],
+    "cifar100": [3, 100],
+    "purchase100": [600, 100],
+    "texas100": [6169, 100],
+}
 
-class Net(nn.Module):
+
+class NN(nn.Module):
+    """Simple CNN for CIFAR10 dataset."""
+
+    def __init__(self, in_shape, num_classes=10):
+        super().__init__()
+        self.fc1 = nn.Linear(in_shape, 128)
+        self.fc2 = nn.Linear(128, num_classes)
+
+    def forward(self, inputs):
+        """Forward pass of the model."""
+        inputs = inputs.flatten(1)
+        inputs = torch.tanh(self.fc1(inputs))
+        outputs = self.fc2(inputs)
+        return outputs
+
+
+class CNN(nn.Module):
     """Simple CNN for CIFAR10 dataset."""
 
     def __init__(self, num_classes=10):
@@ -66,20 +91,31 @@ class AlexNet(nn.Module):
         return outputs
 
 
-def get_model(model_type: str, num_classes: int = 10) -> nn.Module:
+def get_model(model_type: str, dataset_name: str):
     """Instantiate the model based on the model_type
 
     Args:
         model_type (str): Name of the model
-        num_classes (int): Number of classes
+        dataset_name (str): Name of the dataset
     Returns:
         torch.nn.Module: A model
     """
+    num_classes = INPUT_OUTPUT_SHAPE[dataset_name][1]
+    in_shape = INPUT_OUTPUT_SHAPE[dataset_name][0]
     if model_type == "CNN":
-        return Net(num_classes=num_classes)
-    if model_type == "alexnet":
+        return CNN(num_classes=num_classes)
+    elif model_type == "alexnet":
         return AlexNet(num_classes=num_classes)
-    if model_type == "wrn28-2":
-        model = WideResNet(nin=3, nclass=10, depth=28, width=2)
-        return model
-    raise NotImplementedError(f"{model_type} is not implemented")
+    elif model_type == "wrn28-1":
+        return WideResNet(nin=in_shape, nclass=num_classes, depth=28, width=1)
+    elif model_type == "wrn28-2":
+        return WideResNet(nin=in_shape, nclass=num_classes, depth=28, width=2)
+    elif model_type == "wrn28-10":
+        return WideResNet(nin=in_shape, nclass=num_classes, depth=28, width=10)
+    elif model_type == "nn":
+        # for purchase dataset
+        return NN(in_shape=in_shape, num_classes=num_classes)
+    elif model_type == "vgg16":
+        return torchvision.models.vgg16(pretrained=False)
+    else:
+        raise NotImplementedError(f"{model_type} is not implemented")

@@ -6,10 +6,7 @@ import pickle
 import time
 from pathlib import Path
 
-import matplotlib.pyplot as plt
 import numpy as np
-import pandas as pd
-import seaborn as sns
 import torch
 import yaml
 from argument import get_signal_on_argumented_data
@@ -103,7 +100,9 @@ if __name__ == "__main__":
         model_metadata_list = {"model_metadata": {}, "current_idx": 0}
     # Load the dataset
     baseline_time = time.time()
-    dataset = get_dataset(configs["data"]["dataset"], configs["data"]["data_dir"])
+    dataset = get_dataset(
+        configs["data"]["dataset"], configs["data"]["data_dir"]
+    )
 
     privacy_game = configs["audit"]["privacy_game"]
 
@@ -130,8 +129,8 @@ if __name__ == "__main__":
                 model_metadata_list,
                 target_model_idx_list,
                 configs["train"]["model_name"],
-                # trained_target_dataset_list,
                 dataset,
+                configs["data"]["dataset"],
             )
             num_target_models = configs["train"]["num_target_model"] - len(
                 trained_target_dataset_list
@@ -157,9 +156,10 @@ if __name__ == "__main__":
         baseline_time = time.time()
 
         new_model_list, model_metadata_list, new_target_model_idx_list = prepare_models(
-            log_dir, dataset, data_split_info, configs["train"], model_metadata_list
+            log_dir, dataset, data_split_info, configs["train"], model_metadata_list, configs["data"]["dataset"]
         )
 
+        # Combine the trained models with the existing models
         model_list = [*new_model_list, *trained_target_models_list]
         data_split_info["split"] = [
             *data_split_info["split"],
@@ -189,6 +189,7 @@ if __name__ == "__main__":
             model_metadata_list,
             target_model_idx_list,
             configs["train"]["model_name"],
+            configs["data"]["dataset"]
         )
         logger.info(
             "Prepare the information source costs %0.5f seconds",
@@ -249,6 +250,7 @@ if __name__ == "__main__":
             in_model_idx_list,
             configs["train"]["model_name"],
             dataset,
+            configs["data"]["dataset"],
         )
         # Train additional models if the existing models are not enough
         if len(in_model_idx_list) < configs["train"]["num_in_models"]:
@@ -267,6 +269,7 @@ if __name__ == "__main__":
                 data_split_info_in,
                 configs["train"],
                 model_metadata_list,
+                configs["data"]["dataset"]
             )
             model_in_list = [*new_in_model_list, *model_in_list]
             in_model_idx_list = [*new_matched_in_idx, *in_model_idx_list]
@@ -274,7 +277,7 @@ if __name__ == "__main__":
             PytorchModelTensor(
                 model_obj=model,
                 loss_fn=nn.CrossEntropyLoss(),
-                batch_size=1000,
+                batch_size=configs["audit_batch_size"],
                 device=configs["audit"]["device"],
             )
             for model in model_in_list
@@ -295,6 +298,7 @@ if __name__ == "__main__":
             out_model_idx_list,
             configs["train"]["model_name"],
             dataset,
+            configs["data"]["dataset"],
         )
         # Train additional models if the existing models are not enough
         if len(out_model_idx_list) < configs["train"]["num_out_models"]:
@@ -318,6 +322,7 @@ if __name__ == "__main__":
                 data_split_info_out,
                 configs["train"],
                 model_metadata_list,
+                configs["data"]["dataset"]
             )
             model_out_list = [*new_out_model_list, *model_out_list]
             out_model_idx_list = [*new_matched_out_idx, *out_model_idx_list]
@@ -326,7 +331,7 @@ if __name__ == "__main__":
             PytorchModelTensor(
                 model_obj=model,
                 loss_fn=nn.CrossEntropyLoss(),
-                batch_size=1000,
+                batch_size=configs["audit_batch_size"],
                 device=configs["audit"]["device"],
             )
             for model in model_out_list
@@ -391,12 +396,14 @@ if __name__ == "__main__":
         )
         baseline_time = time.time()
         if model_metadata_list["current_idx"] == 0:
+            # if the models are already trained and saved in the disk
             (model_list, model_metadata_dict, trained_model_idx_list) = prepare_models(
                 log_dir,
                 dataset,
                 data_split_info,
                 configs["train"],
                 model_metadata_list,
+                configs["data"]["dataset"]
             )
             logger.info(
                 "Prepare the models costs %0.5f seconds",
@@ -404,17 +411,17 @@ if __name__ == "__main__":
             )
             baseline_time = time.time()
             signals = []
-            for i, model in enumerate(model_list):
-                model_init = lambda: PytorchModelTensor(
+            for model in model_list:
+                model_pm = PytorchModelTensor(
                     model_obj=model,
                     loss_fn=nn.CrossEntropyLoss(),
                     device=configs["audit"]["device"],
-                    batch_size=int(configs["audit"]["audit_batch_size"]),
+                    batch_size=configs["audit"]["audit_batch_size"],
                 )
                 signals.append(
                     get_signal_on_argumented_data(
                         model_pm,
-                        data, # but we query a smaller dataset..
+                        data,
                         targets,
                         method=configs["audit"]["argumentation"],
                     )
@@ -426,20 +433,19 @@ if __name__ == "__main__":
         else:
             baseline_time = time.time()
             signals = []
-            number_of_models_lira = configs["train"]["num_in_models"] + configs["train"]["num_out_models"] + configs["train"]["num_target_model"]
-            for idx in range(number_of_models_lira): # we consider that we train lira online setting first.
-                print("load the model and compute signals for model %d" % idx)
+            for idx in range(model_metadata_list["current_idx"]):
+                print("Load the model and compute signals for model %d" % idx)
                 model_pm = PytorchModelTensor(
                     model_obj=load_existing_models(
                         model_metadata_list,
                         [idx],
                         configs["train"]["model_name"],
                         dataset,
-                        device=configs["audit"]["device"]
+                        configs["data"]["dataset"],
                     )[0],
                     loss_fn=nn.CrossEntropyLoss(),
                     device=configs["audit"]["device"],
-                    batch_size=int(configs["audit"]["audit_batch_size"]),
+                    batch_size=10000,
                 )
                 signals.append(
                     get_signal_on_argumented_data(
@@ -455,11 +461,15 @@ if __name__ == "__main__":
             )
         baseline_time = time.time()
         signals = np.array(signals)
-        target_signal = signals[-1:, :]
-        reference_signals = signals[:-1, :]
-        reference_keep_matrix = keep_matrix[:-1, :]
-        membership = keep_matrix[-1:, :]
 
+        # number of models we want to consider as test
+        n_test = 1
+        target_signal = signals[-n_test:, :]
+        reference_signals = signals[:-n_test, :]
+        reference_keep_matrix = keep_matrix[:-n_test, :]
+        membership = keep_matrix[-n_test:, :]
+
+        print(reference_signals.shape, target_signal.shape)
         in_signals = []
         out_signals = []
 
@@ -475,7 +485,6 @@ if __name__ == "__main__":
         out_size = min(min(map(len, out_signals)), configs["train"]["num_out_models"])
         in_signals = np.array([x[:in_size] for x in in_signals]).astype("float32")
         out_signals = np.array([x[:out_size] for x in out_signals]).astype("float32")
-
         mean_in = np.median(in_signals, 1)
         mean_out = np.median(out_signals, 1)
         fix_variance = configs["audit"]["fix_variance"]
@@ -497,14 +506,17 @@ if __name__ == "__main__":
             score = pr_in - pr_out
             if len(score.shape) == 2:  # the score is of size (data_size, num_arguments)
                 prediction.extend(score.mean(1))
+                fpr_list, tpr_list, _ = roc_curve(ans, -score.mean(1))
             else:
                 prediction.extend(score)
+                fpr_list, tpr_list, _ = roc_curve(ans, -score)
             answers.extend(ans)
+            acc = np.max(1 - (fpr_list + (1 - tpr_list)) / 2)
+            roc_auc = auc(fpr_list, tpr_list)
 
         prediction = np.array(prediction)
         answers = np.array(answers, dtype=bool)
         print(prediction.shape, answers.shape, prediction, np.isnan(prediction).sum())
-        # Last step: compute the metrics
         fpr_list, tpr_list, _ = roc_curve(answers.ravel(), -prediction.ravel())
         acc = np.max(1 - (fpr_list + (1 - tpr_list)) / 2)
         roc_auc = auc(fpr_list, tpr_list)

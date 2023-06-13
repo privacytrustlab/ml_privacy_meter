@@ -10,19 +10,14 @@ except NameError:
   pass ## we're still good
 """
 import copy
-import functools
 import math
-import os
-import time
 from functools import partial
 
-import numpy as np
 import torch
 import torch.nn.functional as F
-import torchvision
+
 # from dataset import get_dataloader, get_dataset, get_dataset_subset
 from torch import nn
-from torchvision import transforms
 
 default_conv_kwargs = {"kernel_size": 3, "padding": "same", "bias": False}
 
@@ -553,10 +548,9 @@ class NetworkEMA(nn.Module):
                         incoming_net_parameter.detach().mul(1.0 - decay)
                     )  # update the ema values in place, similar to how optimizer momentum is coded
                     # And then we also copy the parameters back to the network, similarly to the Lookahead optimizer (but with a much more aggressive-at-the-end schedule)
-                    if (
-                        not ("norm" in parameter_name and "weight" in parameter_name)
-                        and not "whiten" in parameter_name
-                    ):
+                    if not (
+                        "norm" in parameter_name and "weight" in parameter_name
+                    ) and not ("whiten" in parameter_name):
                         incoming_net_parameter.copy_(ema_net_parameter.detach())
 
     def forward(self, inputs):
@@ -573,27 +567,35 @@ def get_batches(data_dict, key, batchsize, epoch_fraction=1., cutmix_size=None, 
     else:
         shuffled = torch.arange(0, num_epoch_examples, device=device)
     if epoch_fraction < 1:
-        shuffled = shuffled[:batchsize * round(epoch_fraction * shuffled.shape[0]/batchsize)] # TODO: Might be slightly inaccurate, let's fix this later... :) :D :confetti: :fireworks:
+        shuffled = shuffled[
+            : batchsize * round(epoch_fraction * shuffled.shape[0] / batchsize)
+        ]  # TODO: Might be slightly inaccurate, let's fix this later... :) :D :confetti: :fireworks:
         num_epoch_examples = shuffled.shape[0]
     crop_size = 32
     ## Here, we prep the dataset by applying all data augmentations in batches ahead of time before each epoch, then we return an iterator below
     ## that iterates in chunks over with a random derangement (i.e. shuffled indices) of the individual examples. So we get perfectly-shuffled
     ## batches (which skip the last batch if it's not a full batch), but everything seems to be (and hopefully is! :D) properly shuffled. :)
-    if key == 'train':
-        images = batch_crop(data_dict[key]['images'], crop_size) # TODO: hardcoded image size for now?
+    if key == "train":
+        images = batch_crop(
+            data_dict[key]["images"], crop_size
+        )  # TODO: hardcoded image size for now?
         images = batch_flip_lr(images)
         images, targets = batch_cutmix(images, data_dict[key]['targets'], patch_size=cutmix_size, device=device)
     else:
-        images = data_dict[key]['images']
-        targets = data_dict[key]['targets']
+        images = data_dict[key]["images"]
+        targets = data_dict[key]["targets"]
 
     # Send the images to an (in beta) channels_last to help improve tensor core occupancy (and reduce NCHW <-> NHWC thrash) during training
     images = images.to(memory_format=torch.channels_last)
     for idx in range(num_epoch_examples // batchsize):
-        if not (idx+1)*batchsize > num_epoch_examples: ## Use the shuffled randperm to assemble individual items into a minibatch
-            yield images.index_select(0, shuffled[idx*batchsize:(idx+1)*batchsize]), \
-                  targets.index_select(0, shuffled[idx*batchsize:(idx+1)*batchsize]) ## Each item is only used/accessed by the network once per epoch. :D
-
+        if (
+            not (idx + 1) * batchsize > num_epoch_examples
+        ):  ## Use the shuffled randperm to assemble individual items into a minibatch
+            yield images.index_select(
+                0, shuffled[idx * batchsize : (idx + 1) * batchsize]
+            ), targets.index_select(
+                0, shuffled[idx * batchsize : (idx + 1) * batchsize]
+            )  ## Each item is only used/accessed by the network once per epoch. :D
 
 
 def init_split_parameter_dictionaries(network):
@@ -824,7 +826,6 @@ def fast_train_fun(data, net, hyp=hyp, batchsize=batchsize, eval_batchsize = 250
             ####################
             net.eval()
 
-            
             assert (
                 data["eval"]["images"].shape[0] % eval_batchsize == 0
             ), "Error: The eval batchsize must evenly divide the eval dataset (for now, we don't have drop_remainder implemented yet)."
@@ -867,36 +868,5 @@ def fast_train_fun(data, net, hyp=hyp, batchsize=batchsize, eval_batchsize = 250
                 ),
                 is_final_entry=(epoch >= math.ceil(hyp["misc"]["train_epochs"] - 1)),
             )
-    net_ema.to("cpu") 
+    net_ema.to("cpu")
     return net_ema, train_acc, train_loss, ema_val_acc, val_loss
-
-
-# if __name__ == "__main__":
-    acc_list = []
-    for run_num in range(1):
-        start_time = time.time()
-        dataset = get_dataset("cifar10", "../data")
-        train_index = np.random.choice(range(50000), 25000, replace=False)
-        test_index = [i for i in range(50000, 60000)]
-        data = get_cifar10_data(dataset, train_index, test_index)
-        net = make_net(data)
-        print_training_details(
-            logging_columns_list, column_heads_only=True
-        )  ## print out the training column heads before we print the actual content for each run.
-        loss_fn = nn.CrossEntropyLoss(label_smoothing=0.2, reduction="none")
-        net_ema,train_acc, train_loss, ema_val_acc, val_loss = fast_train_fun(data, net)
-        loss_list_all = []
-        
-        
-        # This is easy to implement outside the privacy meter
-        eva_data = get_cifar10_data(dataset, train_index[:1], np.concatenate([train_index, test_index]))
-        with torch.no_grad():
-            for inputs, targets in get_batches(
-                eva_data, key="eval", batchsize=2500, device=device
-            ):
-                outputs = net_ema(inputs)
-                loss_list_all.append(loss_fn(outputs, targets).float())
-
-            all_loss = torch.concat(loss_list_all).cpu().numpy()
-        
-        print(loss_list_all)

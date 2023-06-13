@@ -1,7 +1,6 @@
 """This file contains information about the utility functions."""
 from ast import List
 
-import matplotlib.pyplot as plt
 import numpy as np
 import torch
 

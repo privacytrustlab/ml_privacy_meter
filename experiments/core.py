@@ -62,6 +62,7 @@ def load_existing_target_model(
             "learning_rate": configs["train"]["learning_rate"],
             "weight_decay": configs["train"]["weight_decay"],
             "num_train": int(dataset_size * configs["data"]["f_train"]),
+            "dataset": configs["data"]["dataset"],
         }
         matched_idx_list = load_models_by_conditions(
             model_metadata_dict, conditions, num_target_models
@@ -153,8 +154,8 @@ def load_existing_models(
     model_metadata_dict: dict,
     matched_idx: List(int),
     model_name: str,
-    # dataset_list=None,
-    dataset=None,
+    dataset: torchvision.datasets,
+    dataset_name: str,
     device="cuda"
 ):
     """Load existing models from dicks for matched_idx.
@@ -163,8 +164,9 @@ def load_existing_models(
         model_metadata_dict (dict): Model metedata dict.
         matched_idx (List): List of model index we want to load.
         model_name (str): Model name.
-        dataset_list (List): Dataset List. Defaults to None.
-        dataset (torchvision.datasets): Dataset. Defaults to None.
+        dataset_list (List): Dataset List.
+        dataset (torchvision.datasets): Dataset.
+        dataset_name (str): Dataset name.
     Returns:
         List (nn.Module): List of models.
     """
@@ -173,7 +175,7 @@ def load_existing_models(
         for metadata_idx in matched_idx:
             metadata = model_metadata_dict["model_metadata"][metadata_idx]
             if model_name != "speedyresnet":
-                model = get_model(model_name)
+                model = get_model(model_name, dataset_name)
             else:
                 data = get_cifar10_data(
                     dataset,
@@ -448,6 +450,7 @@ def prepare_models(
     data_split: dict,
     configs: dict,
     model_metadata_dict: dict,
+    dataset_name: str,
 ):
     """Train models based on the dataset split information.
 
@@ -458,7 +461,7 @@ def prepare_models(
         configs (dict): Indicate the traininig information
         model_metadata_dict (dict): Metadata information about the existing models.
         matched_idx (List, optional): Index list of existing models that matchs configuration. Defaults to None.
-
+        dataset_name (str): Name of the dataset
     Returns:
         nn.Module: List of trained models
         dict: Updated Metadata of the existing models
@@ -491,7 +494,10 @@ def prepare_models(
 
             # Train the target model based on the configurations.
             model = train(
-                get_model(configs["model_name"]), train_loader, configs, test_loader
+                get_model(configs["model_name"], dataset_name),
+                train_loader,
+                configs,
+                test_loader,
             )
             # Test performance on the training dataset and test dataset
             test_loss, test_acc = inference(model, test_loader, configs["device"])
@@ -499,21 +505,24 @@ def prepare_models(
             print(f"Train accuracy {train_acc}, Train Loss {train_loss}")
             print(f"Test accuracy {test_acc}, Test Loss {test_loss}")
 
-        else:
+        elif configs["model_name"] == "speedyresnet" and dataset_name == "cifar10":
             data = get_cifar10_data(
                 dataset,
                 data_split["split"][split]["train"],
                 data_split["split"][split]["test"],
                 device=configs["device"]
             )
-            print_training_details(
-                logging_columns_list, column_heads_only=True
-            )  ## print out the training column heads before we print the actual content for each run.
+            print_training_details(logging_columns_list, column_heads_only=True)
             model, train_acc, train_loss, test_acc, test_loss = fast_train_fun(
                 data,
                 make_net(data, device=configs["device"]),
                 eval_batchsize=int(data_split["split"][split]["test"].shape[0] / 2),
                 device=configs["device"]
+            )
+
+        else:
+            raise ValueError(
+                f"The {configs['model_name']} is not supported for the {dataset_name}"
             )
 
         model_list.append(copy.deepcopy(model))
@@ -547,6 +556,7 @@ def prepare_models(
         meta_data["test_acc"] = test_acc
         meta_data["train_loss"] = train_loss
         meta_data["test_loss"] = test_loss
+        meta_data["dataset"] = dataset_name
 
         model_metadata_dict["model_metadata"][model_idx] = meta_data
         with open(f"{log_dir}/models_metadata.pkl", "wb") as f:
@@ -617,6 +627,7 @@ def get_info_source_reference_attack(
     model_metadata_dict: dict,
     target_model_idx: int,
     model_name: str,
+    dataset_name: str,
 ):
     """Prepare the information source for the reference attacks
 
@@ -629,6 +640,7 @@ def get_info_source_reference_attack(
         model_metadata_dict (dict): Model metedata dict.
         target_model_idx (int): target model index.
         model_name (str): target model name.
+        dataset_name (str): name of the dataset.
 
     Returns:
         target_dataset: List of target dataset on which we want to infer the membership.
@@ -671,7 +683,11 @@ def get_info_source_reference_attack(
     )
     print(f"Load existing {len(reference_idx)} reference models")
     existing_reference_models = load_existing_models(
-        model_metadata_dict, reference_idx, configs["model_name"]
+        model_metadata_dict,
+        reference_idx,
+        configs["model_name"],
+        dataset,
+        dataset_name,
     )
     reference_models = [
         PytorchModelTensor(
@@ -703,7 +719,7 @@ def get_info_source_reference_attack(
                 shuffle=True,
             )
 
-            reference_model = get_model(configs["model_name"])
+            reference_model = get_model(configs["model_name"], dataset_name)
             reference_model = train(reference_model, reference_loader, configs)
             # Test performance on the training dataset and test dataset
             train_loss, train_acc = inference(
@@ -739,6 +755,7 @@ def get_info_source_reference_attack(
         meta_data["weight_decay"] = configs["weight_decay"]
         meta_data["model_name"] = configs["model_name"]
         meta_data["model_path"] = f"{log_dir}/model_{model_idx}.pkl"
+        meta_data["dataset"] = dataset_name
         model_metadata_dict["model_metadata"][model_idx] = meta_data
         reference_models.append(
             PytorchModelTensor(
@@ -771,6 +788,7 @@ def prepare_information_source(
     model_metadata_dict: dict,
     target_model_idx_list: List(int) = None,
     model_name: str = None,
+    dataset_name: str = None,
 ):
     """Prepare the information source for calling the core of the privacy meter
     Args:
@@ -781,6 +799,7 @@ def prepare_information_source(
         configs (dict): Auditing configuration.
         model_metadata_dict (dict): Model metedata dict.
         model_name str: target model name
+        dataset_name (str): name of the dataset
 
     Returns:
         List(InformationSource): target information source list.
@@ -828,6 +847,7 @@ def prepare_information_source(
                 model_metadata_dict,
                 target_model_idx_list[split],
                 model_name,
+                dataset_name,
             )
             metrics = MetricEnum.REFERENCE
         metric_list.append(metrics)

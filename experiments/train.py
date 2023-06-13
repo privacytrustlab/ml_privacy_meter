@@ -62,8 +62,6 @@ def train(
             data, target = data.to(device, non_blocking=True), target.to(
                 device, non_blocking=True
             )
-            data, target = get_argumented_data(data, target, method="argumented")
-
             # Cast target to long tensor
             target = target.long()
 
@@ -72,7 +70,6 @@ def train(
 
             # Get the model output
             output = model(data)
-
             # Calculate the loss
             loss = criterion(output, target)
             pred = output.data.max(1, keepdim=True)[1]

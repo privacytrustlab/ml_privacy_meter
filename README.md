@@ -60,7 +60,7 @@ We provide examples of how to run privacy meter on standard datasets and models 
 
 ```
 cd experiments
-python main.py --cf config_models.yaml
+python main.py --cf config_models_population.yaml
 ```
 
 Kindly proceed to the experiments folder ([here](experiments/)) to perform privacy audits on various objects, such as models, algorithms, and data points, using the CIFAR10 dataset.
@@ -112,3 +112,6 @@ To cite this repository, please include the following references (or you can dow
 ## Authors
 
 The tool is designed and developed at NUS Data Privacy and Trustworthy Machine Learning Lab.
+<a href="https://github.com/privacytrustlab/ml_privacy_meter/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=privacytrustlab/ml_privacy_meter" />
+</a>
