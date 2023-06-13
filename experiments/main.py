@@ -60,7 +60,6 @@ def setup_log(name: str, save_file: bool):
 
     return my_logger
 
-
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument(
@@ -340,7 +339,7 @@ if __name__ == "__main__":
 
         # Test the models' performance on the data indicated by the audit.idx
         data, targets = get_dataset_subset(
-            dataset, [configs["audit"]["data_idx"]], configs["audit"]["model_name"]
+            dataset, [configs["audit"]["data_idx"]], configs["audit"]["model_name"], device=configs["audit"]["device"]
         )
         in_signal = np.array(
             [
@@ -379,18 +378,17 @@ if __name__ == "__main__":
         baseline_time = time.time()
         p_ratio = configs["data"]["keep_ratio"]
         dataset_size = configs["data"]["dataset_size"]
+        number_of_models_lira = configs["train"]["num_in_models"] + configs["train"]["num_out_models"] + configs["train"]["num_target_model"]
         data_split_info, keep_matrix = prepare_datasets_for_online_attack(
             dataset_size,
             num_models=(
-                configs["train"]["num_in_models"]
-                + configs["train"]["num_out_models"]
-                + configs["train"]["num_target_model"]
+                number_of_models_lira
             ),
             keep_ratio=p_ratio,
             is_uniform=False,
         )
         data, targets = get_dataset_subset(
-            dataset, np.arange(dataset_size), configs["train"]["model_name"]
+            dataset, np.arange(dataset_size), configs["train"]["model_name"], device=configs["train"]["device"]
         )  # only the train dataset we want to attack
         logger.info(
             "Prepare the datasets costs %0.5f seconds",
@@ -436,7 +434,7 @@ if __name__ == "__main__":
             baseline_time = time.time()
             signals = []
             for idx in range(model_metadata_list["current_idx"]):
-                print("load the model and compute signals for model %d" % idx)
+                print("Load the model and compute signals for model %d" % idx)
                 model_pm = PytorchModelTensor(
                     model_obj=load_existing_models(
                         model_metadata_list,
@@ -515,12 +513,11 @@ if __name__ == "__main__":
             answers.extend(ans)
             acc = np.max(1 - (fpr_list + (1 - tpr_list)) / 2)
             roc_auc = auc(fpr_list, tpr_list)
-            print(roc_auc)
 
         prediction = np.array(prediction)
         answers = np.array(answers, dtype=bool)
-        # Last step: compute the metrics
-        fpr_list, tpr_list, _ = roc_curve(answers, -prediction)
+        print(prediction.shape, answers.shape, prediction, np.isnan(prediction).sum())
+        fpr_list, tpr_list, _ = roc_curve(answers.ravel(), -prediction.ravel())
         acc = np.max(1 - (fpr_list + (1 - tpr_list)) / 2)
         roc_auc = auc(fpr_list, tpr_list)
         logger.info(

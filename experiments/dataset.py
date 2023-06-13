@@ -149,7 +149,7 @@ def get_dataset(dataset_name: str, data_dir: str):
 
 
 def get_dataset_subset(
-    dataset: torchvision.datasets, index: List(int), model_name="CNN"
+    dataset: torchvision.datasets, index: List(int), model_name="CNN", device="cuda"
 ):
     """Get a subset of the dataset.
 
@@ -168,7 +168,7 @@ def get_dataset_subset(
         for data, targets in data_loader:
             return data, targets
     else:
-        data = get_cifar10_data(dataset, index[:1], index)
+        data = get_cifar10_data(dataset, index[:1], index, device=device)
         input_list = []
         targets_list = []
 
@@ -186,7 +186,7 @@ def get_dataset_subset(
         batch_size = max(list_divisors)
 
         for inputs, targets in get_batches(
-            data, key="eval", batchsize=batch_size, shuffle=False
+                data, key="eval", batchsize=batch_size, shuffle=False, device=device
         ):
             input_list.append(inputs)
             targets_list.append(targets)

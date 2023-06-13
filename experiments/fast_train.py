@@ -91,7 +91,7 @@ logging_columns_list = [
 #############################################
 #                Dataloader                 #
 #############################################
-def get_cifar10_data(dataset, train_index, test_index):
+def get_cifar10_data(dataset, train_index, test_index, device="cuda"):
     train_dataset_gpu_loader = torch.utils.data.DataLoader(
         torch.utils.data.Subset(dataset, train_index),
         batch_size=len(train_index),
@@ -113,11 +113,11 @@ def get_cifar10_data(dataset, train_index, test_index):
     eval_dataset_gpu = {}
 
     train_dataset_gpu["images"], train_dataset_gpu["targets"] = [
-        item.to(device=hyp["misc"]["device"], non_blocking=True)
+        item.to(device=device, non_blocking=True)
         for item in next(iter(train_dataset_gpu_loader))
     ]
     eval_dataset_gpu["images"], eval_dataset_gpu["targets"] = [
-        item.to(device=hyp["misc"]["device"], non_blocking=True)
+        item.to(device=device, non_blocking=True)
         for item in next(iter(eval_dataset_gpu_loader))
     ]
 
@@ -147,7 +147,7 @@ def get_cifar10_data(dataset, train_index, test_index):
     data["train"]["targets"] = F.one_hot(data["train"]["targets"]).half()
     data["eval"]["targets"] = F.one_hot(data["eval"]["targets"]).half()
 
-    if hyp["net"]["pad_amount"] > 0:
+    if hyp["net"]["pad_amount"] > 0: # Note: if F.pad doesn't work with half(), it means it's on the cpu (only works with cuda)
         data["train"]["images"] = F.pad(
             data["train"]["images"], (hyp["net"]["pad_amount"],) * 4, "reflect"
         )
@@ -377,7 +377,7 @@ class SpeedyResNet(nn.Module):
         return x
 
 
-def make_net(data, hyp=hyp, depths=depths):
+def make_net(data, hyp=hyp, depths=depths, device="cuda"):
     whiten_conv_depth = 3 * hyp["net"]["whitening"]["kernel_size"] ** 2
     network_dict = nn.ModuleDict(
         {
@@ -413,7 +413,7 @@ def make_net(data, hyp=hyp, depths=depths):
     )
 
     net = SpeedyResNet(network_dict)
-    net = net.to(hyp["misc"]["device"])
+    net = net.to(device)
     net = net.to(
         memory_format=torch.channels_last
     )  # to appropriately use tensor cores/avoid thrash while training
@@ -490,9 +490,9 @@ def make_random_square_masks(inputs, mask_size):
     return final_mask
 
 
-def batch_cutmix(inputs, targets, patch_size):
+def batch_cutmix(inputs, targets, patch_size, device="cuda"):
     with torch.no_grad():
-        batch_permuted = torch.randperm(inputs.shape[0], device="cuda")
+        batch_permuted = torch.randperm(inputs.shape[0], device=device)
         cutmix_batch_mask = make_random_square_masks(inputs, patch_size)
         if cutmix_batch_mask is None:
             return (
@@ -560,14 +560,12 @@ class NetworkEMA(nn.Module):
 
 # TODO: Could we jit this in the (more distant) future? :)
 @torch.no_grad()
-def get_batches(
-    data_dict, key, batchsize, epoch_fraction=1.0, cutmix_size=None, shuffle=True
-):
-    num_epoch_examples = len(data_dict[key]["images"])
+def get_batches(data_dict, key, batchsize, epoch_fraction=1., cutmix_size=None, shuffle=True, device="cuda"):
+    num_epoch_examples = len(data_dict[key]['images'])
     if shuffle:
-        shuffled = torch.randperm(num_epoch_examples, device="cuda")
+        shuffled = torch.randperm(num_epoch_examples, device=device)
     else:
-        shuffled = torch.arange(0, num_epoch_examples, device="cuda")
+        shuffled = torch.arange(0, num_epoch_examples, device=device)
     if epoch_fraction < 1:
         shuffled = shuffled[
             : batchsize * round(epoch_fraction * shuffled.shape[0] / batchsize)
@@ -582,9 +580,7 @@ def get_batches(
             data_dict[key]["images"], crop_size
         )  # TODO: hardcoded image size for now?
         images = batch_flip_lr(images)
-        images, targets = batch_cutmix(
-            images, data_dict[key]["targets"], patch_size=cutmix_size
-        )
+        images, targets = batch_cutmix(images, data_dict[key]['targets'], patch_size=cutmix_size, device=device)
     else:
         images = data_dict[key]["images"]
         targets = data_dict[key]["targets"]
@@ -660,7 +656,7 @@ def print_training_details(
 ########################################
 
 
-def fast_train_fun(data, net, hyp=hyp, batchsize=batchsize, eval_batchsize=2500):
+def fast_train_fun(data, net, hyp=hyp, batchsize=batchsize, eval_batchsize = 2500, device="cuda"):
     # Initializing constants for the whole run.
     net_ema = None  ## Reset any existing network emas, we want to have _something_ to check for existence so we can initialize the EMA right from where the network is during training
     ## (as opposed to initializing the network_ema from the randomly-initialized starter network, then forcing it to play catch-up all of a sudden in the last several epochs)
@@ -760,6 +756,7 @@ def fast_train_fun(data, net, hyp=hyp, batchsize=batchsize, eval_batchsize=2500)
                     batchsize=batchsize,
                     epoch_fraction=epoch_fraction,
                     cutmix_size=cutmix_size,
+                    device=device
                 )
             ):
                 ## Run everything through the network
@@ -836,7 +833,7 @@ def fast_train_fun(data, net, hyp=hyp, batchsize=batchsize, eval_batchsize=2500)
 
             with torch.no_grad():
                 for inputs, targets in get_batches(
-                    data, key="eval", batchsize=eval_batchsize
+                    data, key="eval", batchsize=eval_batchsize, device=device
                 ):
                     if epoch >= ema_epoch_start:
                         outputs = net_ema(inputs)

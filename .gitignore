@@ -31,3 +31,7 @@ tutorials/data_batch*
 data/*
 */*/model*.pkl
 */*/data_batch*
+
+*.pkl
+*.log
+*.png
