@@ -9,8 +9,9 @@ audit: # Configurations for auditing
   report_log: report_online_f # String that indicates the folder where we save the and auditing report.
   device: cuda:0
   fix_variance: True # Indicate hwether to fix the variance of the signals for all data points
-  offline: False # Indicate whether to use the offline setting
-  argumentation: none # Indicate whether to use argumentation for the query points
+  offline: True # Indicate whether to use the offline setting
+  argumentation: None # Indicate whether to use argumentation for the query points
+  audit_batch_size: 1000
 
 train: # Configuration for training
   type: pytorch # Training framework (we only support pytorch now).
@@ -23,9 +24,10 @@ train: # Configuration for training
   model_name: speedyresnet # String for indicating the model type. We support CNN. More model types can be added in model.py.
   momentum: 0.9
   device: cuda:0 # String for indicating the device we want to use for training models.
-  num_in_models: 128 # Integer number that indicates how many target models trained on idx
-  num_out_models: 128 # Integer number that indicates how many target models not trained on idx
-  num_target_model: 1 # Number of total models we want to test
+  num_in_models: 8 # Integer number that indicates how many target models trained on idx
+  num_out_models: 8 # Integer number that indicates how many target models not trained on idx
+  num_target_model: 1 # Each reference model will also be the target model
+
 
 data: # Configuration for data
   dataset: cifar10 # String indicates the name of the dataset
