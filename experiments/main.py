@@ -101,7 +101,9 @@ if __name__ == "__main__":
         model_metadata_list = {"model_metadata": {}, "current_idx": 0}
     # Load the dataset
     baseline_time = time.time()
-    dataset = get_dataset(configs["data"]["dataset"], configs["data"]["data_dir"])
+    dataset = get_dataset(
+        configs["data"]["dataset"], configs["data"]["data_dir"]
+    )
 
     privacy_game = configs["audit"]["privacy_game"]
 
@@ -128,8 +130,8 @@ if __name__ == "__main__":
                 model_metadata_list,
                 target_model_idx_list,
                 configs["train"]["model_name"],
-                # trained_target_dataset_list,
                 dataset,
+                configs["data"]["dataset"],
             )
             num_target_models = configs["train"]["num_target_model"] - len(
                 trained_target_dataset_list
@@ -155,9 +157,10 @@ if __name__ == "__main__":
         baseline_time = time.time()
 
         new_model_list, model_metadata_list, new_target_model_idx_list = prepare_models(
-            log_dir, dataset, data_split_info, configs["train"], model_metadata_list
+            log_dir, dataset, data_split_info, configs["train"], model_metadata_list, configs["data"]["dataset"]
         )
 
+        # Combine the trained models with the existing models
         model_list = [*new_model_list, *trained_target_models_list]
         data_split_info["split"] = [
             *data_split_info["split"],
@@ -187,6 +190,7 @@ if __name__ == "__main__":
             model_metadata_list,
             target_model_idx_list,
             configs["train"]["model_name"],
+            configs["data"]["dataset"]
         )
         logger.info(
             "Prepare the information source costs %0.5f seconds",
@@ -247,6 +251,7 @@ if __name__ == "__main__":
             in_model_idx_list,
             configs["train"]["model_name"],
             dataset,
+            configs["data"]["dataset"],
         )
         # Train additional models if the existing models are not enough
         if len(in_model_idx_list) < configs["train"]["num_in_models"]:
@@ -265,6 +270,7 @@ if __name__ == "__main__":
                 data_split_info_in,
                 configs["train"],
                 model_metadata_list,
+                configs["data"]["dataset"]
             )
             model_in_list = [*new_in_model_list, *model_in_list]
             in_model_idx_list = [*new_matched_in_idx, *in_model_idx_list]
@@ -293,6 +299,7 @@ if __name__ == "__main__":
             out_model_idx_list,
             configs["train"]["model_name"],
             dataset,
+            configs["data"]["dataset"],
         )
         # Train additional models if the existing models are not enough
         if len(out_model_idx_list) < configs["train"]["num_out_models"]:
@@ -316,6 +323,7 @@ if __name__ == "__main__":
                 data_split_info_out,
                 configs["train"],
                 model_metadata_list,
+                configs["data"]["dataset"]
             )
             model_out_list = [*new_out_model_list, *model_out_list]
             out_model_idx_list = [*new_matched_out_idx, *out_model_idx_list]
@@ -397,6 +405,7 @@ if __name__ == "__main__":
                 data_split_info,
                 configs["train"],
                 model_metadata_list,
+                configs["data"]["dataset"]
             )
             logger.info(
                 "Prepare the models costs %0.5f seconds",
@@ -434,6 +443,7 @@ if __name__ == "__main__":
                         [idx],
                         configs["train"]["model_name"],
                         dataset,
+                        configs["data"]["dataset"],
                     )[0],
                     loss_fn=nn.CrossEntropyLoss(),
                     device=configs["audit"]["device"],

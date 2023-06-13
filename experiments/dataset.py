@@ -5,12 +5,34 @@ import pickle
 from ast import List
 
 import numpy as np
+import pandas as pd
 import torch
 import torchvision
 import torchvision.transforms as transforms
-from argument import get_argumented_data
 from fast_train import get_batches, get_cifar10_data
 from torch.utils.data import Dataset
+
+
+class TabularDataset(Dataset):
+    """Students Performance dataset."""
+
+    def __init__(self, X, y):
+        """Initializes instance of class StudentsPerformanceDataset.
+        Args:
+            csv_file (str): Path to the csv file with the students data.
+        """
+        self.data = X
+        self.targets = y
+
+    def __len__(self):
+        return len(self.targets)
+
+    def __getitem__(self, idx):
+        # Convert idx from tensor to list due to pandas bug (that arises when using pytorch's random_split)
+        if isinstance(idx, torch.Tensor):
+            idx = idx.tolist()
+
+        return [self.data[idx], self.targets[idx]]
 
 
 class InfiniteRepeatDataset(Dataset):
@@ -37,7 +59,6 @@ def get_dataset(dataset_name: str, data_dir: str):
         torchvision.datasets: Whole dataset.
     """
     path = f"{data_dir}/{dataset_name}"
-
     if os.path.exists(f"{path}.pkl"):
         with open(f"{path}.pkl", "rb") as file:
             all_data = pickle.load(file)
@@ -84,7 +105,42 @@ def get_dataset(dataset_name: str, data_dir: str):
             with open(f"{path}.pkl", "wb") as file:
                 pickle.dump(all_data, file)
             print(f"Save data to {path}.pkl")
+        elif dataset_name == "purchase100":
+            if os.path.exists("../data/purchase/dataset_purchase"):
+                df = pd.read_csv(
+                    "../data/purchase/dataset_purchase", header=None, encoding="utf-8"
+                ).to_numpy()
+                y = df[:, 0] - 1
+                X = df[:, 1:].astype(np.float32)
+                all_data = TabularDataset(X, y)
+                with open(f"{path}.pkl", "wb") as file:
+                    pickle.dump(all_data, file)
+                print(f"Save data to {path}.pkl")
+            else:
+                raise NotImplementedError(
+                    f"{dataset_name} is not installed correctly in ../data/purchase"
+                )
+        elif dataset_name == "texas100":
+            if os.path.exists("../data/texas/texas/100/feats"):
+                X = (
+                    pd.read_csv(
+                        "../data/texas/texas/100/feats", header=None, encoding="utf-8"
+                    )
+                    .to_numpy()
+                    .astype(np.float32)
+                )
+                y = pd.read_csv(
+                    "../data/texas/texas/100/labels", header=None, encoding="utf-8"
+                ).to_numpy().reshape(-1) -1
 
+                all_data = TabularDataset(X, y)
+                with open(f"{path}.pkl", "wb") as file:
+                    pickle.dump(all_data, file)
+                print(f"Save data to {path}.pkl")
+            else:
+                raise NotImplementedError(
+                    f"{dataset_name} is not installed correctly in ../data/texas"
+                )
         else:
             raise NotImplementedError(f"{dataset_name} is not implemented")
 
