@@ -10,6 +10,7 @@ audit: # Configurations for auditing
   algorithm: population # String for indicating the membership inference attack. We currently support population, reference.
   report_log: report_population # String that indicates the folder where we save the and auditing report.
   split_method: uniform # String for indicating the splitting methods for reference dataset. We support uniform and leave_one_out.
+  augmentation: None # Indicate whether to use augmentation for the query points
 
 train: # Configuration for training
   type: pytorch # Training framework (we only support pytorch now).
@@ -23,6 +24,7 @@ train: # Configuration for training
   device: cuda:0 # String for indicating the device we want to use for training models.
   key: none # String for indicating the meaning of the idx. We support data_idx, model_idx or none.
   num_target_model: 1 #Integer number for indicating how many target models we want to audit for the privacy game
+  test_batch_size: 5000 # Integer number for indicating batch size for evaluating the target model.
 
 data: # Configuration for data
   dataset: cifar10 # String indicates the name of the dataset

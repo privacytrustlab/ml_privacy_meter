@@ -20,6 +20,7 @@ audit: # Configurations for auditing
   split_method: uniform # String for indicating the splitting methods for reference dataset. We support uniform and leave_one_out.
   key: none # String for indicating the meaning of the idx. We support data_idx and none for reusing existing reference models. data_idx search for models which include or exclude the data point indicated using idx. Otherwise, the reference models are the ones that have the same training setting as indicated above.
   idx: none # Integer number for the model index or data index.
+  augmentation: None # Indicate whether to use augmentation for the query points
 
 train: # Configuration for training
   type: pytorch # Training framework (we only support pytorch now).
@@ -33,6 +34,7 @@ train: # Configuration for training
   device: cuda:0 # String for indicating the device we want to use for training models.
   key: none # String for indicating the meaning of the idx. We support data_idx, model_idx or none.
   num_target_model: 1 #Integer number for indicating how many target models we want to audit for the privacy game
+  test_batch_size: 5000 # Integer number for indicating batch size for evaluating the target model.
 
 data: # Configuration for data
   dataset: cifar10 # String indicates the name of the dataset

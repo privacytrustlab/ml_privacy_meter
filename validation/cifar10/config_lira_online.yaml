@@ -10,7 +10,7 @@ audit: # Configurations for auditing
   device: cuda:1
   fix_variance: True # Indicate hwether to fix the variance of the signals for all data points
   offline: False # Indicate whether to use the offline setting
-  argumentation: None # Indicate whether to use argumentation for the query points
+  augmentation: None # Indicate whether to use augmentation for the query points
   audit_batch_size: 1000
 
 train: # Configuration for training
@@ -25,6 +25,7 @@ train: # Configuration for training
   weight_decay: speedyresnet_weight_decay
   batch_size: speedyresnet_batch_size
   epochs: speedyresnet_epochs
+  test_batch_size: 5000 # Integer number for indicating batch size for evaluating the target model.
 
 data: # Configuration for data
   dataset: cifar10 # String indicates the name of the dataset

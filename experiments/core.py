@@ -393,6 +393,7 @@ def prepare_datasets_for_sample_privacy_risk(
 
 
 def prepare_datasets_for_online_attack(
+    all_dataset_size: int,
     dataset_size: int,
     num_models: int,
     keep_ratio: float,
@@ -401,8 +402,8 @@ def prepare_datasets_for_online_attack(
     """Prepare the datasets for online attacks. Each data point will be randomly chosen by half of the models with probability keep_ratio and the rest of the models will be trained on the rest of the dataset.
     The partioning method is from https://github.com/tensorflow/privacy/blob/master/research/mi_lira_2021/train.py
     Args:
-        dataset_size (int): Size of the whole dataset
-        used_dataset_size (int): Size of the whole dataset used for training the models
+        all_dataset_size (int): Size of the whole dataset
+        dataset_size (int): Size of the whole dataset used for training the models
         num_models (int): Number of additional target models
         keep_ratio (float): Indicate the probability of keeping the target point for training the model.
         is_uniform (bool): Indicate whether to perform the splitting in a uniform way.
@@ -412,6 +413,7 @@ def prepare_datasets_for_online_attack(
     """
     index_list = []
     all_index = np.arange(dataset_size)
+    left_index = np.setdiff1d(np.arange(all_dataset_size), all_index)
     if is_uniform:
         keep = np.random.uniform(0, 1, size=(num_models, dataset_size)) <= keep_ratio
     else:
@@ -422,7 +424,11 @@ def prepare_datasets_for_online_attack(
         if np.sum(~keep[i]) % 2 == 0:
             # This is for speedyresnet
             index_list.append(
-                {"train": all_index[keep[i]], "test": all_index[~keep[i]], "audit": []}
+                {
+                    "train": all_index[keep[i]],
+                    "test": all_index[~keep[i]],
+                    "audit": left_index,
+                }
             )
         else:
             train_index = all_index[keep[i]]
@@ -431,7 +437,7 @@ def prepare_datasets_for_online_attack(
                 {
                     "train": np.append(train_index, test_index[0]),
                     "test": test_index[1:],
-                    "audit": [],
+                    "audit": left_index,
                 }
             )
 
@@ -507,9 +513,17 @@ def prepare_models(
                 data_split["split"][split]["test"],
                 device=configs["device"],
             )
-            eval_batch_size, test_size = configs["test_batch_size"], len(data_split["split"][split]["test"]) 
-            divisors = [factor for i in range(1, int(np.sqrt(test_size)) + 1) if test_size % i == 0 for factor in (i, test_size // i) if factor <= eval_batch_size]
-            eval_batch_size = max(divisors) # to support smaller GPUs
+            eval_batch_size, test_size = configs["test_batch_size"], len(
+                data_split["split"][split]["test"]
+            )
+            divisors = [
+                factor
+                for i in range(1, int(np.sqrt(test_size)) + 1)
+                if test_size % i == 0
+                for factor in (i, test_size // i)
+                if factor <= eval_batch_size
+            ]
+            eval_batch_size = max(divisors)  # to support smaller GPUs
             print_training_details(logging_columns_list, column_heads_only=True)
             model, train_acc, train_loss, test_acc, test_loss = fast_train_fun(
                 data,
@@ -590,6 +604,7 @@ def get_info_source_population_attack(
     test_data, test_targets = get_dataset_subset(
         dataset, data_split["test"], model_name, device=configs["device"]
     )
+    print(data_split["audit"])
     audit_data, audit_targets = get_dataset_subset(
         dataset, data_split["audit"], model_name, device=configs["device"]
     )
@@ -724,14 +739,33 @@ def get_info_source_reference_attack(
                 model, reference_loader, configs["device"]
             )
         else:
+            reference_test_data_idx = reference_data_idx[:1000]
             data = get_cifar10_data(
-                dataset, reference_data_idx, reference_data_idx, device=device
+                dataset,
+                reference_data_idx,
+                reference_test_data_idx,
+                device=configs["device"],
             )
             print_training_details(
                 logging_columns_list, column_heads_only=True
             )  ## print out the training column heads before we print the actual content for each run.
+            ref_eval_batch_size, ref_test_size = 250, len(
+                reference_test_data_idx
+            )  # hard code for now.
+            divisors = [
+                factor
+                for i in range(1, int(np.sqrt(ref_test_size)) + 1)
+                if ref_test_size % i == 0
+                for factor in (i, ref_test_size // i)
+                if factor <= ref_eval_batch_size
+            ]
+            ref_eval_batch_size = max(divisors)  # to support smaller GPUs
+
             reference_model, train_acc, train_loss, _, _ = fast_train_fun(
-                data, make_net(data, device=configs["device"])
+                data,
+                make_net(data, device=configs["device"]),
+                eval_batchsize=ref_eval_batch_size,
+                device=configs["device"],
             )
 
         logging.info(

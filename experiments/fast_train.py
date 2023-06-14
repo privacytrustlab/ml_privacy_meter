@@ -839,7 +839,6 @@ def fast_train_fun(
             # Evaluation  Mode #
             ####################
             net.eval()
-
             assert (
                 data["eval"]["images"].shape[0] % eval_batchsize == 0
             ), "Error: The eval batchsize must evenly divide the eval dataset (for now, we don't have drop_remainder implemented yet)."

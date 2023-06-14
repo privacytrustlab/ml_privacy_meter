@@ -391,6 +391,7 @@ if __name__ == "__main__":
             + configs["train"]["num_target_model"]
         )
         data_split_info, keep_matrix = prepare_datasets_for_online_attack(
+            len(dataset),
             dataset_size,
             num_models=(number_of_models_lira),
             keep_ratio=p_ratio,
@@ -476,12 +477,10 @@ if __name__ == "__main__":
 
         # number of models we want to consider as test
         n_test = 1
-        target_signal = signals[-n_test:, :]
-        reference_signals = signals[:-n_test, :]
-        reference_keep_matrix = keep_matrix[:-n_test, :]
-        membership = keep_matrix[-n_test:, :]
-
-        print(reference_signals.shape, target_signal.shape)
+        target_signal = signals[:n_test, :]
+        reference_signals = signals[n_test:, :]
+        reference_keep_matrix = keep_matrix[n_test:, :]
+        membership = keep_matrix[:n_test, :]
         in_signals = []
         out_signals = []
 
@@ -528,7 +527,6 @@ if __name__ == "__main__":
 
         prediction = np.array(prediction)
         answers = np.array(answers, dtype=bool)
-        print(prediction.shape, answers.shape, prediction, np.isnan(prediction).sum())
         fpr_list, tpr_list, _ = roc_curve(answers.ravel(), -prediction.ravel())
         acc = np.max(1 - (fpr_list + (1 - tpr_list)) / 2)
         roc_auc = auc(fpr_list, tpr_list)
@@ -542,7 +540,7 @@ if __name__ == "__main__":
             fpr_list,
             tpr_list,
             roc_auc,
-            f"{log_dir}/{configs['audit']['report_log']}/online_attack.png",
+            f"{log_dir}/{configs['audit']['report_log']}/ROC.png",
         )
 
     ############################
