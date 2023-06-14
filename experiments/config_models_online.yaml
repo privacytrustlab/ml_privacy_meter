@@ -10,16 +10,17 @@ audit: # Configurations for auditing
   device: cuda:0
   fix_variance: True # Indicate hwether to fix the variance of the signals for all data points
   offline: False # Indicate whether to use the offline setting
-  argumentation: None # Indicate whether to use argumentation for the query points
+  augmentation: None # Indicate whether to use augmentation for the query points
   audit_batch_size: 1000
 
 train: # Configuration for training
   type: pytorch # Training framework (we only support pytorch now).
-  model_name: speedyresnet # String for indicating the model type. We support CNN, wrn28-1, wrn28-2, wrn28-10, vgg16, nn and speedyresnet. More model types can be added in model.py.
+  model_name: speedyresnet # String for indicating the model type. We support CNN, wrn28-1, wrn28-2, wrn28-10, vgg16, nn and speedyresnet (requires cuda). More model types can be added in model.py.
   device: cuda:0 # String for indicating the device we want to use for training models.
   num_in_models: 8 # Integer number that indicates how many target models trained on idx
   num_out_models: 8 # Integer number that indicates how many target models not trained on idx
   num_target_model: 1 # Number of total models we want to test
+  test_batch_size: 5000 # Integer number for indicating batch size for evaluating the target model.
   optimizer: speedyresnet_optimizer
   learning_rate: speedyresnet_learning_rate
   weight_decay: speedyresnet_weight_decay

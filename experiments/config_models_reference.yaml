@@ -14,7 +14,7 @@ audit: # Configurations for auditing
   optimizer: AdamW # String which indicates the optimizer for training reference models. We support Adam and SGD.
   learning_rate: 0.001 # Float number for indicating learning rate for training the reference model.
   weight_decay: 0 # Float number for indicating weight decay for training the reference model.
-  model_name: CNN # String for indicating the model type. We support CNN, wrn28-1, wrn28-2, wrn28-10, vgg16, nn and speedyresnet. More model types can be added in model.py.
+  model_name: CNN # String for indicating the model type. We support CNN, wrn28-1, wrn28-2, wrn28-10, vgg16, nn and speedyresnet (requires cuda). More model types can be added in model.py.
   epochs: 10 # Integer number for indicating the epochs for training target model.
   report_log: report_reference # String that indicates the folder where we save the and auditing report.
   split_method: uniform # String for indicating the splitting methods for reference dataset. We support uniform and leave_one_out.
