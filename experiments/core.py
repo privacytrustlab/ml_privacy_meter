@@ -507,11 +507,14 @@ def prepare_models(
                 data_split["split"][split]["test"],
                 device=configs["device"],
             )
+            eval_batch_size, test_size = configs["test_batch_size"], len(data_split["split"][split]["test"]) 
+            divisors = [factor for i in range(1, int(np.sqrt(test_size)) + 1) if test_size % i == 0 for factor in (i, test_size // i) if factor <= eval_batch_size]
+            eval_batch_size = max(divisors) # to support smaller GPUs
             print_training_details(logging_columns_list, column_heads_only=True)
             model, train_acc, train_loss, test_acc, test_loss = fast_train_fun(
                 data,
                 make_net(data, device=configs["device"]),
-                eval_batchsize=int(data_split["split"][split]["test"].shape[0] / 2),
+                eval_batchsize=eval_batch_size,
                 device=configs["device"],
             )
 

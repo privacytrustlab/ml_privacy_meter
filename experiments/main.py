@@ -9,7 +9,7 @@ from pathlib import Path
 import numpy as np
 import torch
 import yaml
-from argument import get_signal_on_argumented_data
+from augment import get_signal_on_augmented_data
 from core import (
     load_dataset_for_existing_models,
     load_existing_models,
@@ -431,11 +431,11 @@ if __name__ == "__main__":
                     batch_size=configs["audit"]["audit_batch_size"],
                 )
                 signals.append(
-                    get_signal_on_argumented_data(
+                    get_signal_on_augmented_data(
                         model_pm,
                         data,
                         targets,
-                        method=configs["audit"]["argumentation"],
+                        method=configs["audit"]["augmentation"],
                     )
                 )
             logger.info(
@@ -460,11 +460,11 @@ if __name__ == "__main__":
                     batch_size=10000,
                 )
                 signals.append(
-                    get_signal_on_argumented_data(
+                    get_signal_on_augmented_data(
                         model_pm,
                         data,
                         targets,
-                        method=configs["audit"]["argumentation"],
+                        method=configs["audit"]["augmentation"],
                     )
                 )
             logger.info(
@@ -516,7 +516,7 @@ if __name__ == "__main__":
                 pr_in = -norm.logpdf(sc, mean_in, std_in + 1e-30)
             pr_out = -norm.logpdf(sc, mean_out, std_out + 1e-30)
             score = pr_in - pr_out
-            if len(score.shape) == 2:  # the score is of size (data_size, num_arguments)
+            if len(score.shape) == 2:  # the score is of size (data_size, num_augments)
                 prediction.extend(score.mean(1))
                 fpr_list, tpr_list, _ = roc_curve(ans, -score.mean(1))
             else:

@@ -2,9 +2,9 @@ import numpy as np
 import torch
 
 
-def get_signal_on_argumented_data(model_pm, data, targets, method=None):
-    if method == "argumented":
-        # implement your own way of using the argumented data for inferring membership
+def get_signal_on_augmented_data(model_pm, data, targets, method=None):
+    if method == "augmented":
+        # implement your own way of using the augmented data for inferring membership
         reflect = True
         shift = 0
         stride = 1
@@ -23,10 +23,10 @@ def get_signal_on_argumented_data(model_pm, data, targets, method=None):
         return model_pm.get_rescaled_logits(data, targets)
 
 
-def get_argumented_data(data, targets, method=None):
+def get_augmented_data(data, targets, method=None):
     if method is None:
         return data, targets
-    elif method == "argumented":
+    elif method == "augmented":
         reflect = True
         shift = 0
         stride = 1

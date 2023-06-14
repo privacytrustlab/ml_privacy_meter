@@ -4,7 +4,7 @@ from ast import Tuple
 
 import numpy as np
 import torch
-from argument import get_argumented_data
+from augment import get_augmented_data
 from torch import nn
 from torch.optim import lr_scheduler
 from util import get_optimizer
