@@ -511,25 +511,14 @@ def prepare_models(
             data = get_cifar10_data(
                 dataset,
                 data_split["split"][split]["train"],
-                data_split["split"][split]["test"],
+                data_split["split"][split]["test"][:1000], # hard coded for now
                 device=configs["device"],
             )
-            eval_batch_size, test_size = configs["test_batch_size"], len(
-                data_split["split"][split]["test"]
-            )
-            divisors = [
-                factor
-                for i in range(1, int(np.sqrt(test_size)) + 1)
-                if test_size % i == 0
-                for factor in (i, test_size // i)
-                if factor <= eval_batch_size
-            ]
-            eval_batch_size = max(divisors)  # to support smaller GPUs
             print_training_details(logging_columns_list, column_heads_only=True)
             model, train_acc, train_loss, test_acc, test_loss = fast_train_fun(
                 data,
                 make_net(data, device=configs["device"]),
-                eval_batchsize=eval_batch_size,
+                eval_batchsize=250,
                 device=configs["device"],
             )
 
@@ -740,32 +729,19 @@ def get_info_source_reference_attack(
                 model, reference_loader, configs["device"]
             )
         else:
-            reference_test_data_idx = reference_data_idx[:1000]
             data = get_cifar10_data(
                 dataset,
                 reference_data_idx,
-                reference_test_data_idx,
+                reference_data_idx[:1000], # hard coded for now
                 device=configs["device"],
             )
             print_training_details(
                 logging_columns_list, column_heads_only=True
             )  ## print out the training column heads before we print the actual content for each run.
-            ref_eval_batch_size, ref_test_size = 250, len(
-                reference_test_data_idx
-            )  # hard code for now.
-            divisors = [
-                factor
-                for i in range(1, int(np.sqrt(ref_test_size)) + 1)
-                if ref_test_size % i == 0
-                for factor in (i, ref_test_size // i)
-                if factor <= ref_eval_batch_size
-            ]
-            ref_eval_batch_size = max(divisors)  # to support smaller GPUs
-
             reference_model, train_acc, train_loss, _, _ = fast_train_fun(
                 data,
                 make_net(data, device=configs["device"]),
-                eval_batchsize=ref_eval_batch_size,
+                eval_batchsize=250,
                 device=configs["device"],
             )
 
