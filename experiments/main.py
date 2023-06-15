@@ -385,7 +385,7 @@ if __name__ == "__main__":
         baseline_time = time.time()
         p_ratio = configs["data"]["keep_ratio"]
         dataset_size = configs["data"]["dataset_size"]
-        number_of_models_lira = (
+        number_of_models_total = (
             configs["train"]["num_in_models"]
             + configs["train"]["num_out_models"]
             + configs["train"]["num_target_model"]
@@ -393,7 +393,7 @@ if __name__ == "__main__":
         data_split_info, keep_matrix = prepare_datasets_for_online_attack(
             len(dataset),
             dataset_size,
-            num_models=(number_of_models_lira),
+            num_models=(number_of_models_total),
             keep_ratio=p_ratio,
             is_uniform=False,
         )
