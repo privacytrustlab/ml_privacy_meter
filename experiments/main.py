@@ -5,7 +5,7 @@ import os
 import pickle
 import time
 from pathlib import Path
-
+import random
 import numpy as np
 import torch
 import yaml
@@ -79,6 +79,7 @@ if __name__ == "__main__":
     # Set the random seed, log_dir and inference_game
     torch.manual_seed(configs["run"]["random_seed"])
     np.random.seed(configs["run"]["random_seed"])
+    random.seed(configs["run"]["random_seed"])
 
     log_dir = configs["run"]["log_dir"]
     inference_game_type = configs["audit"]["privacy_game"].upper()
@@ -390,7 +391,7 @@ if __name__ == "__main__":
             + configs["train"]["num_out_models"]
             + configs["train"]["num_target_model"]
         )
-        data_split_info, keep_matrix = prepare_datasets_for_online_attack(
+        data_split_info, keep_matrix, target_data_index = prepare_datasets_for_online_attack(
             len(dataset),
             dataset_size,
             num_models=(number_of_models_total),
@@ -399,7 +400,7 @@ if __name__ == "__main__":
         )
         data, targets = get_dataset_subset(
             dataset,
-            np.arange(dataset_size),
+            target_data_index,
             configs["train"]["model_name"],
             device=configs["train"]["device"],
         )  # only the train dataset we want to attack

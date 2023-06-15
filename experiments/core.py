@@ -412,7 +412,7 @@ def prepare_datasets_for_online_attack(
         list: List of boolean indicating whether the model is trained on the target point.
     """
     index_list = []
-    all_index = np.arange(dataset_size)
+    all_index = np.random.choice(all_dataset_size, dataset_size, replace=False)
     left_index = np.setdiff1d(np.arange(all_dataset_size), all_index)
     if is_uniform:
         keep = np.random.uniform(0, 1, size=(num_models, dataset_size)) <= keep_ratio
@@ -442,7 +442,7 @@ def prepare_datasets_for_online_attack(
             )
 
     dataset_splits = {"split": index_list, "split_method": f"random_{keep_ratio}"}
-    return dataset_splits, keep
+    return dataset_splits, keep, all_index
 
 
 def prepare_models(
