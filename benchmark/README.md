@@ -10,13 +10,12 @@ The target model is trained using 30% of the entire CIFAR10 dataset (referred to
 
 Both Lira attack and reference attacks require training reference models. Here's how each attack method works:
 
-- Population Attacks (Ye et al., 2022): Only use the population data and the target model for the attack (i.e., do not train any reference models)
+- `Population Attack` (Ye et al., 2022): Only use the population data and the target model for the attack (i.e., do not train any reference models)
 
-- Reference Attacks (Ye et al., 2022): Only the OUT models are used for the attack.
+- `Reference Attacks` (Ye et al., 2022): Only the OUT models are used for the attack.
 
-- Lira Attack (Carlini et al., 2022): The models are trained on a random subset of the target dataset, including both the training and testing sets. Each target data point (from member and non-member set) is included in half of the reference models (referred to as "IN models") and excluded from the other half (referred to as "OUT models").
+- `Lira Attack` (Carlini et al., 2022): The models are trained on a random subset of the target dataset, including both the training and testing sets. Each target data point (from member and non-member set) is included in half of the reference models (referred to as "IN models") and excluded from the other half (referred to as "OUT models").
 
-## Metrics
 
 In terms of metrics, we consider the rescaled logits for all attacks and fit Gaussian distributions to the signals computed on the IN models and OUT models. Here's how the ROC is generated for each attack method:
 
