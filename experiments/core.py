@@ -410,6 +410,7 @@ def prepare_datasets_for_online_attack(
     Returns:
         dict: Data split information.
         list: List of boolean indicating whether the model is trained on the target point.
+        list: List of target data index on which the adversary wants to infer the membership.
     """
     index_list = []
     all_index = np.random.choice(all_dataset_size, dataset_size, replace=False)
