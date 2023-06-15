@@ -1,4 +1,4 @@
-# README
+# Benchmark Experiments
 
 This folder contains a script for running benchmark experiments with different methods under the same settings.
 

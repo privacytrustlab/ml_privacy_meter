@@ -1,4 +1,4 @@
-# Reproducing benchmark results
+# Reproducing Existing Results
 
 This folder provides configurations (YAML files) for reproducing the results provided in published papers on different datasets. To reproduce the results, please run the `experiments/main.py` with the corresponding configuration files.
 
