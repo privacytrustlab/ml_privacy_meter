@@ -1,6 +1,6 @@
 run: # Configurations for a specific run
   random_seed: 0530 # Integer number of specifying random seed
-  log_dir: benchmark # String for indicating where to save all the information, including models and computed signals. We can reuse the models saved in the same log_dir.
+  log_dir: benchmark29 # String for indicating where to save all the information, including models and computed signals. We can reuse the models saved in the same log_dir.
   time_log: True # Indicate whether to log the time for each step
 
 audit: # Configurations for auditing

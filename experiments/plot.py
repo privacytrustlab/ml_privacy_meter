@@ -9,8 +9,8 @@ import seaborn as sns
 def plot_roc(fpr_list, tpr_list, roc_auc, path):
     range01 = np.linspace(0, 1)
     plt.fill_between(fpr_list, tpr_list, alpha=0.15)
-    plt.plot(range01, range01, "--", label="Random guess")
     plt.plot(fpr_list, tpr_list, label="ROC curve")
+    plt.plot(range01, range01, "--", label="Random guess")
     plt.xlim([0, 1])
     plt.ylim([0, 1])
     plt.grid()

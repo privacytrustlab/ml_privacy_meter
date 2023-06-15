@@ -1,6 +1,6 @@
 run: # Configurations for a specific run
   random_seed: 0530 # Integer number of specifying random seed
-  log_dir: benchmark # String for indicating where to save all the information, including models and computed signals. We can reuse the models saved in the same log_dir.
+  log_dir: benchmark29 # String for indicating where to save all the information, including models and computed signals. We can reuse the models saved in the same log_dir.
   time_log: True # Indicate whether to log the time for each step
 
 audit: # Configurations for auditing
@@ -10,7 +10,7 @@ audit: # Configurations for auditing
   device: cuda:0
   augmentation: None # Indicate whether to use augmentation for the query points
   audit_batch_size: 1000
-  num_reference_models: 16
+  num_reference_models: 28
   batch_size: speedyresnet_batch_size # Integer number for indicating the batch size of training the reference models if reference attack is used.
   f_reference_dataset: 1 # Float number for indicating the ratio between the reference train dataset and the target train dataset.
   optimizer: speedyresnet_optimizer # String which indicates the optimizer for training reference models. We support Adam and SGD.
