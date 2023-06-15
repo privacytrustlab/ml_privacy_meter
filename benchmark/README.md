@@ -30,9 +30,9 @@ In terms of metrics, we consider the rescaled logits for all attacks and fit Gau
 
 To obtain all the attack results under this setting, please run the following command:
     
-    ```bash
-    python main.py --cf benchmark.yaml
-    ```
+```
+python main.py --cf benchmark.yaml
+```
 
 The results will be saved in the `benchmark` folder within the current directory.
 
