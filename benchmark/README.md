@@ -10,20 +10,21 @@ The target model is trained using 30% of the entire CIFAR10 dataset (referred to
 
 Both Lira attack and reference attacks require training reference models. Here's how each attack method works:
 
-- `Population Attack` (Ye et al., 2022): Only use the population data and the target model for the attack (i.e., do not train any reference models)
+- `Lira Attack` (Carlini et al., 2022): The models are trained on a random subset of the target dataset, including both the training and testing sets. Each target data point (from member and non-member set) is included in half of the reference models (referred to as "IN models") and excluded from the other half (referred to as "OUT models").
+
+- `Population Attack` (Ye et al., 2022): Only use the population data and the target model (i.e., do not train any reference models)
 
 - `Reference Attacks` (Ye et al., 2022): Only the OUT models are used for the attack.
 
-- `Lira Attack` (Carlini et al., 2022): The models are trained on a random subset of the target dataset, including both the training and testing sets. Each target data point (from member and non-member set) is included in half of the reference models (referred to as "IN models") and excluded from the other half (referred to as "OUT models").
+In terms of metrics, we consider the rescaled logits for all attacks and fit a Gaussian distribution for the signals computed on the IN models and OUT models. Here's how the ROC is generated for each attack method:
 
-
-In terms of metrics, we consider the rescaled logits for all attacks and fit Gaussian distributions to the signals computed on the IN models and OUT models. Here's how the ROC is generated for each attack method:
+- `Lira Attack` (Carlini et al., 2022): The likelihood ratio between the IN model distribution and the OUT model distribution is computed and the attacker sweeps all possible thresholds to get the whole ROC.
 
 - `Population Attack` (Ye et al., 2022): The alpha-percentile of the signal distribution computed on the population data from the target model is used as the threshold for the attack. The attacker sweeps all possible thresholds to get the whole ROC.
 
 - `Reference Attacks` (Ye et al., 2022): The alpha-percentile of the OUT model distribution is used as the threshold for the attack. The attacker sweeps all possible thresholds to get the whole ROC.
 
-- `Lira Attack` (Carlini et al., 2022): The likelihood ratio between the IN model distribution and the OUT model distribution is computed and the attacker sweeps all possible thresholds to get the whole ROC.
+To learn more, please refer to the original papers [Ye et al., 2022](https://dl.acm.org/doi/abs/10.1145/3548606.3560675) and [Carlini et al., 2022](https://arxiv.org/pdf/2112.03570.pdf).
 
 ## Running the Script
 
@@ -46,5 +47,5 @@ In the following, we present the results for different variants of attacks:
 7. `population`: This attack utilizes the target model's performance on population data to construct the OUT signal distribution. Each target point's signal is then compared with the alpha-percentile of the OUT signal distribution. This is from the original population attack paper (Ye et al., 2022).
 
 <p align="center" width="100%">
-    <img width="80%" src="benchmark/benchmark/Combined_ROC_log_scaled.png">
+    <img width="80%" src="default_benchmark/benchmark/Combined_ROC_log_scaled.png">
 </p>
