@@ -28,7 +28,7 @@ To learn more, please refer to the original papers [Ye et al., 2022](https://dl.
 
 ## Running the Script
 
-To obtain all the attack results under this setting, please run the following command (GPU needed):
+To obtain all the attack results under this setting, please run the following command (GPU needed. The default GPU id is 1.):
     
 ```
 python main.py --cf benchmark.yaml
