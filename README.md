@@ -28,9 +28,7 @@ ML Privacy Meter is a Python library (`privacy_meter`) that enables quantifying 
 
 The core of the privacy meter consists of three parts: `Information Source`, `Metric` and `Metric Results`.
 
-<p align="center" width="100%">
-    <img width="80%" src="https://github.com/privacytrustlab/ml_privacy_meter/tree/master/source/_static/privacy_meter_architecture.png">
-</p>
+![alt text](https://github.com/privacytrustlab/ml_privacy_meter/blob/master/source/_static/privacy_meter_architecture.png?raw=true)
 
 Kindly refer to the tutorial on the population attack ([here](tutorials/population_metric.ipynb)) to gain familiarity with the utilization of each component.
 
@@ -112,5 +110,7 @@ To cite this repository, please include the following references (or you can dow
 ## Authors
 
 The tool is designed and developed at NUS Data Privacy and Trustworthy Machine Learning Lab. We also welcome contributions from the community. The current contributors are:
-
-[![](https://contrib.rocks/image?repo=privacytrustlab/ml_privacy_meter)](https://github.com/privacytrustlab/ml_privacy_meter/graphs/contributors)
+<a href="https://github.com/privacytrustlab/ml_privacy_meter/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=privacytrustlab/ml_privacy_meter" />
+</a>
+<!-- ![alt text](https://contrib.rocks/image?repo=privacytrustlab/ml_privacy_meter) -->
