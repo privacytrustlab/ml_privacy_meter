@@ -110,7 +110,5 @@ To cite this repository, please include the following references (or you can dow
 ## Authors
 
 The tool is designed and developed at NUS Data Privacy and Trustworthy Machine Learning Lab. We also welcome contributions from the community. The current contributors are:
-<a href="https://github.com/privacytrustlab/ml_privacy_meter/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=privacytrustlab/ml_privacy_meter" />
-</a>
-<!-- ![alt text](https://contrib.rocks/image?repo=privacytrustlab/ml_privacy_meter) -->
+
+[![Contributors](https://contrib.rocks/image?repo=privacytrustlab/ml_privacy_meter)](https://github.com/privacytrustlab/ml_privacy_meter/graphs/contributors)
