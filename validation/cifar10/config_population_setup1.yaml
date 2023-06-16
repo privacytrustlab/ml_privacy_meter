@@ -14,8 +14,8 @@ audit: # Configurations for auditing
 
 train: # Configuration for training
   type: pytorch # Training framework (we only support pytorch now).
-  epochs: 25 # Integer number for indicating the epochs for training target model.
-  batch_size: 500 # Integer number for indicating batch size for training the target model.
+  epochs: 75 # Integer number for indicating the epochs for training target model.
+  batch_size: 16 # Integer number for indicating batch size for training the target model.
   test_batch_size: 10000 # Integer number for indicating batch size for evaluating the target model.
   optimizer: Adam # String which indicates the optimizer. We support Adam and SGD.
   learning_rate: 0.001 # Float number for indicating learning rate for training the target model.

@@ -511,7 +511,7 @@ def prepare_models(
             data = get_cifar10_data(
                 dataset,
                 data_split["split"][split]["train"],
-                data_split["split"][split]["test"][:1000], # hard coded for now
+                data_split["split"][split]["test"][:1000],  # hard coded for now
                 device=configs["device"],
             )
             print_training_details(logging_columns_list, column_heads_only=True)
@@ -594,7 +594,6 @@ def get_info_source_population_attack(
     test_data, test_targets = get_dataset_subset(
         dataset, data_split["test"], model_name, device=configs["device"]
     )
-    print(data_split["audit"])
     audit_data, audit_targets = get_dataset_subset(
         dataset, data_split["audit"], model_name, device=configs["device"]
     )
@@ -732,7 +731,7 @@ def get_info_source_reference_attack(
             data = get_cifar10_data(
                 dataset,
                 reference_data_idx,
-                reference_data_idx[:1000], # hard coded for now
+                reference_data_idx[:1000],  # hard coded for now
                 device=configs["device"],
             )
             print_training_details(
@@ -933,13 +932,6 @@ def prepare_priavcy_risk_report(
                 inference_game_type=InferenceGame.AVG_PRIVACY_LOSS_TRAINING_ALGO,
                 save=True,
                 filename=f"{save_path}/ROC.png",
-            )
-
-            SignalHistogramReport.generate_report(
-                metric_result=audit_results,
-                inference_game_type=InferenceGame.AVG_PRIVACY_LOSS_TRAINING_ALGO,
-                save=True,
-                filename=f"{save_path}/Histogram.png",
             )
         else:
             raise ValueError(

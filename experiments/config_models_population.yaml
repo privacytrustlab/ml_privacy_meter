@@ -12,21 +12,20 @@ audit: # Configurations for auditing
 
 train: # Configuration for training
   type: pytorch # Training framework (we only support pytorch now).
-  epochs: 3 # Integer number for indicating the epochs for training target model.
-  batch_size: 64 # Integer number for indicating batch size for training the target model.
+  epochs: speedyresnet_epochs # Integer number for indicating the epochs for training target model.
+  batch_size: speedyresnet_batch_size # Integer number for indicating batch size for training the target model.
   test_batch_size: 5000 # Integer number for indicating batch size for evaluating the target model.
-  optimizer: AdamW # String which indicates the optimizer. We support Adam and SGD.
-  learning_rate: 0.001 # Float number for indicating learning rate for training the target model.
-  weight_decay: 0 # Float number for indicating weight decay for training the target model.
+  optimizer: speedyresnet_optimizer # String which indicates the optimizer. We support Adam and SGD. For speedyresnet, it uses its own optimizer.
+  learning_rate: speedyresnet_learning_rate # Float number for indicating learning rate for training the target model.
+  weight_decay: speedyresnet_weight_decay # Float number for indicating weight decay for training the target model.
   model_name: speedyresnet # String for indicating the model type. We support CNN, wrn28-1, wrn28-2, wrn28-10, vgg16, nn and speedyresnet (requires cuda). More model types can be added in model.py.
   device: cuda:0 # String for indicating the device we want to use for training models.
   num_target_model: 1 #Integer number for indicating how many target models we want to audit for the privacy game
-  model_idx: 0
 
 data: # Configuration for data
   dataset: cifar10 # String indicates the name of the dataset (i.e., cifar10, cifar100, purchase100, texas1000)
-  f_train: 0.5 # Float number from 0 to 1 indicating the fraction of the train dataset
-  f_test: 0.5 # Float number from 0 to 1 indicating the fraction of the test dataset
-  split_method: uniform # String for indicating the methods of splitting the dataset between train, test, and auditing.
-  f_audit: 0.5 # Float from 0 to 1, indicating the fraction of the auditing dataset
+  f_train: 0.3 # Float number from 0 to 1 indicating the fraction of the train dataset
+  f_test: 0.3 # Float number from 0 to 1 indicating the fraction of the test dataset
+  split_method: no_overlapping # String for indicating the methods of splitting the dataset between train, test, and auditing.
+  f_audit: 0.3 # Float from 0 to 1, indicating the fraction of the auditing dataset
   data_dir: ../data # String about where to save the data.

@@ -2,20 +2,9 @@
 import time
 from ast import Tuple
 
-import numpy as np
 import torch
-from augment import get_augmented_data
 from torch import nn
-from torch.optim import lr_scheduler
 from util import get_optimizer
-
-
-def lr_update(step, total_epoch, train_size, initial_lr):
-    # this is from https://github.com/tensorflow/privacy/blob/4e1fc252e4c64132ad6fcd838e93f071f38dedd7/research/mi_lira_2021/train.py#L58
-    progress = step / (total_epoch * train_size)
-    lr = initial_lr * np.cos(progress * (7 * np.pi) / (2 * 8))
-    lr = lr * np.clip(progress * 100, 0, 1)
-    return lr
 
 
 def train(
@@ -43,13 +32,6 @@ def train(
     optimizer = get_optimizer(model, configs)
     # Get the number of epochs for training
     epochs = configs.get("epochs", 1)
-    # Define the LambdaLR scheduler
-    scheduler = lr_scheduler.LambdaLR(
-        optimizer,
-        lr_lambda=lambda step: lr_update(
-            step * 256, epochs, len(train_loader) * 256, 0.1
-        ),
-    )
 
     # Loop over each epoch
     for epoch_idx in range(epochs):
@@ -78,8 +60,6 @@ def train(
             loss.backward()
             # Take a step using optimizer
             optimizer.step()
-            scheduler.step()
-
             # Add the loss to the total loss
             train_loss += loss.item()
 

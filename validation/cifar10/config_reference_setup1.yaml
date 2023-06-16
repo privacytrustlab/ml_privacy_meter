@@ -18,9 +18,8 @@ audit: # Configurations for auditing
   model_name: alexnet # String for indicating the model type. We support CNN,alexnet. More model type can be added in model.py.
   epochs: 75 # Integer number for indicating the epochs for training target model.
   split_method: uniform # String for indicating the splitting methods for reference dataset. We support uniform and leave_one_out.
-  key: none # String for indicating the meaning of the idx. We support data_idx and none for reusing existing reference models. data_idx search for models which include or exclude the data point indicated using idx. Otherwise, the reference models are the ones that have the same training setting as indicated above.
-  idx: none # Integer number for the model index or data index.
   augmentation: None # Indicate whether to use augmentation for the query points
+  test_batch_size: 5000 # Integer number for indicating batch size for evaluating the target model.
 
 train: # Configuration for training
   type: pytorch # Training framework (we only support pytorch now).

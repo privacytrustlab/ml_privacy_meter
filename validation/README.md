@@ -6,7 +6,7 @@ This folder provides configurations (YAML files) for reproducing the results pro
 
 ```
 cd ../experiments
-python main.py --cf ../benchmark/cifar10/config_population_setup1.yaml
+python main.py --cf ../validation/cifar10/config_population_setup1.yaml
 ```
 
 # Benchmark results
