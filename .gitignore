@@ -22,3 +22,16 @@ log*/
 events.out*
 *.json
 *.csv
+*/*.pickle
+*/*/*.pickle
+experiments/data/*
+experiments/test_ccs/*
+data/cifar10/*
+tutorials/data_batch*
+data/*
+*/*/model*.pkl
+*/*/data_batch*
+
+*.pkl
+*.log
+*.png

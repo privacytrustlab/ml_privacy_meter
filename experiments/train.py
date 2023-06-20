@@ -1,17 +1,17 @@
 """This file contains functions for training and testing the model."""
+import time
 from ast import Tuple
 
 import torch
 from torch import nn
-
 from util import get_optimizer
-import time
-
-# Train Function
 
 
 def train(
-    model: torch.nn.Module, train_loader: torch.utils.data.DataLoader, configs: dict
+    model: torch.nn.Module,
+    train_loader: torch.utils.data.DataLoader,
+    configs: dict,
+    test_loader: torch.utils.data.DataLoader = None,
 ):
     """Train the model based on on the train loader
     Args:
@@ -27,18 +27,18 @@ def train(
     # Set the model to the device
     model.to(device)
     model.train()
-
     # Set the loss function and optimizer
     criterion = nn.CrossEntropyLoss()
     optimizer = get_optimizer(model, configs)
-
     # Get the number of epochs for training
     epochs = configs.get("epochs", 1)
+
     # Loop over each epoch
     for epoch_idx in range(epochs):
         start_time = time.time()
-        train_loss = 0
+        train_loss, train_acc = 0, 0
         # Loop over the training set
+        model.train()
         for data, target in train_loader:
             # Move data to the device
             data, target = data.to(device, non_blocking=True), target.to(
@@ -52,21 +52,38 @@ def train(
 
             # Get the model output
             output = model(data)
-
             # Calculate the loss
             loss = criterion(output, target)
-
+            pred = output.data.max(1, keepdim=True)[1]
+            train_acc += pred.eq(target.data.view_as(pred)).sum()
             # Perform the backward pass
             loss.backward()
             # Take a step using optimizer
             optimizer.step()
-
             # Add the loss to the total loss
             train_loss += loss.item()
 
-        # Print the epoch and loss summary
         print(f"Epoch: {epoch_idx+1}/{epochs} |", end=" ")
-        print(f"Loss: {train_loss/len(train_loader):.8f} ", end=" ")
+        print(f"Train Loss: {train_loss/len(train_loader):.8f} ", end=" ")
+        print(f"Train Acc: {float(train_acc)/len(train_loader.dataset):.8f} ", end=" ")
+
+        if test_loader is not None:
+            model.eval()
+            with torch.no_grad():
+                test_loss, test_acc = 0, 0
+                for data, target in test_loader:
+                    data, target = data.to(device), target.to(device)
+                    # Cast target to long tensor
+                    target = target.long()
+                    # Computing output and loss
+                    output = model(data)
+                    test_loss += criterion(output, target).item()
+                    # Computing accuracy
+                    pred = output.data.max(1, keepdim=True)[1]
+                    test_acc += pred.eq(target.data.view_as(pred)).sum()
+
+            print(f"Test Loss: {test_loss/len(test_loader):.8f} ", end=" ")
+            print(f"Test Acc: {float(test_acc)/len(test_loader.dataset):.8f} ", end=" ")
         print(f"One step uses {time.time() - start_time:.2f} seconds")
 
     # Move the model back to the CPU

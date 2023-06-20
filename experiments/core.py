@@ -8,12 +8,20 @@ from pathlib import Path
 import numpy as np
 import torch
 import torchvision
+from dataset import get_dataloader, get_dataset_subset
+from fast_train import (
+    NetworkEMA,
+    fast_train_fun,
+    get_cifar10_data,
+    logging_columns_list,
+    make_net,
+    print_training_details,
+)
+from models import get_model
 from sklearn.model_selection import train_test_split
 from torch import nn
-
-from dataset import get_dataset_subset, get_dataloader
-from models import get_model
-
+from train import inference, train
+from util import get_split, load_models_by_conditions, load_models_by_model_idx
 
 from privacy_meter import audit_report
 from privacy_meter.audit import MetricEnum
@@ -22,13 +30,11 @@ from privacy_meter.constants import InferenceGame
 from privacy_meter.dataset import Dataset
 from privacy_meter.information_source import InformationSource
 from privacy_meter.model import PytorchModelTensor
-from train import inference, train
-from util import get_split, load_models_by_conditions, load_models_by_model_idx
 
 
 def load_existing_target_model(
     dataset_size: int, model_metadata_dict: dict, configs: dict
-) -> List(int):
+):
     """Return a list of model's index that matches the configuration.
 
     Args:
@@ -51,10 +57,12 @@ def load_existing_target_model(
         conditions = {
             "optimizer": configs["train"]["optimizer"],
             "batch_size": configs["train"]["batch_size"],
+            "model_name": configs["train"]["model_name"],
             "epochs": configs["train"]["epochs"],
             "learning_rate": configs["train"]["learning_rate"],
             "weight_decay": configs["train"]["weight_decay"],
             "num_train": int(dataset_size * configs["data"]["f_train"]),
+            "dataset": configs["data"]["dataset"],
         }
         matched_idx_list = load_models_by_conditions(
             model_metadata_dict, conditions, num_target_models
@@ -64,7 +72,7 @@ def load_existing_target_model(
 
 def load_existing_reference_models(
     model_metadata_dict: dict, configs: dict, target_idx: int
-) -> List(int):
+):
     """Return a list of reference model's index that matches the configuration.
 
     Args:
@@ -104,7 +112,7 @@ def check_reference_model_dataset(
     target_idx: int,
     splitting_method: str,
     data_idx=None,
-) -> List(int):
+):
     """Filter out the reference models that does not satisfy the splitting method.
 
     Args:
@@ -143,14 +151,22 @@ def check_reference_model_dataset(
 
 
 def load_existing_models(
-    model_metadata_dict: dict, matched_idx: List(int), model_name: str
-) -> List(nn.Module):
+    model_metadata_dict: dict,
+    matched_idx: List(int),
+    model_name: str,
+    dataset: torchvision.datasets,
+    dataset_name: str,
+    device="cuda",
+):
     """Load existing models from dicks for matched_idx.
 
     Args:
         model_metadata_dict (dict): Model metedata dict.
         matched_idx (List): List of model index we want to load.
         model_name (str): Model name.
+        dataset_list (List): Dataset List.
+        dataset (torchvision.datasets): Dataset.
+        dataset_name (str): Dataset name.
     Returns:
         List (nn.Module): List of models.
     """
@@ -158,7 +174,11 @@ def load_existing_models(
     if len(matched_idx) > 0:
         for metadata_idx in matched_idx:
             metadata = model_metadata_dict["model_metadata"][metadata_idx]
-            model = get_model(model_name)
+            if model_name != "speedyresnet":
+                model = get_model(model_name, dataset_name)
+            else:
+                data = get_cifar10_data(dataset, [0], [0], device=device)
+                model = NetworkEMA(make_net(data, device=device))
             with open(f"{metadata['model_path']}", "rb") as file:
                 model_weight = pickle.load(file)
             model.load_state_dict(model_weight)
@@ -170,7 +190,7 @@ def load_existing_models(
 
 def load_dataset_for_existing_models(
     dataset_size: int, model_metadata_dict: dict, matched_idx: List(int), configs: dict
-) -> List(dict):
+):
     """Load the dataset index list for the existing models.
 
     Args:
@@ -265,7 +285,7 @@ def prepare_datasets_for_sample_privacy_risk(
     split_method: str,
     model_metadata_dict: dict,
     matched_in_idx: List(int) = None,
-) -> dict:
+):
     """Prepare the datasets for auditing the priavcy risk for a data point. We prepare the dataset with or without the target point for training a set of models with or without the target point.
 
     Args:
@@ -317,7 +337,22 @@ def prepare_datasets_for_sample_privacy_risk(
                 )
 
     # We generate a list of dataset which is the same as the training dataset of the models indicated by the matched_in_idx but excluding the target point.
-    elif split_method == "leave_one_out":
+    elif split_method == "leave_one_out" and data_type == "include":
+        train_index = np.random.choice(
+            all_index_exclude_z,
+            int((configs["f_train"]) * dataset_size) - 1,
+            replace=False,
+        )
+        for _ in range(num_models):
+            index_list.append(
+                {
+                    "train": np.append(train_index, data_idx),
+                    "test": all_index,
+                    "audit": all_index,
+                }
+            )
+
+    elif split_method == "leave_one_out" and data_type == "exclude":
         assert (
             matched_in_idx is not None
         ), "Please indicate the in-world model metdadata"
@@ -358,36 +393,57 @@ def prepare_datasets_for_sample_privacy_risk(
 
 
 def prepare_datasets_for_online_attack(
+    all_dataset_size: int,
     dataset_size: int,
     num_models: int,
-    configs: dict,
     keep_ratio: float,
-    model_metadata_dict: dict,
-) -> dict:
+    is_uniform: bool,
+):
     """Prepare the datasets for online attacks. Each data point will be randomly chosen by half of the models with probability keep_ratio and the rest of the models will be trained on the rest of the dataset.
     The partioning method is from https://github.com/tensorflow/privacy/blob/master/research/mi_lira_2021/train.py
     Args:
-        dataset_size (int): Size of the whole dataset
+        all_dataset_size (int): Size of the whole dataset
+        dataset_size (int): Size of the whole dataset used for training the models
         num_models (int): Number of additional target models
-        configs (dict): Data split configuration
         keep_ratio (float): Indicate the probability of keeping the target point for training the model.
-        model_metadata_dict (dict): Metadata for existing models.
-
+        is_uniform (bool): Indicate whether to perform the splitting in a uniform way.
     Returns:
         dict: Data split information.
         list: List of boolean indicating whether the model is trained on the target point.
+        list: List of target data index on which the adversary wants to infer the membership.
     """
     index_list = []
-    all_index = np.arange(dataset_size)
-    selected_matrix = np.random.uniform(0, 1, size=(num_models, dataset_size))
-    order = selected_matrix.argsort(0)
-    keep = order < int(keep_ratio * num_models)
+    all_index = np.random.choice(all_dataset_size, dataset_size, replace=False)
+    left_index = np.setdiff1d(np.arange(all_dataset_size), all_index)
+    if is_uniform:
+        keep = np.random.uniform(0, 1, size=(num_models, dataset_size)) <= keep_ratio
+    else:
+        selected_matrix = np.random.uniform(0, 1, size=(num_models, dataset_size))
+        order = selected_matrix.argsort(0)
+        keep = order < int(keep_ratio * num_models)
     for i in range(num_models):
-        index_list.append(
-            {"train": all_index[keep[i]], "test": all_index[~keep[i]], "audit": []}
-        )
+        if np.sum(~keep[i]) % 2 == 0:
+            # This is for speedyresnet
+            index_list.append(
+                {
+                    "train": all_index[keep[i]],
+                    "test": all_index[~keep[i]],
+                    "audit": left_index,
+                }
+            )
+        else:
+            train_index = all_index[keep[i]]
+            test_index = all_index[~keep[i]]
+            index_list.append(
+                {
+                    "train": np.append(train_index, test_index[0]),
+                    "test": test_index[1:],
+                    "audit": left_index,
+                }
+            )
+
     dataset_splits = {"split": index_list, "split_method": f"random_{keep_ratio}"}
-    return dataset_splits, keep
+    return dataset_splits, keep, all_index
 
 
 def prepare_models(
@@ -396,6 +452,7 @@ def prepare_models(
     data_split: dict,
     configs: dict,
     model_metadata_dict: dict,
+    dataset_name: str,
 ):
     """Train models based on the dataset split information.
 
@@ -406,7 +463,7 @@ def prepare_models(
         configs (dict): Indicate the traininig information
         model_metadata_dict (dict): Metadata information about the existing models.
         matched_idx (List, optional): Index list of existing models that matchs configuration. Defaults to None.
-
+        dataset_name (str): Name of the dataset
     Returns:
         nn.Module: List of trained models
         dict: Updated Metadata of the existing models
@@ -419,16 +476,6 @@ def prepare_models(
     for split in range(len(data_split["split"])):
         meta_data = {}
         baseline_time = time.time()
-        train_loader = get_dataloader(
-            torch.utils.data.Subset(dataset, data_split["split"][split]["train"]),
-            batch_size=configs["batch_size"],
-            shuffle=True,
-        )
-        test_loader = get_dataloader(
-            torch.utils.data.Subset(dataset, data_split["split"][split]["test"]),
-            batch_size=configs["test_batch_size"],
-            shuffle=False,
-        )
 
         print(50 * "-")
         print(
@@ -436,19 +483,57 @@ def prepare_models(
             f"Train size {len(data_split['split'][split]['train'])}, Test size {len(data_split['split'][split]['test'])}",
         )
 
-        # Train the target model based on the configurations.
-        model = train(get_model(configs["model_name"]), train_loader, configs)
-        # Test performance on the training dataset and test dataset
-        test_loss, test_acc = inference(model, test_loader, configs["device"])
-        train_loss, train_acc = inference(model, train_loader, configs["device"])
+        if configs["model_name"] != "speedyresnet":
+            train_loader = get_dataloader(
+                torch.utils.data.Subset(dataset, data_split["split"][split]["train"]),
+                batch_size=configs["batch_size"],
+                shuffle=True,
+            )
+            test_loader = get_dataloader(
+                torch.utils.data.Subset(dataset, data_split["split"][split]["test"]),
+                batch_size=configs["test_batch_size"],
+            )
+
+            # Train the target model based on the configurations.
+            model = train(
+                get_model(configs["model_name"], dataset_name),
+                train_loader,
+                configs,
+                test_loader,
+            )
+            # Test performance on the training dataset and test dataset
+            test_loss, test_acc = inference(model, test_loader, configs["device"])
+            train_loss, train_acc = inference(model, train_loader, configs["device"])
+            print(f"Train accuracy {train_acc}, Train Loss {train_loss}")
+            print(f"Test accuracy {test_acc}, Test Loss {test_loss}")
+
+        elif configs["model_name"] == "speedyresnet" and dataset_name == "cifar10":
+            data = get_cifar10_data(
+                dataset,
+                data_split["split"][split]["train"],
+                data_split["split"][split]["test"][:1000],  # hard coded for now
+                device=configs["device"],
+            )
+            print_training_details(logging_columns_list, column_heads_only=True)
+            model, train_acc, train_loss, test_acc, test_loss = fast_train_fun(
+                data,
+                make_net(data, device=configs["device"]),
+                eval_batchsize=250,
+                device=configs["device"],
+            )
+
+        else:
+            raise ValueError(
+                f"The {configs['model_name']} is not supported for the {dataset_name}"
+            )
+
         model_list.append(copy.deepcopy(model))
         logging.info(
             "Prepare %s-th target model costs %s seconds ",
             split,
             time.time() - baseline_time,
         )
-        print(f"Train accuracy {train_acc}, Train Loss {train_loss}")
-        print(f"Test accuracy {test_acc}, Test Loss {test_loss}")
+
         print(50 * "-")
 
         # Update the model metadata and save the model
@@ -469,6 +554,12 @@ def prepare_models(
         meta_data["learning_rate"] = configs["learning_rate"]
         meta_data["weight_decay"] = configs["weight_decay"]
         meta_data["model_path"] = f"{log_dir}/model_{model_idx}.pkl"
+        meta_data["train_acc"] = train_acc
+        meta_data["test_acc"] = test_acc
+        meta_data["train_loss"] = train_loss
+        meta_data["test_loss"] = test_loss
+        meta_data["dataset"] = dataset_name
+
         model_metadata_dict["model_metadata"][model_idx] = meta_data
         with open(f"{log_dir}/models_metadata.pkl", "wb") as f:
             pickle.dump(model_metadata_dict, f)
@@ -477,7 +568,11 @@ def prepare_models(
 
 
 def get_info_source_population_attack(
-    dataset: torchvision.datasets, data_split: dict, model: nn.Module, configs: dict
+    dataset: torchvision.datasets,
+    data_split: dict,
+    model: nn.Module,
+    configs: dict,
+    model_name: str,
 ):
     """Prepare the information source for calling the core of privacy meter for the population attack
 
@@ -486,16 +581,22 @@ def get_info_source_population_attack(
         data_split (dict): Data split information. 'split' contains a list of dict, each of which has the train, test and audit information. 'split_method' indicates the how the dataset is generated.
         model (nn.Module): Target Model.
         configs (dict): Auditing configuration
-
+        model_name (str): Target model name
     Returns:
         List(Dataset): List of target dataset on which we want to infer the membership
         List(Dataset):  List of auditing datasets we use for launch the attack
         List(nn.Module): List of target models we want to audit
         List(nn.Module): List of reference models (which is the target model based on population attack)
     """
-    train_data, train_targets = get_dataset_subset(dataset, data_split["train"])
-    test_data, test_targets = get_dataset_subset(dataset, data_split["test"])
-    audit_data, audit_targets = get_dataset_subset(dataset, data_split["audit"])
+    train_data, train_targets = get_dataset_subset(
+        dataset, data_split["train"], model_name, device=configs["device"]
+    )
+    test_data, test_targets = get_dataset_subset(
+        dataset, data_split["test"], model_name, device=configs["device"]
+    )
+    audit_data, audit_targets = get_dataset_subset(
+        dataset, data_split["audit"], model_name, device=configs["device"]
+    )
     target_dataset = Dataset(
         data_dict={
             "train": {"x": train_data, "y": train_targets},
@@ -527,6 +628,8 @@ def get_info_source_reference_attack(
     configs: dict,
     model_metadata_dict: dict,
     target_model_idx: int,
+    model_name: str,
+    dataset_name: str,
 ):
     """Prepare the information source for the reference attacks
 
@@ -538,6 +641,8 @@ def get_info_source_reference_attack(
         configs (dict): Auditing configuration.
         model_metadata_dict (dict): Model metedata dict.
         target_model_idx (int): target model index.
+        model_name (str): target model name.
+        dataset_name (str): name of the dataset.
 
     Returns:
         target_dataset: List of target dataset on which we want to infer the membership.
@@ -549,8 +654,13 @@ def get_info_source_reference_attack(
     """
 
     # Construct the target dataset and target models
-    train_data, train_targets = get_dataset_subset(dataset, data_split["train"])
-    test_data, test_targets = get_dataset_subset(dataset, data_split["test"])
+
+    train_data, train_targets = get_dataset_subset(
+        dataset, data_split["train"], model_name, device=configs["device"]
+    )
+    test_data, test_targets = get_dataset_subset(
+        dataset, data_split["test"], model_name, device=configs["device"]
+    )
     target_dataset = Dataset(
         data_dict={
             "train": {"x": train_data, "y": train_targets},
@@ -575,7 +685,11 @@ def get_info_source_reference_attack(
     )
     print(f"Load existing {len(reference_idx)} reference models")
     existing_reference_models = load_existing_models(
-        model_metadata_dict, reference_idx, configs["model_name"]
+        model_metadata_dict,
+        reference_idx,
+        configs["model_name"],
+        dataset,
+        dataset_name,
     )
     reference_models = [
         PytorchModelTensor(
@@ -600,16 +714,35 @@ def get_info_source_reference_attack(
         print(f"Training  {reference_idx}-th reference model")
         start_time = time.time()
 
-        reference_loader = get_dataloader(
-            torch.utils.data.Subset(dataset, reference_data_idx),
-            batch_size=configs["batch_size"],
-            shuffle=True,
-        )
+        if configs["model_name"] != "speedyresnet":
+            reference_loader = get_dataloader(
+                torch.utils.data.Subset(dataset, reference_data_idx),
+                batch_size=configs["batch_size"],
+                shuffle=True,
+            )
 
-        reference_model = get_model(configs["model_name"])
-        reference_model = train(reference_model, reference_loader, configs)
-        # Test performance on the training dataset and test dataset
-        train_loss, train_acc = inference(model, reference_loader, configs["device"])
+            reference_model = get_model(configs["model_name"], dataset_name)
+            reference_model = train(reference_model, reference_loader, configs)
+            # Test performance on the training dataset and test dataset
+            train_loss, train_acc = inference(
+                model, reference_loader, configs["device"]
+            )
+        else:
+            data = get_cifar10_data(
+                dataset,
+                reference_data_idx,
+                reference_data_idx[:1000],  # hard coded for now
+                device=configs["device"],
+            )
+            print_training_details(
+                logging_columns_list, column_heads_only=True
+            )  ## print out the training column heads before we print the actual content for each run.
+            reference_model, train_acc, train_loss, _, _ = fast_train_fun(
+                data,
+                make_net(data, device=configs["device"]),
+                eval_batchsize=250,
+                device=configs["device"],
+            )
 
         logging.info(
             f"Prepare {reference_idx}-th reference model costs {time.time()-start_time} seconds: Train accuracy (on auditing dataset) {train_acc}, Train Loss {train_loss}"
@@ -632,6 +765,7 @@ def get_info_source_reference_attack(
         meta_data["weight_decay"] = configs["weight_decay"]
         meta_data["model_name"] = configs["model_name"]
         meta_data["model_path"] = f"{log_dir}/model_{model_idx}.pkl"
+        meta_data["dataset"] = dataset_name
         model_metadata_dict["model_metadata"][model_idx] = meta_data
         reference_models.append(
             PytorchModelTensor(
@@ -663,6 +797,8 @@ def prepare_information_source(
     configs: dict,
     model_metadata_dict: dict,
     target_model_idx_list: List(int) = None,
+    model_name: str = None,
+    dataset_name: str = None,
 ):
     """Prepare the information source for calling the core of the privacy meter
     Args:
@@ -672,6 +808,8 @@ def prepare_information_source(
         model_list (List): List of target models.
         configs (dict): Auditing configuration.
         model_metadata_dict (dict): Model metedata dict.
+        model_name str: target model name
+        dataset_name (str): name of the dataset
 
     Returns:
         List(InformationSource): target information source list.
@@ -695,7 +833,11 @@ def prepare_information_source(
                 target_model,
                 audit_models,
             ) = get_info_source_population_attack(
-                dataset, data_split["split"][split], model_list[split], configs
+                dataset,
+                data_split["split"][split],
+                model_list[split],
+                configs,
+                model_name,
             )
             metrics = MetricEnum.POPULATION
         elif configs["algorithm"] == "reference":
@@ -714,6 +856,8 @@ def prepare_information_source(
                 configs,
                 model_metadata_dict,
                 target_model_idx_list[split],
+                model_name,
+                dataset_name,
             )
             metrics = MetricEnum.REFERENCE
         metric_list.append(metrics)
@@ -788,13 +932,6 @@ def prepare_priavcy_risk_report(
                 inference_game_type=InferenceGame.AVG_PRIVACY_LOSS_TRAINING_ALGO,
                 save=True,
                 filename=f"{save_path}/ROC.png",
-            )
-
-            SignalHistogramReport.generate_report(
-                metric_result=audit_results,
-                inference_game_type=InferenceGame.AVG_PRIVACY_LOSS_TRAINING_ALGO,
-                save=True,
-                filename=f"{save_path}/Histogram.png",
             )
         else:
             raise ValueError(

@@ -47,3 +47,14 @@ python main.py --cf config_samples.yaml
 ```
 
 After the completion, you can locate the privacy risk report in the `demo/report_sample` folder.
+
+## Training models efficiently
+
+We have integrated the fast training library, [hlb-CIFAR10](https://github.com/tysam-code/hlb-CIFAR10), developed by [tysam-code](https://github.com/tysam-code), into Privacy Meter. This library achieves an impressive training accuracy of 94% on CIFAR-10 in approximately 6.84 seconds on a single A100 GPU, setting a new world speed record. This integration allows users to efficiently evaluate the effectiveness of the newly proposed algorithm against existing attack algorithms using the CIFAR-10 dataset. To leverage this fast training library, simply specify the `model_name` as `speedyresnet` in the configuration file. In addition, `speedyresnet` has its own hyper-parameters from `hlb-CIFAR10`, e.g., learning rate, weight decay, etc. The hyper-parameter defined in configuration files will not have an impact on the model training. You can set `optimizer` to `speedyresnet_optimizer`, `learning_rate` to `speedyresnet_learning_rate`, `weight_decay` to `speedyresnet_weight_decay`, `batch_size` to `speedyresnet_batch_size` and `epochs` to `speedyresnet_epochs`. Note that, to further speed up the training, by default, only 1000 test points are used for evaluating the model performance during the training.
+
+## Supported Dataset and Models
+
+Privacy Meter supports various datasets widely used in the MIA literature, including CIFAR10 (`cifar10`), CIFAR100 (`cifar100`), Purchase (`purchase100`), and Texas (`texas100`). In terms of models, we provide support for CNN (`cnn`), AlexNet (`alexnet`), WideResNet (`wrn28-1`, `wrn28-2`, `wrn28-10`), and NN (`nn`) models. To specify the dataset and model, you can use the `dataset` and `model_name` parameters in the configuration file.
+
+## Tutorial
+We also provide video tutorial about privacy meter [here](https://drive.google.com/file/d/1wAxzlb8Oy67OCa95JXKPlFiJb0T2e39Y/view?usp=drive_link).
