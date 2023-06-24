@@ -29,7 +29,7 @@ python main.py --cf config_models_reference_in_out.yaml
 ``` 
 This script will train 16 reference models and one target model. Each target point, on which the adversary wants to infer the membership, is included in the training dataset for half of the models and excluded from the other half of the models.
 
-For a comprehensive explanation of each parameter, please refer to each Yaml file. Upon completion, you will find the results in the `demo` folder, with the reference attack results saved in `demo/report_reference` and the population attack results saved in `demo/report_population`. Furthermore, we also offer a timing log for each run, which can be found in the file `log_time_analysis.log`.
+For a comprehensive explanation of each parameter, please refer to each Yaml file. Upon completion, you will find the results in the folder indicated by `run.log_dir`, with the attack results saved in subfolder indicated by `audit.report_log`. Furthermore, we also offer a timing log for each run, which can be found in the file `log_time_analysis.log`.
 
 
 ## Auditing the privacy risk for a training algorithm.
