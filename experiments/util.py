@@ -3,6 +3,7 @@ from ast import List
 
 import numpy as np
 import torch
+import sklearn.metrics as metrics
 
 
 def check_configs(configs: dict):
@@ -252,17 +253,13 @@ def load_leave_one_out_models(
 
 
 def sweep(in_signal, out_signal):
-    all_signals = np.concatenate([in_signal, out_signal])
-    all_signals.sort()
-    tpr_list = []
-    fpr_list = []
-    for threshold in all_signals:
-        tp = np.sum(in_signal < threshold)
-        fp = np.sum(out_signal < threshold)
-        tn = np.sum(out_signal >= threshold)
-        fn = np.sum(in_signal >= threshold)
-        tpr = tp / (tp + fn)
-        fpr = fp / (fp + tn)
-        tpr_list.append(tpr)
-        fpr_list.append(fpr)
-    return fpr_list, tpr_list, np.trapz(x=fpr_list, y=tpr_list)
+    """Calculate the ROC curve and AUC score."""
+    all_t = np.concatenate([in_signal, out_signal])
+    all_t = np.append(all_t, [np.max(all_t) + 0.0001, np.min(all_t) - 0.0001])
+    all_t.sort()
+    tpr = []
+    fpr = []
+    for threshold in all_t:
+        tpr.append(np.sum(in_signal < threshold) / len(in_signal))
+        fpr.append(np.sum(out_signal < threshold) / len(out_signal))
+    return fpr, tpr, metrics.auc(fpr, tpr)

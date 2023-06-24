@@ -8,7 +8,7 @@ audit: # the configurations for the MIA
   device: cpu # indicate on which device we conduct the MIA
   audit_batch_size: 1000 # the batch size for computing signals for inferring membership information
   report_log: report_sample # String that indicates the folder where we save the and auditing report.
-  data_idx: 1 # Integer number indicating the data index for which we want to show the performance difference
+  data_idx: 100 # Integer number indicating the data index for which we want to show the performance difference
   model_name: CNN
 
 train: # Configuration for training
@@ -22,7 +22,7 @@ train: # Configuration for training
   weight_decay: 0 # Float number for indicating weight decay for training the target model.
   model_name: CNN # String for indicating the model type. We support CNN, wrn28-1, wrn28-2, wrn28-10, vgg16, and nn. More model types can be added in model.py.
   device: cpu # String for indicating the device we want to use for training models.
-  data_idx: 1 # Integer number for indicating the model index or data index.
+  data_idx: 100 # Integer number for indicating the model index or data index.
   num_in_models: 10 # Integer number that indicates how many target models trained on idx
   num_out_models: 10 # Integer number that indicates how many target models not trained on idx
 
