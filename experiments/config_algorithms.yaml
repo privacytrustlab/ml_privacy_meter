@@ -23,7 +23,8 @@ train: # Configuration for training
   type: pytorch # Training framework (we only support pytorch now).
   epochs: 1 # Integer number for indicating the epochs for training target model.
   batch_size: 256 # Integer number for indicating batch size for training the target model.
-  test_batch_size: 10000 # Integer number for indicating batch size for evaluating the target model.
+  test_batch_size: 250 # Integer number for indicating batch size for evaluating the target model.
+  num_test_size: 1000 # Integer number for indicating the size of the test dataset for evaluating the target model during the training. This should be divisible by test_batch_size.
   optimizer: Adam # String which indicates the optimizer. We support Adam and SGD.
   learning_rate: 0.001 # Float number for indicating learning rate for training the target model.
   weight_decay: 0 # Float number for indicating weight decay for training the target model.

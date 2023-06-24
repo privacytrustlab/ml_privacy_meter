@@ -15,16 +15,22 @@ In the following, we introduce how to run privacy auditing automatelliy using ou
 To start, you can run the following commands
 
 ```
-python main.py --cf config_models_reference.yaml
+python main.py --cf config_models_reference_out.yaml
 ```
 
-The Yaml file allows you to specify the hyperparameters for training the model, the method for splitting the data, and the algorithm for the membership inference attack. By default, the program trains a model on the CIFAR10 dataset and trains ten reference models to perform the reference attack algorithm (refer to [Ye et al. 2022] for a more detailed explanation). If you are interested in conducting a population attack, which does not require the training of reference models, you can run the following commands.
+The Yaml file allows you to specify the hyperparameters for training the model, the method for splitting the data, and the algorithm for the membership inference attack. By default, the program trains a model on the CIFAR10 dataset and trains ten reference models to perform the reference attack algorithm based on reference models trained without target points (refer to [Ye et al. 2022] for a more detailed explanation). If you are interested in conducting a population attack, which does not require the training of reference models, you can run the following commands.
 
 ```
 python main.py --cf config_models_population.yaml
 ```
+Alternatively, if you want to conduct an attack based on reference models trained with/without the target point, you can run the following commands:
+```
+python main.py --cf config_models_reference_in_out.yaml
+``` 
+This script will train 16 reference models and one target model. Each target point, on which the adversary wants to infer the membership, is included in the training dataset for half of the models and excluded from the other half of the models.
 
 For a comprehensive explanation of each parameter, please refer to each Yaml file. Upon completion, you will find the results in the `demo` folder, with the reference attack results saved in `demo/report_reference` and the population attack results saved in `demo/report_population`. Furthermore, we also offer a timing log for each run, which can be found in the file `log_time_analysis.log`.
+
 
 ## Auditing the privacy risk for a training algorithm.
 
@@ -50,7 +56,8 @@ After the completion, you can locate the privacy risk report in the `demo/report
 
 ## Training models efficiently
 
-We have integrated the fast training library, [hlb-CIFAR10](https://github.com/tysam-code/hlb-CIFAR10), developed by [tysam-code](https://github.com/tysam-code), into Privacy Meter. This library achieves an impressive training accuracy of 94% on CIFAR-10 in approximately 6.84 seconds on a single A100 GPU, setting a new world speed record. This integration allows users to efficiently evaluate the effectiveness of the newly proposed algorithm against existing attack algorithms using the CIFAR-10 dataset. To leverage this fast training library, simply specify the `model_name` as `speedyresnet` in the configuration file. In addition, `speedyresnet` has its own hyper-parameters from `hlb-CIFAR10`, e.g., learning rate, weight decay, etc. The hyper-parameter defined in configuration files will not have an impact on the model training. You can set `optimizer` to `speedyresnet_optimizer`, `learning_rate` to `speedyresnet_learning_rate`, `weight_decay` to `speedyresnet_weight_decay`, `batch_size` to `speedyresnet_batch_size` and `epochs` to `speedyresnet_epochs`. Note that, to further speed up the training, by default, only 1000 test points are used for evaluating the model performance during the training.
+We have integrated the fast training library, [hlb-CIFAR10](https://github.com/tysam-code/hlb-CIFAR10), developed by [tysam-code](https://github.com/tysam-code), into Privacy Meter. This library achieves an impressive training accuracy of 94% on CIFAR-10 in approximately 6.84 seconds on a single A100 GPU, setting a new world speed record. This integration allows users to efficiently evaluate the effectiveness of the newly proposed algorithm against existing attack algorithms using the CIFAR-10 dataset. To leverage this fast training library, simply specify the `model_name` as `speedyresnet` in the configuration file. In addition, `speedyresnet` has its own hyper-parameters from `hlb-CIFAR10`, e.g., learning rate, weight decay, etc. The hyper-parameter defined in configuration files will not have an impact on the model training. You can set `optimizer` to `speedyresnet_optimizer`, `learning_rate` to `speedyresnet_learning_rate`, `weight_decay` to `speedyresnet_weight_decay`, `batch_size` to `speedyresnet_batch_size` and `epochs` to `speedyresnet_epochs`. Note that the size of the test dataset used for evaluating the model during training, denoted as `num_test_size`, must be divisible by the batch size `test_batch_size`.
+
 
 ## Supported Dataset and Models
 

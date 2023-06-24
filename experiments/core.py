@@ -392,14 +392,14 @@ def prepare_datasets_for_sample_privacy_risk(
     return dataset_splits
 
 
-def prepare_datasets_for_online_attack(
+def prepare_datasets_for_reference_in_attack(
     all_dataset_size: int,
     dataset_size: int,
     num_models: int,
     keep_ratio: float,
     is_uniform: bool,
 ):
-    """Prepare the datasets for online attacks. Each data point will be randomly chosen by half of the models with probability keep_ratio and the rest of the models will be trained on the rest of the dataset.
+    """Prepare the datasets for reference_in attacks. Each data point will be randomly chosen by half of the models with probability keep_ratio and the rest of the models will be trained on the rest of the dataset.
     The partioning method is from https://github.com/tensorflow/privacy/blob/master/research/mi_lira_2021/train.py
     Args:
         all_dataset_size (int): Size of the whole dataset
@@ -511,14 +511,14 @@ def prepare_models(
             data = get_cifar10_data(
                 dataset,
                 data_split["split"][split]["train"],
-                data_split["split"][split]["test"][:1000],  # hard coded for now
+                data_split["split"][split]["test"][: configs["num_test_size"]],
                 device=configs["device"],
             )
             print_training_details(logging_columns_list, column_heads_only=True)
             model, train_acc, train_loss, test_acc, test_loss = fast_train_fun(
                 data,
                 make_net(data, device=configs["device"]),
-                eval_batchsize=250,
+                eval_batchsize=configs["test_batch_size"],
                 device=configs["device"],
             )
 
@@ -731,7 +731,7 @@ def get_info_source_reference_attack(
             data = get_cifar10_data(
                 dataset,
                 reference_data_idx,
-                reference_data_idx[:1000],  # hard coded for now
+                reference_data_idx[: configs["num_test_size"]],
                 device=configs["device"],
             )
             print_training_details(
@@ -740,7 +740,7 @@ def get_info_source_reference_attack(
             reference_model, train_acc, train_loss, _, _ = fast_train_fun(
                 data,
                 make_net(data, device=configs["device"]),
-                eval_batchsize=250,
+                eval_batchsize=configs["test_batch_size"],
                 device=configs["device"],
             )
 

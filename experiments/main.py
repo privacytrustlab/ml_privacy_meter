@@ -15,7 +15,7 @@ from core import (
     load_existing_models,
     load_existing_target_model,
     prepare_datasets,
-    prepare_datasets_for_online_attack,
+    prepare_datasets_for_reference_in_attack,
     prepare_datasets_for_sample_privacy_risk,
     prepare_information_source,
     prepare_models,
@@ -66,7 +66,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--cf",
         type=str,
-        default="experiments/config_models_online.yaml",
+        default="experiments/config_models_reference_in_out.yaml",
         help="Yaml file which contains the configurations",
     )
 
@@ -111,7 +111,7 @@ if __name__ == "__main__":
     ############################
     if (
         privacy_game in ["avg_privacy_loss_training_algo", "privacy_loss_model"]
-        and "online" not in configs["audit"]["algorithm"]
+        and "reference_in_out" not in configs["audit"]["algorithm"]
     ):
         # Load the trained models from disk
         if model_metadata_list["current_idx"] > 0:
@@ -379,9 +379,9 @@ if __name__ == "__main__":
         )
 
     ############################
-    # Privacy auditing for an model with online attack (i.e., adversary trains models with/without each target points)
+    # Privacy auditing for an model with reference_in_out attack (i.e., adversary trains models with/without each target points)
     ############################
-    elif "online" in configs["audit"]["algorithm"]:
+    elif "reference_in_out" in configs["audit"]["algorithm"]:
         # The following code is modified from the original code in the repo: https://github.com/tensorflow/privacy/tree/master/research/mi_lira_2021
         baseline_time = time.time()
         p_ratio = configs["data"]["keep_ratio"]
@@ -391,7 +391,7 @@ if __name__ == "__main__":
             + configs["train"]["num_out_models"]
             + configs["train"]["num_target_model"]
         )
-        data_split_info, keep_matrix, target_data_index = prepare_datasets_for_online_attack(
+        data_split_info, keep_matrix, target_data_index = prepare_datasets_for_reference_in_attack(
             len(dataset),
             dataset_size,
             num_models=(number_of_models_total),
