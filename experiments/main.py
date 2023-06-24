@@ -265,7 +265,7 @@ if __name__ == "__main__":
                 configs["train"]["data_idx"],
                 configs["data"],
                 "include",
-                "leave_one_out",
+                configs["data"]["split_method"],
                 model_metadata_list,
             )
             new_in_model_list, model_metadata_list, new_matched_in_idx = prepare_models(
@@ -351,13 +351,13 @@ if __name__ == "__main__":
         )
         in_signal = np.array(
             [
-                model.get_rescaled_logits(data, targets).item()
+                model.get_loss(data, targets).item()
                 for model in in_model_list_pm
             ]
         )
         out_signal = np.array(
             [
-                model.get_rescaled_logits(data, targets).item()
+                model.get_loss(data, targets).item()
                 for model in out_model_list_pm
             ]
         )

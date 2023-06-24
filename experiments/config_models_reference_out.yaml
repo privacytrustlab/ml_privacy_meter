@@ -16,7 +16,7 @@ audit: # Configurations for auditing
   weight_decay: speedyresnet_weight_decay # Float number for indicating weight decay for training the reference model.
   model_name: speedyresnet # String for indicating the model type. We support CNN, wrn28-1, wrn28-2, wrn28-10, vgg16, nn and speedyresnet (requires cuda). More model types can be added in model.py.
   epochs: speedyresnet_epochs # Integer number for indicating the epochs for training target model.
-  report_log: report_reference # String that indicates the folder where we save the and auditing report.
+  report_log: report_reference_out # String that indicates the folder where we save the and auditing report.
   split_method: uniform # String for indicating the splitting methods for reference dataset. We support uniform and leave_one_out.
   test_batch_size: 250 # Integer number for indicating batch size for evaluating the target model.
   num_test_size: 1000 # Integer number for indicating the size of the test dataset for evaluating the target model during the training. This should be divisible by test_batch_size.

@@ -1,14 +1,64 @@
 # Privacy Meter Experiments
-
-This folder contains the implementation of an end-to-end membership inference attack, based on various attack games defined by [[Ye et al. 2022](https://arxiv.org/pdf/2111.09679.pdf)]. It is recommended that you perform privacy auditing using our automatical pipline. By default, the audit provides a way to evaluate the privacy risks for models, algorithms, and data points using the CIFAR10 dataset. To adapt it to your specific use case, you can specify the model structure in `model.py`, the dataset in `dataset.py`, and the training algorithm in `train.py`. The training configurations can then be specified in the configuration Yaml file. The overall pipeline is illustrated below. For a deeper understanding of various types of attacks or for information on how to extend the Privacy Meter to include other libraries, please refer to our [tutorials](../tutorials) for more information.
+This folder contains the implementation of an end-to-end membership inference attack, based on various attack games defined by [[Ye et al. 2022](https://arxiv.org/pdf/2111.09679.pdf)] and different attack algorithms. It is recommended that you perform privacy auditing using our automatic pipeline. By default, the audit provides a way to evaluate the privacy risks for models, algorithms, and data points using the CIFAR10 dataset. The training configurations can then be specified in the configuration YAML file. The overall pipeline is illustrated below. For a deeper understanding of various types of attacks or for information on how to extend the Privacy Meter to include other libraries, please refer to our [tutorials](../tutorials) for more information.
 
 <p align="center" width="100%">
     <img width="80%" src="docs/experiment_pipeline.png">
 </p>
 
-In the following, we introduce how to run privacy auditing automatelliy using our default configurations.
+## Privacy Game
+In Ye et al. 2022, four different privacy games are defined. Users can specify which privacy game they want to run in the YAML configuration file by setting the `audit.privacy_game` to the following values:
 
-# Privacy auditing examples
+- `avg_privacy_loss_training_algo` - Game 3.1
+This privacy game defines how to audit the privacy risk for a training algorithm, which is averaged over samples and trained models. An example configuration is provided in `config_algorithms.yaml`.
+
+- `privacy_loss_model`  - Game 3.2
+This privacy game defines how to audit the privacy risk for a trained model. An example configuration is provided in `config_models_population.yaml`.
+
+- `privacy_loss_sample` (uniform) - Game 3.3
+This privacy game defines how to audit the privacy risk for a sample. An example configuration is provided in `config_models_samples.yaml`.
+
+- `privacy_loss_sample` (leave one out) - Game 3.4
+This privacy game defines how to audit the privacy risk for a sample. An example configuration is provided in `config_models_samples.yaml` by changing the `data.split_method` to `leave_one_out`.
+
+## Attack Algorithm 
+The adversary first determines which signal to use for inferring the membership, e.g., loss, logits, etc. Then, they simulate the game to compute how likely the target point is a member. Specifically, there are three ways to simulate the game:
+
+- `reference`
+The adversary trains a set of reference models on a dataset excluding the target point (OUT models) and computes the signal distribution.
+
+- `reference_in_out`
+The adversary trains a set of reference models on a dataset including the target point (IN models) and a set of reference models on the dataset excluding the target point (OUT models).
+
+- `population` 
+The adversary does not train any models but queries the target model on a dataset disjoint from the target dataset.
+
+<!-- This folder contains the implementation of an end-to-end membership inference attack, based on various attack games defined by [[Ye et al. 2022](https://arxiv.org/pdf/2111.09679.pdf)]. It is recommended that you perform privacy auditing using our automatical pipline. By default, the audit provides a way to evaluate the privacy risks for models, algorithms, and data points using the CIFAR10 dataset. To adapt it to your specific use case, you can specify the model structure in `model.py`, the dataset in `dataset.py`, and the training algorithm in `train.py`. The training configurations can then be specified in the configuration Yaml file. The overall pipeline is illustrated below. For a deeper understanding of various types of attacks or for information on how to extend the Privacy Meter to include other libraries, please refer to our [tutorials](../tutorials) for more information.
+
+<p align="center" width="100%">
+    <img width="80%" src="docs/experiment_pipeline.png">
+</p> -->
+
+<!-- In the following, we introduce how to run privacy auditing automatelliy using our default configurations. -->
+
+<!-- ## Examples -->
+
+
+
+## Datasets and Models
+
+Privacy Meter supports various datasets widely used in the MIA literature, including CIFAR10 (`cifar10`), CIFAR100 (`cifar100`), Purchase (`purchase100`), and Texas (`texas100`). In terms of models, we provide support for CNN (`cnn`), AlexNet (`alexnet`), WideResNet (`wrn28-1`, `wrn28-2`, `wrn28-10`), and NN (`nn`) models. To specify the dataset and model, you can use the `dataset` and `model_name` parameters in the configuration file. To add dataset, models or training algorithms for your specific use case, you can add the model structure in `model.py`, the dataset in `dataset.py`, and the training algorithm in `train.py`. 
+
+## Efficient Training
+
+We have integrated the fast training library, [hlb-CIFAR10](https://github.com/tysam-code/hlb-CIFAR10), developed by [tysam-code](https://github.com/tysam-code), into Privacy Meter. This library achieves an impressive training accuracy of 94% on CIFAR-10 in approximately 6.84 seconds on a single A100 GPU, setting a new world speed record. This integration allows users to efficiently evaluate the effectiveness of the newly proposed algorithm against existing attack algorithms using the CIFAR-10 dataset. To leverage this fast training library, simply specify the `model_name` as `speedyresnet` in the configuration file. In addition, `speedyresnet` has its own hyper-parameters from `hlb-CIFAR10`, e.g., learning rate, weight decay, etc. The hyper-parameter defined in configuration files will not have an impact on the model training. You can set `optimizer` to `speedyresnet_optimizer`, `learning_rate` to `speedyresnet_learning_rate`, `weight_decay` to `speedyresnet_weight_decay`, `batch_size` to `speedyresnet_batch_size` and `epochs` to `speedyresnet_epochs`. Note that the size of the test dataset used for evaluating the model during training, denoted as `num_test_size`, must be divisible by the batch size `test_batch_size`.
+
+## Video Tutorial
+
+We also provide video tutorial about privacy meter [here](https://drive.google.com/file/d/1wAxzlb8Oy67OCa95JXKPlFiJb0T2e39Y/view?usp=drive_link).
+
+
+<!-- 
+
 
 ## Auditing the privacy risk for a trained model.
 
@@ -53,15 +103,4 @@ python main.py --cf config_samples.yaml
 ```
 
 After the completion, you can locate the privacy risk report in the `demo/report_sample` folder.
-
-## Training models efficiently
-
-We have integrated the fast training library, [hlb-CIFAR10](https://github.com/tysam-code/hlb-CIFAR10), developed by [tysam-code](https://github.com/tysam-code), into Privacy Meter. This library achieves an impressive training accuracy of 94% on CIFAR-10 in approximately 6.84 seconds on a single A100 GPU, setting a new world speed record. This integration allows users to efficiently evaluate the effectiveness of the newly proposed algorithm against existing attack algorithms using the CIFAR-10 dataset. To leverage this fast training library, simply specify the `model_name` as `speedyresnet` in the configuration file. In addition, `speedyresnet` has its own hyper-parameters from `hlb-CIFAR10`, e.g., learning rate, weight decay, etc. The hyper-parameter defined in configuration files will not have an impact on the model training. You can set `optimizer` to `speedyresnet_optimizer`, `learning_rate` to `speedyresnet_learning_rate`, `weight_decay` to `speedyresnet_weight_decay`, `batch_size` to `speedyresnet_batch_size` and `epochs` to `speedyresnet_epochs`. Note that the size of the test dataset used for evaluating the model during training, denoted as `num_test_size`, must be divisible by the batch size `test_batch_size`.
-
-
-## Supported Dataset and Models
-
-Privacy Meter supports various datasets widely used in the MIA literature, including CIFAR10 (`cifar10`), CIFAR100 (`cifar100`), Purchase (`purchase100`), and Texas (`texas100`). In terms of models, we provide support for CNN (`cnn`), AlexNet (`alexnet`), WideResNet (`wrn28-1`, `wrn28-2`, `wrn28-10`), and NN (`nn`) models. To specify the dataset and model, you can use the `dataset` and `model_name` parameters in the configuration file.
-
-## Tutorial
-We also provide video tutorial about privacy meter [here](https://drive.google.com/file/d/1wAxzlb8Oy67OCa95JXKPlFiJb0T2e39Y/view?usp=drive_link).
+ -->
