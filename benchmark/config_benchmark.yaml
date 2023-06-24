@@ -22,7 +22,8 @@ train: # Configuration for training
   weight_decay: speedyresnet_weight_decay
   batch_size: speedyresnet_batch_size
   epochs: speedyresnet_epochs
-  test_batch_size: 5000
+  test_batch_size: 250
+  num_test_size: 1000
 
 data: # Configuration for data
   dataset: cifar10 # String indicates the name of the dataset

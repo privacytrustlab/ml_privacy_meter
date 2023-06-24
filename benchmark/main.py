@@ -15,11 +15,8 @@ import numpy as np
 import torch
 import yaml
 from augment import get_signal_on_augmented_data
-from core import (
-    load_existing_models,
-    prepare_datasets_for_online_attack,
-    prepare_models,
-)
+from core import (load_existing_models, prepare_datasets_for_reference_in_attack,
+                  prepare_models)
 from dataset import get_dataset, get_dataset_subset
 from plot import plot_compare_roc
 from scipy.stats import norm
@@ -58,7 +55,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--cf",
         type=str,
-        default="experiments/config_models_online.yaml",
+        default="config_benchmark.yaml",
         help="Yaml file which contains the configurations",
     )
 
@@ -110,7 +107,7 @@ if __name__ == "__main__":
         data_split_info,
         keep_matrix,
         target_data_index,
-    ) = prepare_datasets_for_online_attack(
+    ) = prepare_datasets_for_reference_in_attack(
         len(dataset),
         dataset_size,
         num_models=(number_of_models_total),
@@ -161,20 +158,23 @@ if __name__ == "__main__":
                 batch_size=configs["audit"]["audit_batch_size"],
             )
             signals.append(
-                get_signal_on_augmented_data(
-                    model_pm,
-                    data,
-                    targets,
-                    method=configs["audit"]["augmentation"],
-                )
+                model_pm.get_rescaled_logits(data, targets)
+                
+                # get_signal_on_augmented_data(
+                #     model_pm,
+                #     data,
+                #     targets,
+                #     method=configs["audit"]["augmentation"],
+                # )
             )
             population_signals.append(
-                get_signal_on_augmented_data(
-                    model_pm,
-                    population_data,
-                    population_targets,
-                    method=configs["audit"]["augmentation"],
-                )
+                model_pm.get_rescaled_logits(population_data, population_targets)
+                # get_signal_on_augmented_data(
+                #     model_pm,
+                #     population_data,
+                #     population_targets,
+                #     method=configs["audit"]["augmentation"],
+                # )
             )
 
         logger.info(
@@ -197,20 +197,22 @@ if __name__ == "__main__":
                 batch_size=10000,
             )
             signals.append(
-                get_signal_on_augmented_data(
-                    model_pm,
-                    data,
-                    targets,
-                    method=configs["audit"]["augmentation"],
-                )
+                model_pm.get_rescaled_logits(data, targets)
+                # get_signal_on_augmented_data(
+                #     model_pm,
+                #     data,
+                #     targets,
+                #     method=configs["audit"]["augmentation"],
+                # )
             )
             population_signals.append(
-                get_signal_on_augmented_data(
-                    model_pm,
-                    population_data,
-                    population_targets,
-                    method=configs["audit"]["augmentation"],
-                )
+                model_pm.get_rescaled_logits(population_data, population_targets)
+                # get_signal_on_augmented_data(
+                #     model_pm,
+                #     population_data,
+                #     population_targets,
+                #     method=configs["audit"]["augmentation"],
+                # )
             )
         logger.info(
             "Prepare the signals costs %0.5f seconds",
