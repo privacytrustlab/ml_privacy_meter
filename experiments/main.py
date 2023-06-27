@@ -3,9 +3,10 @@ import argparse
 import logging
 import os
 import pickle
+import random
 import time
 from pathlib import Path
-import random
+
 import numpy as np
 import torch
 import yaml
@@ -350,16 +351,10 @@ if __name__ == "__main__":
             device=configs["audit"]["device"],
         )
         in_signal = np.array(
-            [
-                model.get_loss(data, targets).item()
-                for model in in_model_list_pm
-            ]
+            [model.get_loss(data, targets).item() for model in in_model_list_pm]
         )
         out_signal = np.array(
-            [
-                model.get_loss(data, targets).item()
-                for model in out_model_list_pm
-            ]
+            [model.get_loss(data, targets).item() for model in out_model_list_pm]
         )
 
         # Generate the privacy risk report
@@ -391,7 +386,11 @@ if __name__ == "__main__":
             + configs["train"]["num_out_models"]
             + configs["train"]["num_target_model"]
         )
-        data_split_info, keep_matrix, target_data_index = prepare_datasets_for_reference_in_attack(
+        (
+            data_split_info,
+            keep_matrix,
+            target_data_index,
+        ) = prepare_datasets_for_reference_in_attack(
             len(dataset),
             dataset_size,
             num_models=(number_of_models_total),
@@ -477,11 +476,11 @@ if __name__ == "__main__":
         signals = np.array(signals)
 
         # number of models we want to consider as test
-        n_test = 1
-        target_signal = signals[:n_test, :]
-        reference_signals = signals[n_test:, :]
-        reference_keep_matrix = keep_matrix[n_test:, :]
-        membership = keep_matrix[:n_test, :]
+        num_target = configs["train"]["num_target_model"]
+        target_signal = signals[:num_target, :]
+        reference_signals = signals[num_target:, :]
+        reference_keep_matrix = keep_matrix[num_target:, :]
+        membership = keep_matrix[:num_target, :]
         in_signals = []
         out_signals = []
 
