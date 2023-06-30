@@ -14,8 +14,8 @@ import random
 import numpy as np
 import torch
 import yaml
-from core import (load_existing_models, prepare_datasets_for_reference_in_attack,
-                  prepare_models)
+from core import (load_existing_models,
+                  prepare_datasets_for_reference_in_attack, prepare_models)
 from dataset import get_dataset, get_dataset_subset
 from plot import plot_compare_roc
 from scipy.stats import norm

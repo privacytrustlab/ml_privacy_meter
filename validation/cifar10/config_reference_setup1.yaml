@@ -20,6 +20,7 @@ audit: # Configurations for auditing
   split_method: uniform # String for indicating the splitting methods for reference dataset. We support uniform and leave_one_out.
   augmentation: None # Indicate whether to use augmentation for the query points
   test_batch_size: 5000 # Integer number for indicating batch size for evaluating the target model.
+  signal: loss # String for indicating the attack signal. We support loss, negative_rescaled_logits.
 
 train: # Configuration for training
   type: pytorch # Training framework (we only support pytorch now).

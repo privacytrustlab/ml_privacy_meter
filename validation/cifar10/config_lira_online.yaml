@@ -12,6 +12,7 @@ audit: # Configurations for auditing
   offline: False # Indicate whether to use the offline setting
   augmentation: None # Indicate whether to use augmentation for the query points
   audit_batch_size: 1000
+  signal: rescaled_logits # String for indicating the attack signal. We support loss, rescaled_logits.
 
 train: # Configuration for training
   type: pytorch # Training framework (we only support pytorch now).
