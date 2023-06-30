@@ -8,10 +8,10 @@ This folder contains the implementation of an end-to-end membership inference at
 
 ## Privacy Game
 
-In Ye et al. 2022, four different privacy games widely used in the literature are summerized. Users can specify which privacy game they want to run in the YAML configuration file by setting the `audit.privacy_game` to the following values:
+In Ye et al., 2022, four different privacy games widely used in the literature are summerized. Users can specify which privacy game they want to run in the YAML configuration file by setting the `audit.privacy_game` to the following values:
 
 - `avg_privacy_loss_training_algo` - Game 3.1
-  This privacy game defines how to audit the privacy risk for a training algorithm, which is averaged over samples and trained models. An example configuration is provided in `config_algorithms.yaml`.
+  This privacy game defines how to audit the privacy risk for a training algorithm. An example configuration is provided in `config_algorithms.yaml`.
 
 - `privacy_loss_model` - Game 3.2
   This privacy game defines how to audit the privacy risk for a trained model. An example configuration is provided in `config_models_population.yaml`.
@@ -20,29 +20,29 @@ In Ye et al. 2022, four different privacy games widely used in the literature ar
   This privacy game defines how to audit the privacy risk for a sample. An example configuration is provided in `config_models_samples.yaml`.
 
 - `privacy_loss_sample` (leave one out) - Game 3.4
-  This privacy game defines how to audit the privacy risk for a sample. An example configuration is provided in `config_samples_leave_one_out.yaml`.
+  This privacy game defines how to audit the privacy risk for a sample when the rest of the point is known to the adversary. An example configuration is provided in `config_samples_leave_one_out.yaml`.
 
 ## Attack Algorithm
 
-The adversary first determines which signal to use for inferring the membership, e.g., loss, logits, etc. Then, they simulate the game to compute how likely the target point is a member. Specifically, there are three ways to simulate the game:
+The adversary simulates the privacy game above to compute how likely the target point is a member. Specifically, there are three ways to simulate the game, which corresponds to three different types of attacks:
 
 - `reference_out`
-  The adversary trains a set of reference models on a dataset excluding the target point (OUT models) and computes the signal distribution.
+  The adversary trains a set of reference models on datasets excluding the target point (OUT models). An example configuration is provided in `config_models_reference_out.yaml`.
 
 - `reference_in_out`
-  The adversary trains a set of reference models on a dataset including the target point (IN models) and a set of reference models on the dataset excluding the target point (OUT models).
+  The adversary trains a set of reference models on datasets including the target point (IN models) and a set of reference models on datasets excluding the target point (OUT models). An example configuration is provided in `config_models_reference_in_out.yaml`.
 
 - `population`
-  The adversary does not train any models but queries the target model on a dataset disjoint from the target dataset.
+  The adversary does not train any models but queries the target model on a dataset disjoint from the target dataset. An example configuration is provided in `config_models_population.yaml`.
 
 ## Signal
 
-We support different signals for MIA. Specifically, currently, we support the following two signals:
+We support different attack signals, which is defined by `audit.signal` in the configuration file.Currently, we support the following two signals:
 
 - `loss`
   This is the classification loss that the target model is trained to minimize.
 - `rescaled_logits`
-  This is the rescaled logits of the target model, which is $\log (p/1-p)$, where $p$ is the probability of the correct label.
+  This is the rescaled logits, which is $\log (p/1-p)$, where $p$ is the probability of predicting the correct label.
 - `negative_rescaled_logits`
   This is the negation of the rescaled logits.
 
