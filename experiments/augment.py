@@ -2,7 +2,7 @@ import numpy as np
 import torch
 
 
-def get_signal_on_augmented_data(model_pm, data, targets, method=None):
+def get_signal_on_augmented_data(model_pm, data, targets, method=None, signal="loss"):
     if method == "augmented":
         # implement your own way of using the augmented data for inferring membership
         reflect = True
@@ -15,12 +15,22 @@ def get_signal_on_augmented_data(model_pm, data, targets, method=None):
             for dx in range(0, 2 * shift + 1, stride):
                 for dy in range(0, 2 * shift + 1, stride):
                     this_x = aug_pad[:, :, dx : dx + 32, dy : dy + 32]
-                    logits = model_pm.get_rescaled_logits(this_x, targets)
+                    if signal == "loss":
+                        logits = model_pm.get_loss(this_x, targets)
+                    elif signal == "rescaled_logits":
+                        logits = model_pm.get_rescaled_logits(this_x, targets)
+                    elif signal == "negative_rescaled_logits":
+                        logits = -model_pm.get_rescaled_logits(this_x, targets)
                     outs.append(logits)
         return np.transpose(np.array(outs), (1, 0))  # (batch size, number of aug)
 
     else:
-        return model_pm.get_rescaled_logits(data, targets)
+        if signal == "loss":
+            return model_pm.get_loss(data, targets)
+        elif signal == "rescaled_logits":
+            return model_pm.get_rescaled_logits(data, targets)
+        elif signal == "negative_rescaled_logits":
+            return -model_pm.get_rescaled_logits(data, targets)
 
 
 def get_augmented_data(data, targets, method=None):

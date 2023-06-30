@@ -3,9 +3,10 @@ import argparse
 import logging
 import os
 import pickle
+import random
 import time
 from pathlib import Path
-import random
+
 import numpy as np
 import torch
 import yaml
@@ -15,7 +16,7 @@ from core import (
     load_existing_models,
     load_existing_target_model,
     prepare_datasets,
-    prepare_datasets_for_online_attack,
+    prepare_datasets_for_reference_in_attack,
     prepare_datasets_for_sample_privacy_risk,
     prepare_information_source,
     prepare_models,
@@ -66,7 +67,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--cf",
         type=str,
-        default="experiments/config_models_online.yaml",
+        default="experiments/config_models_reference_in_out.yaml",
         help="Yaml file which contains the configurations",
     )
 
@@ -111,7 +112,7 @@ if __name__ == "__main__":
     ############################
     if (
         privacy_game in ["avg_privacy_loss_training_algo", "privacy_loss_model"]
-        and "online" not in configs["audit"]["algorithm"]
+        and "reference_in_out" not in configs["audit"]["algorithm"]
     ):
         # Load the trained models from disk
         if model_metadata_list["current_idx"] > 0:
@@ -265,7 +266,7 @@ if __name__ == "__main__":
                 configs["train"]["data_idx"],
                 configs["data"],
                 "include",
-                "leave_one_out",
+                configs["data"]["split_method"],
                 model_metadata_list,
             )
             new_in_model_list, model_metadata_list, new_matched_in_idx = prepare_models(
@@ -349,18 +350,26 @@ if __name__ == "__main__":
             configs["audit"]["model_name"],
             device=configs["audit"]["device"],
         )
-        in_signal = np.array(
-            [
-                model.get_rescaled_logits(data, targets).item()
-                for model in in_model_list_pm
-            ]
-        )
-        out_signal = np.array(
-            [
-                model.get_rescaled_logits(data, targets).item()
-                for model in out_model_list_pm
-            ]
-        )
+        if configs["audit"]["signal"] == "loss":
+            in_signal = np.array(
+                [model.get_loss(data, targets).item() for model in in_model_list_pm]
+            )
+            out_signal = np.array(
+                [model.get_loss(data, targets).item() for model in out_model_list_pm]
+            )
+        elif configs["audit"]["signal"] == "negative_rescaled_logits":
+            in_signal = np.array(
+                [
+                    -model.get_rescaled_logits(data, targets).item()
+                    for model in in_model_list_pm
+                ]
+            )
+            out_signal = np.array(
+                [
+                    -model.get_rescaled_logits(data, targets).item()
+                    for model in out_model_list_pm
+                ]
+            )
 
         # Generate the privacy risk report
         plot_signal_histogram(
@@ -379,10 +388,10 @@ if __name__ == "__main__":
         )
 
     ############################
-    # Privacy auditing for an model with online attack (i.e., adversary trains models with/without each target points)
+    # Privacy Auditing for an model with reference_in_out attack
     ############################
-    elif "online" in configs["audit"]["algorithm"]:
-        # The following code is modified from the original code in the repo: https://github.com/tensorflow/privacy/tree/master/research/mi_lira_2021
+    elif "reference_in_out" in configs["audit"]["algorithm"]:
+        # The following code of generating the data is modified from the original code in the repo: https://github.com/tensorflow/privacy/tree/master/research/mi_lira_2021
         baseline_time = time.time()
         p_ratio = configs["data"]["keep_ratio"]
         dataset_size = configs["data"]["dataset_size"]
@@ -391,7 +400,11 @@ if __name__ == "__main__":
             + configs["train"]["num_out_models"]
             + configs["train"]["num_target_model"]
         )
-        data_split_info, keep_matrix, target_data_index = prepare_datasets_for_online_attack(
+        (
+            data_split_info,
+            keep_matrix,
+            target_data_index,
+        ) = prepare_datasets_for_reference_in_attack(
             len(dataset),
             dataset_size,
             num_models=(number_of_models_total),
@@ -438,6 +451,7 @@ if __name__ == "__main__":
                         data,
                         targets,
                         method=configs["audit"]["augmentation"],
+                        signal=configs["audit"]["signal"],
                     )
                 )
             logger.info(
@@ -467,6 +481,7 @@ if __name__ == "__main__":
                         data,
                         targets,
                         method=configs["audit"]["augmentation"],
+                        signal=configs["audit"]["signal"],
                     )
                 )
             logger.info(
@@ -477,11 +492,11 @@ if __name__ == "__main__":
         signals = np.array(signals)
 
         # number of models we want to consider as test
-        n_test = 1
-        target_signal = signals[:n_test, :]
-        reference_signals = signals[n_test:, :]
-        reference_keep_matrix = keep_matrix[n_test:, :]
-        membership = keep_matrix[:n_test, :]
+        num_target = configs["train"]["num_target_model"]
+        target_signal = signals[:num_target, :]
+        reference_signals = signals[num_target:, :]
+        reference_keep_matrix = keep_matrix[num_target:, :]
+        membership = keep_matrix[:num_target, :]
         in_signals = []
         out_signals = []
 
@@ -510,10 +525,7 @@ if __name__ == "__main__":
         prediction = []
         answers = []
         for ans, sc in zip(membership, target_signal):
-            if configs["audit"]["offline"]:
-                pr_in = 0
-            else:
-                pr_in = -norm.logpdf(sc, mean_in, std_in + 1e-30)
+            pr_in = -norm.logpdf(sc, mean_in, std_in + 1e-30)
             pr_out = -norm.logpdf(sc, mean_out, std_out + 1e-30)
             score = pr_in - pr_out
             if len(score.shape) == 2:  # the score is of size (data_size, num_augments)

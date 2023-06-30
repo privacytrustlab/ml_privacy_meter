@@ -8,13 +8,15 @@ audit: # Configurations for auditing
   device: cuda:0 # String for indicating on which device we conduct the membership inference attack and train reference models.
   audit_batch_size: 1000 # Integer number for indicating the batch size for computing signals in the privacy meter.
   algorithm: population # String for indicating the membership inference attack. We currently support population, reference.
-  report_log: report_population # String that indicates the folder where we save the and auditing report.
+  report_log: report_population_loss # String that indicates the folder where we save the and auditing report.
+  signal: loss # String for indicating the attack signal. We support loss, negative_rescaled_logits.
 
 train: # Configuration for training
   type: pytorch # Training framework (we only support pytorch now).
   epochs: speedyresnet_epochs # Integer number for indicating the epochs for training target model.
   batch_size: speedyresnet_batch_size # Integer number for indicating batch size for training the target model.
-  test_batch_size: 5000 # Integer number for indicating batch size for evaluating the target model.
+  test_batch_size: 250 # Integer number for indicating batch size for evaluating the target model.
+  num_test_size: 1000 # Integer number for indicating the size of the test dataset for evaluating the target model during the training. This should be divisible by test_batch_size.
   optimizer: speedyresnet_optimizer # String which indicates the optimizer. We support Adam and SGD. For speedyresnet, it uses its own optimizer.
   learning_rate: speedyresnet_learning_rate # Float number for indicating learning rate for training the target model.
   weight_decay: speedyresnet_weight_decay # Float number for indicating weight decay for training the target model.

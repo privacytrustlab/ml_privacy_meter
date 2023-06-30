@@ -14,8 +14,7 @@ import random
 import numpy as np
 import torch
 import yaml
-from augment import get_signal_on_augmented_data
-from core import (load_existing_models, prepare_datasets_for_online_attack,
+from core import (load_existing_models, prepare_datasets_for_reference_in_attack,
                   prepare_models)
 from dataset import get_dataset, get_dataset_subset
 from plot import plot_compare_roc
@@ -55,7 +54,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--cf",
         type=str,
-        default="experiments/config_models_online.yaml",
+        default="config_benchmark.yaml",
         help="Yaml file which contains the configurations",
     )
 
@@ -107,7 +106,7 @@ if __name__ == "__main__":
         data_split_info,
         keep_matrix,
         target_data_index,
-    ) = prepare_datasets_for_online_attack(
+    ) = prepare_datasets_for_reference_in_attack(
         len(dataset),
         dataset_size,
         num_models=(number_of_models_total),
@@ -158,20 +157,10 @@ if __name__ == "__main__":
                 batch_size=configs["audit"]["audit_batch_size"],
             )
             signals.append(
-                get_signal_on_augmented_data(
-                    model_pm,
-                    data,
-                    targets,
-                    method=configs["audit"]["augmentation"],
-                )
+                model_pm.get_rescaled_logits(data, targets)
             )
             population_signals.append(
-                get_signal_on_augmented_data(
-                    model_pm,
-                    population_data,
-                    population_targets,
-                    method=configs["audit"]["augmentation"],
-                )
+                model_pm.get_rescaled_logits(population_data, population_targets)
             )
 
         logger.info(
@@ -194,20 +183,10 @@ if __name__ == "__main__":
                 batch_size=10000,
             )
             signals.append(
-                get_signal_on_augmented_data(
-                    model_pm,
-                    data,
-                    targets,
-                    method=configs["audit"]["augmentation"],
-                )
+                model_pm.get_rescaled_logits(data, targets)
             )
             population_signals.append(
-                get_signal_on_augmented_data(
-                    model_pm,
-                    population_data,
-                    population_targets,
-                    method=configs["audit"]["augmentation"],
-                )
+                model_pm.get_rescaled_logits(population_data, population_targets)
             )
         logger.info(
             "Prepare the signals costs %0.5f seconds",
@@ -242,24 +221,32 @@ if __name__ == "__main__":
     all_fpr_list = []
     all_tpr_list = []
     all_auc_list = []
-    all_alg_list = ['reference_in_fixed', 'reference_in', 'reference_out_fixed', 'reference_out', 'reference_out_offline_fixed', 'reference_out_offline', 'population']
-    
-    print(100*"#")
-    
+    all_alg_list = [
+        "reference_in_out_logit_pdf_fixed",
+        "reference_in_out_logit_pdf",
+        "reference_out_logits_percentile_fixed",
+        "reference_out_logits_percentile",
+        "reference_out_logits_pdf_fixed",
+        "reference_out_logits_pdf",
+        "population",
+    ]
+
+    print(100 * "#")
+
     for alg in all_alg_list:
         prediction = []
         answers = []
         for ans, sc in zip(membership, target_signal):
-            if alg == "reference_in_fixed":
+            if alg == "reference_in_out_logit_pdf_fixed":
                 mean_in = np.median(in_signals, 1)
                 mean_out = np.median(out_signals, 1)
                 std_in = np.std(in_signals)
                 std_out = np.std(in_signals)
-                
-                pr_in = -norm.logpdf(sc, mean_in,  std_in + 1e-30)
+
+                pr_in = -norm.logpdf(sc, mean_in, std_in + 1e-30)
                 pr_out = -norm.logpdf(sc, mean_out, std_out + 1e-30)
                 score = pr_in - pr_out
-            elif alg == "reference_in":
+            elif alg == "reference_in_out_logit_pdf":
                 mean_in = np.median(in_signals, 1)
                 mean_out = np.median(out_signals, 1)
                 std_in = np.std(in_signals, 1)
@@ -267,34 +254,34 @@ if __name__ == "__main__":
                 pr_in = -norm.logpdf(sc, mean_in, std_in + 1e-30)
                 pr_out = -norm.logpdf(sc, mean_out, std_out + 1e-30)
                 score = pr_in - pr_out
-            elif alg == "reference_out_fixed":
+            elif alg == "reference_out_logits_percentile_fixed":
                 mean_out = np.median(out_signals, 1)
                 std_out = np.std(out_signals)
                 pr_out = norm.cdf(sc, mean_out, std_out + 1e-30)
                 score = -pr_out
-            elif alg == "reference_out":
+            elif alg == "reference_out_logits_percentile":
                 mean_out = np.median(out_signals, 1)
                 std_out = np.std(out_signals, 1)
-                pr_out = norm.cdf(sc, mean_out,  std_out + 1e-30)
+                pr_out = norm.cdf(sc, mean_out, std_out + 1e-30)
                 score = -pr_out
             elif alg == "population":
                 mean_out = np.median(population_signals)
                 std_out = np.std(population_signals)
                 pr_out = norm.cdf(sc, mean_out, std_out + 1e-30)
                 score = -pr_out
-            elif alg == "reference_out_offline_fixed":
+            elif alg == "reference_out_logits_pdf_fixed":
                 mean_out = np.median(out_signals, 1)
                 std_out = np.std(out_signals)
                 pr_out = -norm.logpdf(sc, mean_out, std_out + 1e-30)
-                score = - pr_out
-            elif alg == "reference_out_offline":
+                score = -pr_out
+            elif alg == "reference_out_logits_pdf":
                 mean_out = np.median(out_signals, 1)
                 std_out = np.std(out_signals, 1)
                 pr_out = -norm.logpdf(sc, mean_out, std_out + 1e-30)
-                score = - pr_out
+                score = -pr_out
             else:
                 raise ValueError("Unknown algorithm")
-            
+
             if len(score.shape) == 2:  # the score is of size (data_size, num_augments)
                 prediction.extend(score.mean(1))
                 fpr_list, tpr_list, _ = roc_curve(ans, -score.mean(1))
@@ -307,13 +294,11 @@ if __name__ == "__main__":
 
         prediction = np.array(prediction)
         answers = np.array(answers, dtype=bool)
-        fpr_list, tpr_list, _ = roc_curve(
-            answers.ravel(), -prediction.ravel()
-        )
+        fpr_list, tpr_list, _ = roc_curve(answers.ravel(), -prediction.ravel())
         ref_in_acc = np.max(1 - (fpr_list + (1 - tpr_list)) / 2)
         ref_in_roc_auc = auc(fpr_list, tpr_list)
         ref_in_low = tpr_list[np.where(fpr_list < 0.001)[0][-1]]
-        
+
         print(
             f"{alg}     AUC: %.4f, Accuracy: %.4f, TPR@0.1%%FPR: %.4f"
             % (ref_in_roc_auc, ref_in_acc, ref_in_low)
@@ -322,8 +307,8 @@ if __name__ == "__main__":
         all_tpr_list.append(tpr_list)
         all_auc_list.append(ref_in_roc_auc)
 
-    print(100*"#")
-    
+    print(100 * "#")
+
     plot_compare_roc(
         all_fpr_list,
         all_tpr_list,
