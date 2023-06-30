@@ -350,12 +350,26 @@ if __name__ == "__main__":
             configs["audit"]["model_name"],
             device=configs["audit"]["device"],
         )
-        in_signal = np.array(
-            [model.get_loss(data, targets).item() for model in in_model_list_pm]
-        )
-        out_signal = np.array(
-            [model.get_loss(data, targets).item() for model in out_model_list_pm]
-        )
+        if configs["audit"]["signal"] == "loss":
+            in_signal = np.array(
+                [model.get_loss(data, targets).item() for model in in_model_list_pm]
+            )
+            out_signal = np.array(
+                [model.get_loss(data, targets).item() for model in out_model_list_pm]
+            )
+        elif configs["audit"]["signal"] == "negative_rescaled_logits":
+            in_signal = np.array(
+                [
+                    -model.get_rescaled_logits(data, targets).item()
+                    for model in in_model_list_pm
+                ]
+            )
+            out_signal = np.array(
+                [
+                    -model.get_rescaled_logits(data, targets).item()
+                    for model in out_model_list_pm
+                ]
+            )
 
         # Generate the privacy risk report
         plot_signal_histogram(
@@ -374,10 +388,10 @@ if __name__ == "__main__":
         )
 
     ############################
-    # Privacy auditing for an model with reference_in_out attack (i.e., adversary trains models with/without each target points)
+    # Privacy Auditing for an model with reference_in_out attack
     ############################
     elif "reference_in_out" in configs["audit"]["algorithm"]:
-        # The following code is modified from the original code in the repo: https://github.com/tensorflow/privacy/tree/master/research/mi_lira_2021
+        # The following code of generating the data is modified from the original code in the repo: https://github.com/tensorflow/privacy/tree/master/research/mi_lira_2021
         baseline_time = time.time()
         p_ratio = configs["data"]["keep_ratio"]
         dataset_size = configs["data"]["dataset_size"]
@@ -437,6 +451,7 @@ if __name__ == "__main__":
                         data,
                         targets,
                         method=configs["audit"]["augmentation"],
+                        signal=configs["audit"]["signal"],
                     )
                 )
             logger.info(
@@ -466,6 +481,7 @@ if __name__ == "__main__":
                         data,
                         targets,
                         method=configs["audit"]["augmentation"],
+                        signal=configs["audit"]["signal"],
                     )
                 )
             logger.info(
@@ -509,10 +525,7 @@ if __name__ == "__main__":
         prediction = []
         answers = []
         for ans, sc in zip(membership, target_signal):
-            if configs["audit"]["offline"]:
-                pr_in = 0
-            else:
-                pr_in = -norm.logpdf(sc, mean_in, std_in + 1e-30)
+            pr_in = -norm.logpdf(sc, mean_in, std_in + 1e-30)
             pr_out = -norm.logpdf(sc, mean_out, std_out + 1e-30)
             score = pr_in - pr_out
             if len(score.shape) == 2:  # the score is of size (data_size, num_augments)

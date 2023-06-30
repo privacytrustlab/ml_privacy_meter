@@ -8,7 +8,8 @@ audit: # Configurations for auditing
   device: cuda:0 # String for indicating on which device we conduct the membership inference attack and train reference models.
   audit_batch_size: 1000 # Integer number for indicating the batch size for computing signals in the privacy meter.
   algorithm: population # String for indicating the membership inference attack. We currently support population, reference.
-  report_log: report_population # String that indicates the folder where we save the and auditing report.
+  report_log: report_population_loss # String that indicates the folder where we save the and auditing report.
+  signal: loss # String for indicating the attack signal. We support loss, negative_rescaled_logits.
 
 train: # Configuration for training
   type: pytorch # Training framework (we only support pytorch now).

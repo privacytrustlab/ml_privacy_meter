@@ -14,7 +14,6 @@ import random
 import numpy as np
 import torch
 import yaml
-from augment import get_signal_on_augmented_data
 from core import (load_existing_models, prepare_datasets_for_reference_in_attack,
                   prepare_models)
 from dataset import get_dataset, get_dataset_subset
@@ -159,22 +158,9 @@ if __name__ == "__main__":
             )
             signals.append(
                 model_pm.get_rescaled_logits(data, targets)
-                
-                # get_signal_on_augmented_data(
-                #     model_pm,
-                #     data,
-                #     targets,
-                #     method=configs["audit"]["augmentation"],
-                # )
             )
             population_signals.append(
                 model_pm.get_rescaled_logits(population_data, population_targets)
-                # get_signal_on_augmented_data(
-                #     model_pm,
-                #     population_data,
-                #     population_targets,
-                #     method=configs["audit"]["augmentation"],
-                # )
             )
 
         logger.info(
@@ -198,21 +184,9 @@ if __name__ == "__main__":
             )
             signals.append(
                 model_pm.get_rescaled_logits(data, targets)
-                # get_signal_on_augmented_data(
-                #     model_pm,
-                #     data,
-                #     targets,
-                #     method=configs["audit"]["augmentation"],
-                # )
             )
             population_signals.append(
                 model_pm.get_rescaled_logits(population_data, population_targets)
-                # get_signal_on_augmented_data(
-                #     model_pm,
-                #     population_data,
-                #     population_targets,
-                #     method=configs["audit"]["augmentation"],
-                # )
             )
         logger.info(
             "Prepare the signals costs %0.5f seconds",

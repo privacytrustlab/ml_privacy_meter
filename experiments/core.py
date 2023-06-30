@@ -28,7 +28,13 @@ from privacy_meter.audit import MetricEnum
 from privacy_meter.audit_report import ROCCurveReport, SignalHistogramReport
 from privacy_meter.constants import InferenceGame
 from privacy_meter.dataset import Dataset
+from privacy_meter.hypothesis_test import linear_itp_threshold_func
 from privacy_meter.information_source import InformationSource
+from privacy_meter.information_source_signal import (
+    ModelLoss,
+    ModelNegativeRescaledLogits,
+)
+from privacy_meter.metric import PopulationMetric, ReferenceMetric
 from privacy_meter.model import PytorchModelTensor
 
 
@@ -83,7 +89,7 @@ def load_existing_reference_models(
     Returns:
         List(int): List of reference model index which matches the conditions
     """
-    if configs["algorithm"] != "reference":
+    if configs["algorithm"] != "reference_out":
         return []
     number_models = configs.get("num_reference_models", 10)
     num_audit_train_data = int(
@@ -789,6 +795,27 @@ def get_info_source_reference_attack(
     )
 
 
+def get_signal_and_hypothesis_test_func(configs):
+    """Return the attack and way to find the threshold
+
+    Args:
+        configs (dict): Auditing configuration.
+    """
+    signals = []
+
+    if configs["signal"] == "loss":
+        signals.append(ModelLoss())
+    elif configs["signal"] == "negative_rescaled_logits":
+        signals.append(ModelNegativeRescaledLogits())
+    else:
+        raise ValueError(
+            f"{configs['signal']} is not supported. Please use loss or rescaled_logits as the signal."
+        )
+
+    hypothesis_test_func = linear_itp_threshold_func
+    return signals, hypothesis_test_func
+
+
 def prepare_information_source(
     log_dir: str,
     dataset: torchvision.datasets,
@@ -826,6 +853,8 @@ def prepare_information_source(
     # Prepare the information source for each target model
     for split in range(len(model_list)):
         print(f"preparing information sources for {split}-th target model")
+        log_dir_path = f"{log_dir}/{configs['report_log']}/signal_{split}"
+        signals, hypothesis_test_func = get_signal_and_hypothesis_test_func(configs)
         if configs["algorithm"] == "population":
             (
                 target_dataset,
@@ -839,8 +868,20 @@ def prepare_information_source(
                 configs,
                 model_name,
             )
-            metrics = MetricEnum.POPULATION
-        elif configs["algorithm"] == "reference":
+            target_info_source = InformationSource(
+                models=target_model, datasets=target_dataset
+            )
+            reference_info_source = InformationSource(
+                models=audit_models, datasets=audit_dataset
+            )
+            metrics = PopulationMetric(
+                target_info_source=target_info_source,
+                reference_info_source=reference_info_source,
+                signals=signals,
+                hypothesis_test_func=hypothesis_test_func,
+                logs_dirname=log_dir_path,
+            )
+        elif configs["algorithm"] == "reference_out":
             # Check if there are existing reference models
             (
                 target_dataset,
@@ -859,12 +900,21 @@ def prepare_information_source(
                 model_name,
                 dataset_name,
             )
-            metrics = MetricEnum.REFERENCE
+            target_info_source = InformationSource(
+                models=target_model, datasets=target_dataset
+            )
+            reference_info_source = InformationSource(
+                models=audit_models, datasets=audit_dataset
+            )
+            metrics = ReferenceMetric(
+                target_info_source=target_info_source,
+                reference_info_source=reference_info_source,
+                signals=signals,
+                hypothesis_test_func=hypothesis_test_func,
+                logs_dirname=log_dir_path,
+            )
         metric_list.append(metrics)
 
-        target_info_source = InformationSource(
-            models=target_model, datasets=target_dataset
-        )
         reference_info_source = InformationSource(
             models=audit_models, datasets=audit_dataset
         )
@@ -872,7 +922,6 @@ def prepare_information_source(
         target_info_source_list.append(target_info_source)
 
         # Save the log_dir for attacking different target model
-        log_dir_path = f"{log_dir}/{configs['report_log']}/signal_{split}"
         Path(log_dir_path).mkdir(parents=True, exist_ok=True)
         log_dir_list.append(log_dir_path)
 

@@ -2,8 +2,8 @@
 from ast import List
 
 import numpy as np
-import torch
 import sklearn.metrics as metrics
+import torch
 
 
 def check_configs(configs: dict):

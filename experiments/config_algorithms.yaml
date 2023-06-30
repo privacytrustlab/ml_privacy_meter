@@ -18,6 +18,7 @@ audit: # Configurations for auditing
   epochs: 1 # Integer number for indicating the epochs for training target model.
   report_log: report_reference_algorithm # String that indicates the folder where we save the and auditing report.
   split_method: uniform # String for indicating the splitting methods for reference dataset. We support uniform and leave_one_out.
+  signal: negative_rescaled_logits # String for indicating the attack signal. We support loss, negative_rescaled_logits.
 
 train: # Configuration for training
   type: pytorch # Training framework (we only support pytorch now).

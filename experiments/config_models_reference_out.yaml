@@ -20,6 +20,7 @@ audit: # Configurations for auditing
   split_method: uniform # String for indicating the splitting methods for reference dataset. We support uniform and leave_one_out.
   test_batch_size: 250 # Integer number for indicating batch size for evaluating the target model.
   num_test_size: 1000 # Integer number for indicating the size of the test dataset for evaluating the target model during the training. This should be divisible by test_batch_size.
+  signal: negative_rescaled_logits # String for indicating the attack signal. We support loss, negative_rescaled_logits.
 
 train: # Configuration for training
   type: pytorch # Training framework (we only support pytorch now).
