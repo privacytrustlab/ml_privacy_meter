@@ -1,31 +1,31 @@
 run: # Configurations for a specific run
   random_seed: 1234 # Integer number of specifying random seed
-  log_dir: demo # String for indicating where to save all the information, including models and computed signals. We can reuse the models saved in the same log_dir.
+  log_dir: demo_samples # String for indicating where to save all the information, including models and computed signals. We can reuse the models saved in the same log_dir.
   time_log: True # Indicate whether to log the time for each step
 
 audit: # the configurations for the MIA
   privacy_game: privacy_loss_sample #privacy_loss_model #avg_privacy_loss_training_algo # the configuarations for the privacy loss game
-  device: cpu # indicate on which device we conduct the MIA
+  report_log: report_sample_loss # String that indicates the folder where we save the and auditing report.
+  signal: loss # String for indicating the attack signal. We support loss, rescaled_logits.
+  device: cuda:0 # indicate on which device we conduct the MIA
+  model_name: speedyresnet
   audit_batch_size: 1000 # the batch size for computing signals for inferring membership information
-  report_log: report_sample # String that indicates the folder where we save the and auditing report.
   data_idx: 100 # Integer number indicating the data index for which we want to show the performance difference
-  model_name: CNN
-  signal: negative_rescaled_logits # String for indicating the attack signal. We support loss, negative_rescaled_logits.
 
 train: # Configuration for training
   type: pytorch # Training framework (we only support pytorch now).
-  epochs: 1 # Integer number for indicating the epochs for training target model.
-  batch_size: 64 # Integer number for indicating batch size for training the target model.
+  model_name: speedyresnet # String for indicating the model type. We support CNN, wrn28-1, wrn28-2, wrn28-10, vgg16, nn and speedyresnet (requires cuda). More model types can be added in model.py.
+  data_idx: 100 # Integer number for indicating the model index or data index.
+  num_in_models: 50 # Integer number that indicates how many target models trained on data_idx.
+  num_out_models: 50 # Integer number that indicates how many target models not trained on data_idx.
+  device: cuda:0 # String for indicating the device we want to use for training models, e.g., cpu or cuda.
+  epochs: speedyresnet_epochs # Integer number for indicating the epochs for training target model. For speedyresnet, it uses its own number of epochs.
+  batch_size: speedyresnet_batch_size # Integer number for indicating batch size for training the target model. For speedyresnet, it uses its own batch size.
+  optimizer: speedyresnet_optimizer # String which indicates the optimizer. We support Adam and SGD. For speedyresnet, it uses its own optimizer.
+  learning_rate: speedyresnet_learning_rate # Float number for indicating learning rate for training the target model. For speedyresnet, it uses its own learning_rate.
+  weight_decay: speedyresnet_weight_decay # Float number for indicating weight decay for training the target model. For speedyresnet, it uses its own weight_decay.
   test_batch_size: 250 # Integer number for indicating batch size for evaluating the target model.
   num_test_size: 1000 # Integer number for indicating the size of the test dataset for evaluating the target model during the training. This should be divisible by test_batch_size.
-  optimizer: Adam # String which indicates the optimizer. We support Adam and SGD.
-  learning_rate: 0.001 # Float number for indicating learning rate for training the target model.
-  weight_decay: 0 # Float number for indicating weight decay for training the target model.
-  model_name: CNN # String for indicating the model type. We support CNN, wrn28-1, wrn28-2, wrn28-10, vgg16, and nn. More model types can be added in model.py.
-  device: cpu # String for indicating the device we want to use for training models.
-  data_idx: 100 # Integer number for indicating the model index or data index.
-  num_in_models: 10 # Integer number that indicates how many target models trained on idx
-  num_out_models: 10 # Integer number that indicates how many target models not trained on idx
 
 data: # Configuration for data
   dataset: cifar10 # String indicates the name of the dataset (i.e., cifar10, cifar100, purchase100, texas1000)

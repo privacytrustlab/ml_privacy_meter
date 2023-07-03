@@ -202,7 +202,7 @@ if __name__ == "__main__":
             time.time() - baseline_time,
         )
 
-        # Call core of privacy meter
+        # Call core of Privacy Meter
         print(25 * ">" + "Auditing the privacy risk")
         baseline_time = time.time()
         audit_obj = Audit(
@@ -216,7 +216,7 @@ if __name__ == "__main__":
         audit_obj.prepare()
         audit_results = audit_obj.run()
         logger.info(
-            "Prepare the privacy meter result costs %0.5f seconds",
+            "Prepare the Privacy Meter result costs %0.5f seconds",
             time.time() - baseline_time,
         )
 
@@ -357,7 +357,7 @@ if __name__ == "__main__":
             out_signal = np.array(
                 [model.get_loss(data, targets).item() for model in out_model_list_pm]
             )
-        elif configs["audit"]["signal"] == "negative_rescaled_logits":
+        elif configs["audit"]["signal"] == "rescaled_logits":
             in_signal = np.array(
                 [
                     -model.get_rescaled_logits(data, targets).item()
@@ -396,8 +396,8 @@ if __name__ == "__main__":
         p_ratio = configs["data"]["keep_ratio"]
         dataset_size = configs["data"]["dataset_size"]
         number_of_models_total = (
-            configs["train"]["num_in_models"]
-            + configs["train"]["num_out_models"]
+            configs["audit"]["num_in_models"]
+            + configs["audit"]["num_out_models"]
             + configs["train"]["num_target_model"]
         )
         (
@@ -508,8 +508,8 @@ if __name__ == "__main__":
                 reference_signals[~reference_keep_matrix[:, data_idx], data_idx]
             )
 
-        in_size = min(min(map(len, in_signals)), configs["train"]["num_in_models"])
-        out_size = min(min(map(len, out_signals)), configs["train"]["num_out_models"])
+        in_size = min(min(map(len, in_signals)), configs["audit"]["num_in_models"])
+        out_size = min(min(map(len, out_signals)), configs["audit"]["num_out_models"])
         in_signals = np.array([x[:in_size] for x in in_signals]).astype("float32")
         out_signals = np.array([x[:out_size] for x in out_signals]).astype("float32")
         mean_in = np.median(in_signals, 1)

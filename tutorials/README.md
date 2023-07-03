@@ -16,14 +16,14 @@ You can access these tutorials on Colab for a seamless experience.
 | [Extending the Model class for OpenVINO Models](openvino_models.ipynb)                       | [Run](https://colab.research.google.com/github/privacytrustlab/ml_privacy_meter/blob/master/tutorials/openvino_models.ipynb)           |
 | [Extending the tool for HuggingFace Causal Language Models](hf_causal_language_models.ipynb) | [Run](https://colab.research.google.com/github/privacytrustlab/ml_privacy_meter/blob/master/tutorials/hf_causal_language_models.ipynb) |
 
-If you are running the tutorials on Colab, please add the following code to install the privacy meter.
+If you are running the tutorials on Colab, please add the following code to install the Privacy Meter.
 ```
 # Clone the repo.
 !git clone https://github.com/changhongyan123/ml_privacy_meter.git
 %pip install -r privacy_meter/requirements.txt
 exit()
 ```
-Then, add the following code before you import the privacy meter
+Then, add the following code before you import the Privacy Meter
 ```
 # Add the repo root to the Python path.
 import sys, os

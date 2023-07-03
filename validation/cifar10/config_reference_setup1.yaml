@@ -6,8 +6,8 @@ run: # Configurations for a specific run
 audit: # Configurations for auditing
   privacy_game: privacy_loss_model # Indicate the privacy game from privacy_loss_model, avg_privacy_loss_training_algo, privacy_loss_sample
   device: cuda:0 # String for indicating on which device we conduct the membership inference attack and train reference models.
-  audit_batch_size: 1000 # Integer number for indicating the batch size for computing signals in the privacy meter.
-  algorithm: reference # String for indicating the membership inference attack. We currently support population, reference.
+  audit_batch_size: 1000 # Integer number for indicating the batch size for computing signals in the Privacy Meter.
+  algorithm: reference_out # String for indicating the membership inference attack. We currently support population, reference.
   report_log: report_reference # String that indicates the folder where we save the and auditing report.
   num_reference_models: 300 # Integer number for indicating how many reference models we need to train for auditing, if the reference attack is used.
   batch_size: 16 # Integer number for indicating the batch size of training the reference models if reference attack is used.
@@ -20,7 +20,7 @@ audit: # Configurations for auditing
   split_method: uniform # String for indicating the splitting methods for reference dataset. We support uniform and leave_one_out.
   augmentation: None # Indicate whether to use augmentation for the query points
   test_batch_size: 5000 # Integer number for indicating batch size for evaluating the target model.
-  signal: loss # String for indicating the attack signal. We support loss, negative_rescaled_logits.
+  signal: loss # String for indicating the attack signal. We support loss, rescaled_logits.
 
 train: # Configuration for training
   type: pytorch # Training framework (we only support pytorch now).

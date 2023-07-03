@@ -11,16 +11,16 @@ This folder contains the implementation of an end-to-end membership inference at
 In Ye et al., 2022, four different privacy games widely used in the literature are summerized. Users can specify which privacy game they want to run in the YAML configuration file by setting the `audit.privacy_game` to the following values:
 
 - `avg_privacy_loss_training_algo` - Game 3.1
-  This privacy game defines how to audit the privacy risk for a training algorithm. An example configuration is provided in `config_algorithms.yaml`.
+  This privacy game defines how to audit the privacy risk for a training algorithm. An example configuration is provided in `config_algorithms.yaml`. The privacy risk for a training algorithm is the average privacy risk over records and the models trained by the algorithm, in the sense that the target datasets and the target models are randomly generated. The figure `demo_algorithms/report_population_loss/Histogram.png` shows the loss distribution of the target model on the members and non-members, and the figure `demo_algorithms/report_population_loss/ROC.png` shows the aggregated ROC of the population attack in attacking 16 models trained on random samples drawn from the population with the same training algorithm.
 
 - `privacy_loss_model` - Game 3.2
-  This privacy game defines how to audit the privacy risk for a trained model. An example configuration is provided in `config_models_population.yaml`.
+  This privacy game defines how to audit the privacy risk for a trained model. An example configuration is provided in `config_models_population.yaml`. This game is similar to Game 3.1, except that the target dataset and target models are fixed. The figure `demo_models/report_population_loss/Histogram.png` shows the loss distribution of the target model on the members and non-members and the figure `demo_models/report_population_loss/ROC.png` shows the ROC of the population attack in attacking a trained model.
 
 - `privacy_loss_sample` (uniform) - Game 3.3
-  This privacy game defines how to audit the privacy risk for a sample. An example configuration is provided in `config_models_samples.yaml`.
+  This privacy game defines how to audit the privacy risk for a sample. An example configuration is provided in `config_samples.yaml`. This privacy game captures the privacy risk for a fixed data record where the adversary needs to distinguish models trained with and without the target sample. The figure `demo_samples/report_sample_loss/individual_pr_100_100.png` shows the loss distribution of the target point (data with index 100) for the models trained with it and models trained without it and the figure `demo_samples/report_sample_loss/individual_pr_roc_100_100.png` shows the ROC of the adversary in distinguishing the two types of models. Note that the rest of the training data points for different models are sampled uniformly from the underlying data distribution.
 
 - `privacy_loss_sample` (leave one out) - Game 3.4
-  This privacy game defines how to audit the privacy risk for a sample when the rest of the point is known to the adversary. An example configuration is provided in `config_samples_leave_one_out.yaml`.
+  This privacy game defines how to audit the privacy risk for a sample when the rest of the point is known to the adversary. An example configuration is provided in `config_samples_leave_one_out.yaml`. This game is similar to Game 3.3, except that the training dataset is fixed. In other words, the game quantifies the privacy risk of a target data record with regard to a fixed dataset. The figure in `demo_samples` shows the loss distribution of the target point (data with index 1000) for the models trained with it and models trained without it. The figure `demo_samples_leave_one_out/report_sample_loss/individual_pr_100_100.png` shows the loss distribution of the target point (data with index 100) for the models trained with it and models trained without it and the figure `demo_samples_leave_one_out/report_sample_loss/individual_pr_roc_100_100.png` shows the ROC of the adversary in distinguishing the two types of models. Note that the rest of the training datasets for all models is the same.
 
 ## Attack Algorithm
 
@@ -43,8 +43,6 @@ We support different attack signals, which is defined by `audit.signal` in the c
   This is the classification loss that the target model is trained to minimize.
 - `rescaled_logits`
   This is the rescaled logits, which is $\log (p/1-p)$, where $p$ is the probability of predicting the correct label.
-- `negative_rescaled_logits`
-  This is the negation of the rescaled logits.
 
 ## Others
 
@@ -62,4 +60,4 @@ When computing the signals from the target model or reference model, we support 
 
 ### Video Tutorial
 
-We also provide video tutorial about privacy meter [here](https://drive.google.com/file/d/1wAxzlb8Oy67OCa95JXKPlFiJb0T2e39Y/view?usp=drive_link).
+We also provide video tutorial about Privacy Meter [here](https://drive.google.com/file/d/1wAxzlb8Oy67OCa95JXKPlFiJb0T2e39Y/view?usp=drive_link).
