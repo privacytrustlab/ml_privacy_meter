@@ -1,6 +1,6 @@
 # Privacy Meter Experiments
 
-This folder contains the implementation of an end-to-end membership inference attack based on various attack games defined by [[Ye et al. 2022](https://arxiv.org/pdf/2111.09679.pdf)] and different attack algorithms. It is recommended that you perform privacy auditing using our automatic pipeline. By default, the audit provides a way to evaluate the privacy risks for models, algorithms, and data points using the CIFAR10 dataset. The training configurations can then be specified in the configuration YAML file. The overall pipeline is illustrated below. For a deeper understanding of various types of attacks or for information on how to extend the Privacy Meter to include other libraries, please refer to our [tutorials](../tutorials) for more information.
+This folder contains the implementation of an end-to-end membership inference attack based on various attack games defined by [[Ye et al., 2022](https://arxiv.org/pdf/2111.09679.pdf)] and different attack algorithms. It is recommended that you perform privacy auditing using our automatic pipeline. By default, the audit provides a way to evaluate the privacy risks for models, algorithms, and data points using the CIFAR10 dataset. The training configurations can then be specified in the configuration YAML file. The overall pipeline is illustrated below. For a deeper understanding of various types of attacks or for information on how to extend the Privacy Meter to include other libraries, please refer to our [tutorials](../tutorials) for more information.
 
 <p align="center" width="100%">
     <img width="80%" src="docs/experiment_pipeline.png">
@@ -23,9 +23,9 @@ In Ye et al., 2022, four different privacy games widely used in the literature a
 - `privacy_loss_sample` (leave one out) - Game 3.4
   This privacy game defines how to audit the privacy risk for a sample when the rest of the point is known to the adversary. An example configuration is provided in `config_samples_leave_one_out.yaml`. This game is similar to Game 3.3, except that the training dataset is fixed. In other words, the game quantifies the privacy risk of a target data record with regard to a fixed dataset. The figure in `demo_samples` shows the loss distribution of the target point (data with index 1000) for the models trained with it and models trained without it. The privacy risk report includes loss distribution of the target point (data with index 100) for the models trained with it and models trained without it (See [here](demo_samples_leave_one_out/report_sample_loss/individual_pr_100_100.png)) and the ROC of the adversary in distinguishing the two types of models (See [here](demo_samples_leave_one_out/report_sample_loss/individual_pr_roc_100_100.png)). Note that the rest of the training datasets for all models is the same.
 
-## Attack Algorithm
+## Auditing Algorithm
 
-The adversary simulates the privacy game above to compute how likely the target point is a member. Specifically, there are three ways to simulate the game, which corresponds to three different types of attacks:
+In order to audit the privacy risks, we take the role of the adversary who simulates the privacy game above to compute how likely the target point is to be a member. Specifically, there are three ways to simulate the game, which correspond to three different types of algorithms:
 
 - `reference_out`
   The adversary trains a set of reference models on datasets excluding the target point (OUT models). An example configuration is provided in `config_models_reference_out.yaml`.
@@ -35,6 +35,8 @@ The adversary simulates the privacy game above to compute how likely the target 
 
 - `population`
   The adversary does not train any models but queries the target model on a dataset disjoint from the target dataset. An example configuration is provided in `config_models_population.yaml`.
+
+For more details about algorithms, please refer to Ye et al., 2022.
 
 ## Signal
 
@@ -49,7 +51,7 @@ We support different attack signals, which are defined by `audit.signal` in the 
 
 ### Datasets and Models
 
-Privacy Meter supports various datasets widely used in the MIA literature, including CIFAR10 (`cifar10`), CIFAR100 (`cifar100`), Purchase (`purchase100`), and Texas (`texas100`). In terms of models, we provide support for CNN (`cnn`), AlexNet (`alexnet`), WideResNet (`wrn28-1`, `wrn28-2`, `wrn28-10`), and NN (`nn`) models. To specify the dataset and model, you can use the `dataset` and `model_name` parameters in the configuration file. To add dataset, models or training algorithms for your specific use case, you can add the model structure in `model.py`, the dataset in `dataset.py`, and the training algorithm in `train.py`.
+Privacy Meter supports various datasets widely used in the MIA literature, including CIFAR10 (`cifar10`), CIFAR100 (`cifar100`), Purchase (`purchase100`), and Texas (`texas100`). In terms of models, we provide support for CNN (`cnn`), AlexNet (`alexnet`), WideResNet (`wrn28-1`, `wrn28-2`, `wrn28-10`), and NN (`nn`) models. To specify the dataset and model, you can use the `dataset` and `model_name` parameters in the configuration file. To add dataset, models, or training algorithms for your specific use case, you can add the model structure in `model.py`, the dataset in `dataset.py`, and the training algorithm in `train.py`.
 
 ### Efficient Training
 
