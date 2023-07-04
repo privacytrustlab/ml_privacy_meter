@@ -78,7 +78,7 @@ We have comprehensive tutorials available in the tutorials folder to aid users i
 Users have the capability to extend our Privacy Meter to fit their specific needs. By utilizing the code in the experiments folder, one can perform privacy audits on customized training algorithms, datasets, and settings based on different privacy games (See instructions [here](experiments/README.md)). Furthermore, our framework can be extended to include white-box attacks and models developed by other libraries. For more information on this, please refer to the tutorials covering the following topics:
 
 1. [Implementing a simple white-box attack using the Privacy Meter.](tutorials/white_box_attack.ipynb)
-2. [Expanding the Privacy Meter to encompass OpenVION models.](tutorials/openvino_models.ipynb)
+2. [Expanding the Privacy Meter to encompass OpenVINO models.](tutorials/openvino_models.ipynb)
 3. [Integrating the Privacy Meter with HuggingFace models.](tutorials/hf_causal_language_models.ipynb)
 
 ## Video (Talks)
