@@ -30,7 +30,7 @@ The core of the Privacy Meter consists of three parts: `Information Source`, `Me
 
 ![alt text](https://github.com/privacytrustlab/ml_privacy_meter/blob/master/source/_static/privacy_meter_architecture.png?raw=true)
 
-Kindly refer to the tutorial on the population attack ([here](tutorials/population_metric.ipynb)) to gain familiarity with the utilization of each component.
+<!-- Kindly refer to the tutorial on the population attack ([here](tutorials/population_metric.ipynb)) to gain familiarity with the utilization of each component. -->
 
 ## Installation
 
@@ -38,11 +38,11 @@ Privacy Meter supports Python `>=3.6` and works with `tensorflow>=2.4.0` and `to
 
 You can install `privacy-meter` using `pip` for the latest stable version of the tool:
 
-```bash
-pip install git+https://github.com/privacytrustlab/ml_privacy_meter.git
-```
-
 <!-- ```bash
+pip install git+https://github.com/privacytrustlab/ml_privacy_meter.git
+``` -->
+
+```bash
 pip install privacy-meter
 ``` -->
 
@@ -50,7 +50,7 @@ pip install privacy-meter
 
 ```bash
 conda install privacy-meter
-``` -->
+```
 
 ## Quickstart
 
@@ -67,19 +67,16 @@ Kindly proceed to the experiments folder ([here](https://github.com/privacytrust
 
 ### Basic Usage
 
-We have comprehensive tutorials available in the tutorials folder to aid users in comprehending the Privacy Meter and also offer a default implementation for automatic privacy auditing in the experiments folder. To maximize the benefits of these resources, we recommend following this suggested order:
-
-1. [Acquire a fundamental understanding of the Privacy Meter by executing a population attack on the CIFAR10 dataset.](https://github.com/privacytrustlab/ml_privacy_meter/tree/master/tutorials/population_metric.ipynb)
-2. [Enhance your knowledge by conducting a reference attack on the CIFAR10 dataset.](https://github.com/privacytrustlab/ml_privacy_meter/tree/master/tutorials/reference_metric.ipynb)
-3. [Automate the privacy auditing process on the CIFAR10 dataset.](https://github.com/privacytrustlab/ml_privacy_meter/tree/master/experiments/)
+We offer a default implementation for automatic privacy auditing in the experiments folder based on various privacy games. Please check the [experiments](https://github.com/privacytrustlab/ml_privacy_meter/tree/master/experiments/) folder for more details.
 
 ### Advanced Usage
 
-Users have the capability to extend our Privacy Meter to fit their specific needs. By utilizing the code in the experiments folder, one can perform privacy audits on customized training algorithms, datasets, and settings based on different privacy games (See instructions [here](https://github.com/privacytrustlab/ml_privacy_meter/tree/master/experiments/README.md)). Furthermore, our framework can be extended to include white-box attacks and models developed by other libraries. For more information on this, please refer to the tutorials covering the following topics:
-
-1. [Implementing a simple white-box attack using the Privacy Meter.](https://github.com/privacytrustlab/ml_privacy_meter/tree/master/tutorials/white_box_attack.ipynb)
-2. [Expanding the Privacy Meter to encompass OpenVINO models.](https://github.com/privacytrustlab/ml_privacy_meter/tree/master/tutorials/openvino_models.ipynb)
-3. [Integrating the Privacy Meter with HuggingFace models.](https://github.com/privacytrustlab/ml_privacy_meter/tree/master/tutorials/hf_causal_language_models.ipynb)
+Users can also extend our Privacy Meter to fit their specific needs. By utilizing the code in the experiments folder, one can perform privacy audits on customized training algorithms, datasets, and settings based on different privacy games (See instructions [here](https://github.com/privacytrustlab/ml_privacy_meter/tree/master/experiments/README.md)). Furthermore, our framework can be extended to white-box attacks and models developed by other libraries. For more information on this, please refer to the tutorials covering the following topics:
+1. [Understanding low-level APIs: Acquire a fundamental understanding of the Privacy Meter by executing a population attack on the CIFAR10 dataset.](https://github.com/privacytrustlab/ml_privacy_meter/tree/master/tutorials/population_metric.ipynb)
+2. [Understanding low-level APIs: Enhance your knowledge by conducting a reference attack on the CIFAR10 dataset.](https://github.com/privacytrustlab/ml_privacy_meter/tree/master/tutorials/reference_metric.ipynb)
+3. [Implementing a simple white-box attack using the Privacy Meter.](https://github.com/privacytrustlab/ml_privacy_meter/tree/master/tutorials/white_box_attack.ipynb)
+4. [Expanding the Privacy Meter to encompass OpenVINO models.](https://github.com/privacytrustlab/ml_privacy_meter/tree/master/tutorials/openvino_models.ipynb)
+5. [Integrating the Privacy Meter with HuggingFace models.](https://github.com/privacytrustlab/ml_privacy_meter/tree/master/tutorials/hf_causal_language_models.ipynb)
 
 ## Video (Talks)
 
