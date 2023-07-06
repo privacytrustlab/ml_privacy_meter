@@ -44,9 +44,9 @@ pip install git+https://github.com/privacytrustlab/ml_privacy_meter.git
 
 ```bash
 pip install privacy-meter
-``` -->
+``` 
 
-<!-- Alternatively, one can install it via conda:
+Alternatively, one can install it via conda:
 
 ```bash
 conda install privacy-meter
