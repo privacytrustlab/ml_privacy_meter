@@ -69,6 +69,6 @@ We have integrated the fast training library, [hlb-CIFAR10](https://github.com/t
 
 When computing the signals from the target model or reference model, we support argument queries. For instance, for each target point, we can query the model loss on the argument target points (e.g., random cropped images from the target image). You can implement your own argumentation queries in `argumented_query.py`.
 
-### Video Tutorial
+<!-- ### Video Tutorial
 
-We also provide a video tutorial about Privacy Meter [here](https://drive.google.com/file/d/1wAxzlb8Oy67OCa95JXKPlFiJb0T2e39Y/view?usp=drive_link).
+We also provide a video tutorial about Privacy Meter [here](https://drive.google.com/file/d/1wAxzlb8Oy67OCa95JXKPlFiJb0T2e39Y/view?usp=drive_link). -->
