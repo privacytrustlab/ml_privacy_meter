@@ -67,7 +67,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--cf",
         type=str,
-        default="experiments/config_models_reference_in_out.yaml",
+        default="basic/config_models_reference_in_out.yaml",
         help="Yaml file which contains the configurations",
     )
 

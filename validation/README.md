@@ -1,11 +1,11 @@
 # Reproducing Existing Results
 
-This folder provides configurations (YAML files) for reproducing the results provided in published papers on different datasets. To reproduce the results, please run the `experiments/main.py` with the corresponding configuration files.
+This folder provides configurations (YAML files) for reproducing the results provided in published papers on different datasets. To reproduce the results, please run the `basic/main.py` with the corresponding configuration files.
 
 **Example:**
 
 ```
-cd ../experiments
+cd ../basic
 python main.py --cf ../validation/cifar10/config_population_setup1.yaml
 ```
 

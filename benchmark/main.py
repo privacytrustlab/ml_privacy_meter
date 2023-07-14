@@ -7,7 +7,7 @@ import sys
 import time
 from pathlib import Path
 
-sys.path.insert(0, "../experiments/")
+sys.path.insert(0, "../basic/")
 
 import random
 

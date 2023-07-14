@@ -8,13 +8,13 @@ You can access these tutorials on Colab for a seamless experience.
 
 | Tutorial                                                                                     | <img src="https://www.tensorflow.org/images/colab_logo_32px.png" />                                                                    |
 | -------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
-| [Running the Population Metric](population_metric.ipynb)                                     | [Run](https://colab.research.google.com/github/privacytrustlab/ml_privacy_meter/blob/master/tutorials/population_metric.ipynb)         |
-| [Running the White-box Attack based on Population Metric](white_box_attack.ipynb)             | [Run](https://colab.research.google.com/github/privacytrustlab/ml_privacy_meter/blob/master/tutorials/white_box_attack.ipynb)           |
-| [Running the Reference Metric](reference_metric.ipynb)                                       | [Run](https://colab.research.google.com/github/privacytrustlab/ml_privacy_meter/blob/master/tutorials/reference_metric.ipynb)          |
-| [Evaluating the Average Privacy Loss of a Training Algorithm](avg_loss_training_algo.ipynb)  | [Run](https://colab.research.google.com/github/privacytrustlab/ml_privacy_meter/blob/master/tutorials/avg_loss_training_algo.ipynb)    |
-| [Running the Shadow Metric ](shadow_metric.ipynb)                                            | [Run](https://colab.research.google.com/github/privacytrustlab/ml_privacy_meter/blob/master/tutorials/shadow_metric.ipynb)             |
-| [Extending the Model class for OpenVINO Models](openvino_models.ipynb)                       | [Run](https://colab.research.google.com/github/privacytrustlab/ml_privacy_meter/blob/master/tutorials/openvino_models.ipynb)           |
-| [Extending the tool for HuggingFace Causal Language Models](hf_causal_language_models.ipynb) | [Run](https://colab.research.google.com/github/privacytrustlab/ml_privacy_meter/blob/master/tutorials/hf_causal_language_models.ipynb) |
+| [Running the Population Metric](population_metric.ipynb)                                     | [Run](https://colab.research.google.com/github/privacytrustlab/ml_privacy_meter/blob/master/advanced/population_metric.ipynb)         |
+| [Running the White-box Attack based on Population Metric](white_box_attack.ipynb)             | [Run](https://colab.research.google.com/github/privacytrustlab/ml_privacy_meter/blob/master/advanced/white_box_attack.ipynb)           |
+| [Running the Reference Metric](reference_metric.ipynb)                                       | [Run](https://colab.research.google.com/github/privacytrustlab/ml_privacy_meter/blob/master/advanced/reference_metric.ipynb)          |
+| [Evaluating the Average Privacy Loss of a Training Algorithm](avg_loss_training_algo.ipynb)  | [Run](https://colab.research.google.com/github/privacytrustlab/ml_privacy_meter/blob/master/advanced/avg_loss_training_algo.ipynb)    |
+| [Running the Shadow Metric ](shadow_metric.ipynb)                                            | [Run](https://colab.research.google.com/github/privacytrustlab/ml_privacy_meter/blob/master/advanced/shadow_metric.ipynb)             |
+| [Extending the Model class for OpenVINO Models](openvino_models.ipynb)                       | [Run](https://colab.research.google.com/github/privacytrustlab/ml_privacy_meter/blob/master/advanced/openvino_models.ipynb)           |
+| [Extending the tool for HuggingFace Causal Language Models](hf_causal_language_models.ipynb) | [Run](https://colab.research.google.com/github/privacytrustlab/ml_privacy_meter/blob/master/advanced/hf_causal_language_models.ipynb) |
 
 If you are running the tutorials on Colab, please add the following code to install the Privacy Meter.
 ```

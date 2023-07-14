@@ -14,11 +14,11 @@
 
 ## What is Privacy Meter?
 
-Privacy Meter is an open-source library to audit data privacy in statistical and machine learning algorithms. The tool can help in data protection impact assessment process by providing a quantitative analysis of fundamental privacy risks of a (machine learning) model. It uses state-of-the-art inference techniques to audit a wide range of machine learning algorithms for classification, regression, computer vision, and natural language processing. Privacy Meter generates extensive reports about the aggregate and individual privacy risks for data records in the training set, at multiple levels of access to the model.
+Privacy Meter is an open-source library to audit data privacy in statistical and machine learning algorithms. The tool can help in the data protection impact assessment process by providing a quantitative analysis of the fundamental privacy risks of a (machine learning) model. It uses state-of-the-art inference techniques to audit a wide range of machine learning algorithms for classification, regression, computer vision, and natural language processing. Privacy Meter generates extensive reports about the aggregate and individual privacy risks for data records in the training set, at multiple levels of access to the model.
 
 ## Why Privacy Meter?
 
-Machine learning is playing a central role in automated decision-making in a wide range of organization and service providers. The data, which is used to train the models, typically contain sensitive information about individuals. Although the data in most cases cannot be released, due to privacy concerns, the models are usually made public or deployed as a service for inference on new test data. For a safe and secure use of machine learning models, it is important to have a quantitative assessment of the privacy risks of these models, and to make sure that they do not reveal sensitive information about their training data. This is of a great importance as there has been a surge in use of machine learning in sensitive domains such as medical and finance applications.
+Machine learning is playing a central role in automated decision-making in a wide range of organizations and service providers. The data, which is used to train the models, typically contain sensitive information about individuals. Although the data in most cases cannot be released, due to privacy concerns, the models are usually made public or deployed as a service for inference on new test data. For a safe and secure use of machine learning models, it is important to have a quantitative assessment of the privacy risks of these models, and to make sure that they do not reveal sensitive information about their training data. This is of a great importance as there has been a surge in use of machine learning in sensitive domains such as medical and finance applications.
 
 Data Protection regulations, such as GDPR, and AI governance frameworks require personal data to be protected when used in AI systems, and that the users have control over their data and awareness about how it is being used. For example, [Article 35 of GDPR](https://gdpr-info.eu/art-35-gdpr/) requires organizations to systematically analyze, identify and minimize the data protection risks of a project, especially when the project involves innovative technologies such as Artificial Intelligence, Machine Learning and Deep Learning. Thus, proper mechanisms need to be in place to quantitatively evaluate and verify the privacy of individuals in every step of the data processing pipeline in AI systems.
 
@@ -30,7 +30,7 @@ The core of the Privacy Meter consists of three parts: `Information Source`, `Me
 
 ![alt text](https://github.com/privacytrustlab/ml_privacy_meter/blob/master/source/_static/privacy_meter_architecture.png?raw=true)
 
-<!-- Kindly refer to the tutorial on the population attack ([here](tutorials/population_metric.ipynb)) to gain familiarity with the utilization of each component. -->
+<!-- Kindly refer to the tutorial on the population attack ([here](advanced/population_metric.ipynb)) to gain familiarity with the utilization of each component. -->
 
 ## Installation
 
@@ -44,39 +44,22 @@ pip install git+https://github.com/privacytrustlab/ml_privacy_meter.git
 
 ```bash
 pip install privacy-meter
-``` 
+```
 
 Alternatively, one can install it via conda:
 
 ```bash
 conda install privacy-meter
 ```
-
-## Quickstart
-
-We provide examples of how to run Privacy Meter on standard datasets and models in the [experiments](experiments/) folder. Run the following code for your first membership inference attack on CIFAR10 (we support various datasets, e.g., CIFAR100 and Purchase dataset, but the default example is based on CIFAR10).
-
-```
-cd experiments
-python main.py --cf config_models_population.yaml
-```
-
-Kindly proceed to the experiments folder ([here](https://github.com/privacytrustlab/ml_privacy_meter/tree/master/experiments/)) to perform privacy audits on various objects, such as models, algorithms, and data points, using the CIFAR10 dataset.
-
 ## User manual
 
-### Basic Usage
+We offer two types of tutorials: basic usage (in the [experiments](https://github.com/privacytrustlab/ml_privacy_meter/tree/master/basic/) folder folder) and advanced usage (in the [advanced](https://github.com/privacytrustlab/ml_privacy_meter/tree/master/advanced/) folder folder). The goal of the basic usage is to provide users with a seamless experience in working with a predefined selection of games, algorithms, and signals. These components represent state-of-the-art auditing attacks and can be configured easily, without requiring users to write code (See instructions [here](https://github.com/privacytrustlab/ml_privacy_meter/tree/master/basic/README.md)). On the other hand, the advanced usage is tailored for professional users who seek to conduct sophisticated auditing. It allows them to utilize both pre-existing and customized algorithms, signals, and models, empowering them to perform advanced auditing tasks at a higher level of complexity and customization. Specifically, we provide the following tutorials for adavanced usage:
 
-We offer a default implementation for automatic privacy auditing in the experiments folder based on various privacy games. Please check the [experiments](https://github.com/privacytrustlab/ml_privacy_meter/tree/master/experiments/) folder for more details.
-
-### Advanced Usage
-
-Users can also extend our Privacy Meter to fit their specific needs. By utilizing the code in the experiments folder, one can perform privacy audits on customized training algorithms, datasets, and settings based on different privacy games (See instructions [here](https://github.com/privacytrustlab/ml_privacy_meter/tree/master/experiments/README.md)). Furthermore, our framework can be extended to white-box attacks and models developed by other libraries. For more information on this, please refer to the tutorials covering the following topics:
-1. [Understanding low-level APIs: Acquire a fundamental understanding of the Privacy Meter by executing a population attack on the CIFAR10 dataset.](https://github.com/privacytrustlab/ml_privacy_meter/tree/master/tutorials/population_metric.ipynb)
-2. [Understanding low-level APIs: Enhance your knowledge by conducting a reference attack on the CIFAR10 dataset.](https://github.com/privacytrustlab/ml_privacy_meter/tree/master/tutorials/reference_metric.ipynb)
-3. [Implementing a simple white-box attack using the Privacy Meter.](https://github.com/privacytrustlab/ml_privacy_meter/tree/master/tutorials/white_box_attack.ipynb)
-4. [Expanding the Privacy Meter to encompass OpenVINO models.](https://github.com/privacytrustlab/ml_privacy_meter/tree/master/tutorials/openvino_models.ipynb)
-5. [Integrating the Privacy Meter with HuggingFace models.](https://github.com/privacytrustlab/ml_privacy_meter/tree/master/tutorials/hf_causal_language_models.ipynb)
+1. [Understanding low-level APIs: Acquire a fundamental understanding of the Privacy Meter by executing a population attack on the CIFAR10 dataset.](https://github.com/privacytrustlab/ml_privacy_meter/tree/master/advanced/population_metric.ipynb)
+2. [Understanding low-level APIs: Enhance your knowledge by conducting a reference attack on the CIFAR10 dataset.](https://github.com/privacytrustlab/ml_privacy_meter/tree/master/advanced/reference_metric.ipynb)
+3. [Implementing a simple white-box attack using the Privacy Meter.](https://github.com/privacytrustlab/ml_privacy_meter/tree/master/advanced/white_box_attack.ipynb)
+4. [Expanding the Privacy Meter to encompass OpenVINO models.](https://github.com/privacytrustlab/ml_privacy_meter/tree/master/advanced/openvino_models.ipynb)
+5. [Integrating the Privacy Meter with HuggingFace models.](https://github.com/privacytrustlab/ml_privacy_meter/tree/master/advanced/hf_causal_language_models.ipynb)
 
 ## Video (Talks)
 

@@ -78,7 +78,7 @@ def test_inference():
     data_loader = torch.utils.data.DataLoader(
         dataset, batch_size=1000, shuffle=False, num_workers=2
     )
-    loss_b, acc_b = inference(model, data_loader, "cuda:1")
+    loss_b, acc_b = inference(model, data_loader, "cuda:0")
 
     updated_w = model.state_dict()
     # Make sure that the original model is not updated. Inference function does not change the model parameters.
@@ -95,5 +95,5 @@ def test_inference():
     }
 
     updated_model = train(model, data_loader, configs)
-    loss_a, acc_a = inference(updated_model, data_loader, "cuda:1")
+    loss_a, acc_a = inference(updated_model, data_loader, "cuda:0")
     assert loss_a < loss_b, acc_a > acc_b
