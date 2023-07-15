@@ -1,7 +1,7 @@
 # Contributing to Privacy Meter
 
 We are happy to accepet any contributions to this project. Implementing new attack signals, improving documentation, fixing issues, providing feedback, or writing tutorials are all examples of valuable contributions.
-Suppose you publish a new membership inference attack or evaluate the defense's effectiveness. In such a case, we encourage you to add it to the privacy meter so that others can evaluate it fairly for their own projects.
+Suppose you publish a new membership inference attack or evaluate the defense's effectiveness. In such a case, we encourage you to add it to the Privacy Meter so that others can evaluate it fairly for their own projects.
 
 ## Pipeline for contributing
 

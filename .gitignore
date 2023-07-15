@@ -11,7 +11,7 @@ archive/venv/
 archive/*.egg-info/
 archive/.vscode/
 archive/datasets/*.txt*
-archive/tutorials/datasets/*.txt*
+archive/advanced/datasets/*.txt*
 archive/logs/
 archive/.DS_Store
 
@@ -22,3 +22,15 @@ log*/
 events.out*
 *.json
 *.csv
+*/*.pickle
+*/*/*.pickle
+data/*/*
+advanced/data_batch*
+data/*
+*/*/model*.pkl
+*/*/data_batch*
+*/data/*
+
+*.pkl
+*.log
+*.png
