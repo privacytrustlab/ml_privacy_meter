@@ -126,7 +126,7 @@ class PytorchModel(Model):
         Returns:
             Model output.
         """
-        return self.model_obj(torch.Tensor(batch_samples)).detach().numpy()
+        return self.model_obj(torch.tensor(batch_samples)).detach().numpy()
 
     def get_loss(self, batch_samples, batch_labels, per_point=True):
         """Function to get the model loss on a given input and an expected output.
@@ -142,15 +142,15 @@ class PytorchModel(Model):
         if per_point:
             return (
                 self.loss_fn_no_reduction(
-                    self.model_obj(torch.Tensor(batch_samples)),
-                    torch.Tensor(batch_labels),
+                    self.model_obj(torch.tensor(batch_samples)),
+                    torch.tensor(batch_labels),
                 )
                 .detach()
                 .numpy()
             )
         else:
             return self.loss_fn(
-                self.model_obj(torch.Tensor(batch_samples)), torch.Tensor(batch_labels)
+                self.model_obj(torch.tensor(batch_samples)), torch.tensor(batch_labels)
             ).item()
 
     def get_grad(self, batch_samples, batch_labels):
@@ -165,7 +165,7 @@ class PytorchModel(Model):
             A list of gradients of the model loss (one item per layer) with respect to the model parameters.
         """
         loss = self.loss_fn(
-            self.model_obj(torch.Tensor(batch_samples)), torch.Tensor(batch_labels)
+            self.model_obj(torch.tensor(batch_samples)), torch.tensor(batch_labels)
         )
         loss.backward()
         return [p.grad.numpy() for p in self.model_obj.parameters()]
@@ -183,7 +183,7 @@ class PytorchModel(Model):
             A list of intermediate outputs of layers.
         """
         if forward_pass:
-            _ = self.get_logits(torch.Tensor(batch_samples))
+            _ = self.get_logits(torch.tensor(batch_samples))
         layer_names = []
         for layer in layers:
             if isinstance(layer, str):
@@ -682,7 +682,7 @@ class PytorchModelTensor(Model):
             A list of intermediate outputs of layers.
         """
         if forward_pass:
-            _ = self.get_logits(torch.Tensor(batch_samples))
+            _ = self.get_logits(torch.tensor(batch_samples))
         layer_names = []
         for layer in layers:
             if isinstance(layer, str):

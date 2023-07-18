@@ -6,14 +6,14 @@ run: # Configurations for a specific run
 audit: # Configurations for auditing
   privacy_game: privacy_loss_model # Indicate the privacy game from privacy_loss_model, avg_privacy_loss_training_algo, privacy_loss_sample
   report_log: benchmark # String that indicates the folder where we save the and auditing report.
-  device: cuda:1
+  device: cuda:0
   augmentation: None # Indicate whether to use augmentation for the query points
   audit_batch_size: 1000
 
 train: # Configuration for training
   type: pytorch # Training framework (we only support pytorch now).
   model_name: speedyresnet # String for indicating the model type. We support CNN. More model types can be added in model.py.
-  device: cuda:1 # String for indicating the device we want to use for training models.
+  device: cuda:0 # String for indicating the device we want to use for training models.
   num_in_models: 8 # Integer number that indicates how many target models trained on idx
   num_out_models: 8 # Integer number that indicates how many target models not trained on idx
   num_target_model: 1 # Number of total models we want to test

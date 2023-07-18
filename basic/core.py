@@ -580,7 +580,7 @@ def get_info_source_population_attack(
     configs: dict,
     model_name: str,
 ):
-    """Prepare the information source for calling the core of privacy meter for the population attack
+    """Prepare the information source for calling the core of Privacy Meter for the population attack
 
     Args:
         dataset(torchvision.datasets): The whole dataset
@@ -805,7 +805,7 @@ def get_signal_and_hypothesis_test_func(configs):
 
     if configs["signal"] == "loss":
         signals.append(ModelLoss())
-    elif configs["signal"] == "negative_rescaled_logits":
+    elif configs["signal"] == "rescaled_logits":
         signals.append(ModelNegativeRescaledLogits())
     else:
         raise ValueError(
@@ -827,7 +827,7 @@ def prepare_information_source(
     model_name: str = None,
     dataset_name: str = None,
 ):
-    """Prepare the information source for calling the core of the privacy meter
+    """Prepare the information source for calling the core of the Privacy Meter
     Args:
         log_dir (str): Log directory that saved all the information, including the models.
         dataset (torchvision.datasets): The whole dataset
@@ -842,7 +842,7 @@ def prepare_information_source(
         List(InformationSource): target information source list.
         List(InformationSource): reference information source list.
         List: List of metrics used for each target models.
-        List(str): List of directory to save the privacy meter results for each target model.
+        List(str): List of directory to save the Privacy Meter results for each target model.
         dict: Updated metadata for the trained model.
     """
     reference_info_source_list = []

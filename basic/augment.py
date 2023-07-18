@@ -19,8 +19,8 @@ def get_signal_on_augmented_data(model_pm, data, targets, method=None, signal="l
                         logits = model_pm.get_loss(this_x, targets)
                     elif signal == "rescaled_logits":
                         logits = model_pm.get_rescaled_logits(this_x, targets)
-                    elif signal == "negative_rescaled_logits":
-                        logits = -model_pm.get_rescaled_logits(this_x, targets)
+                    else:
+                        raise ValueError(f"signal {signal} not implemented")
                     outs.append(logits)
         return np.transpose(np.array(outs), (1, 0))  # (batch size, number of aug)
 
@@ -29,8 +29,8 @@ def get_signal_on_augmented_data(model_pm, data, targets, method=None, signal="l
             return model_pm.get_loss(data, targets)
         elif signal == "rescaled_logits":
             return model_pm.get_rescaled_logits(data, targets)
-        elif signal == "negative_rescaled_logits":
-            return -model_pm.get_rescaled_logits(data, targets)
+        else:
+            raise ValueError(f"signal {signal} not implemented")
 
 
 def get_augmented_data(data, targets, method=None):
