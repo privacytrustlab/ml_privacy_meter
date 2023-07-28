@@ -9,7 +9,7 @@ DESCRIPTION = (
 )
 
 here = os.path.abspath(os.path.dirname(__file__))
-version = 0.1
+version = 1.0.1
 # Import the README and use it as the long-description.
 # Note: this will only work if 'README.md' is present in your MANIFEST.in file!
 try:
