@@ -46,11 +46,11 @@ pip install git+https://github.com/privacytrustlab/ml_privacy_meter.git
 pip install privacy-meter
 ```
 
-Alternatively, one can install it via conda:
+<!-- Alternatively, one can install it via conda:
 
 ```bash
 conda install privacy-meter
-```
+``` -->
 ## User manual
 
 We offer two types of tutorials: basic usage (in the [basic](https://github.com/privacytrustlab/ml_privacy_meter/tree/master/basic/) folder) and advanced usage (in the [advanced](https://github.com/privacytrustlab/ml_privacy_meter/tree/master/advanced/) folder). The goal of the basic tutorials is to provide users with a seamless experience in working with various predefined privacy games, algorithms, and signals. These components represent state-of-the-art membership inference attacks and can be configured easily without requiring users to write code (See instructions [here](https://github.com/privacytrustlab/ml_privacy_meter/tree/master/basic/README.md)). On the other hand, the advanced usage is tailored for professional users who seek to conduct sophisticated auditing. It allows them to utilize both pre-existing and customized algorithms, signals, and models, empowering them to perform advanced auditing tasks at a higher level of complexity and customization. Specifically, we provide the following tutorials for advanced usage:
