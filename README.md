@@ -46,11 +46,11 @@ pip install git+https://github.com/privacytrustlab/ml_privacy_meter.git
 pip install privacy-meter
 ```
 
-Alternatively, one can install it via conda:
+<!-- Alternatively, one can install it via conda:
 
 ```bash
 conda install privacy-meter
-```
+``` -->
 ## User manual
 
 We offer two types of tutorials: basic usage (in the [basic](https://github.com/privacytrustlab/ml_privacy_meter/tree/master/basic/) folder) and advanced usage (in the [advanced](https://github.com/privacytrustlab/ml_privacy_meter/tree/master/advanced/) folder). The goal of the basic tutorials is to provide users with a seamless experience in working with various predefined privacy games, algorithms, and signals. These components represent state-of-the-art membership inference attacks and can be configured easily without requiring users to write code (See instructions [here](https://github.com/privacytrustlab/ml_privacy_meter/tree/master/basic/README.md)). On the other hand, the advanced usage is tailored for professional users who seek to conduct sophisticated auditing. It allows them to utilize both pre-existing and customized algorithms, signals, and models, empowering them to perform advanced auditing tasks at a higher level of complexity and customization. Specifically, we provide the following tutorials for advanced usage:
@@ -79,13 +79,15 @@ Please feel free to join our [Slack Channel](https://join.slack.com/t/privacy-me
 
 To cite this repository, please include the following references (or you can download the [bib file](CITATION.bib)).
 
-1. Jiayuan Ye, Aadyaa Maddi, Sasi Kumar Murakonda, Reza Shokri. [Enhanced Membership Inference Attacks against Machine Learning Models](https://arxiv.org/pdf/2111.09679.pdf) in Proceedings of the 2022 ACM SIGSAC Conference on Computer and Communications Security, 2022.
+1. Sasi Kumar Murakonda, Reza Shokri. [MLPrivacy Meter: Aiding Regulatory Compliance by Quantifying the Privacy Risks of Machine Learning](https://arxiv.org/pdf/2007.09339.pdf) in Workshop on Hot Topics in Privacy Enhancing Technologies (HotPETs), 2020.
+   
+2. Jiayuan Ye, Aadyaa Maddi, Sasi Kumar Murakonda, Reza Shokri. [Enhanced Membership Inference Attacks against Machine Learning Models](https://arxiv.org/pdf/2111.09679.pdf) in Proceedings of the 2022 ACM SIGSAC Conference on Computer and Communications Security, 2022.
 
-2. Sasi Kumar Murakonda, Reza Shokri. [MLPrivacy Meter: Aiding Regulatory Compliance by Quantifying the Privacy Risks of Machine Learning](https://arxiv.org/pdf/2007.09339.pdf) in Workshop on Hot Topics in Privacy Enhancing Technologies (HotPETs), 2020.
+3. Nicholas Carlini, Steve Chien, Milad Nasr, Shuang Song, Andreas Terzis, Florian Tramer. [Membership Inference Attacks From First Principles](https://arxiv.org/abs/2112.03570) in IEEE Symposium on Security and Privacy, 2022.
 
-3. Milad Nasr, Reza Shokri, and Amir Houmansadr. [Comprehensive Privacy Analysis of Deep Learning: Stand-alone and Federated Learning under Passive and Active White-box Inference Attacks](https://www.comp.nus.edu.sg/~reza/files/Shokri-SP2019.pdf) in IEEE Symposium on Security and Privacy, 2019.
+4. Milad Nasr, Reza Shokri, and Amir Houmansadr. [Comprehensive Privacy Analysis of Deep Learning: Stand-alone and Federated Learning under Passive and Active White-box Inference Attacks](https://www.comp.nus.edu.sg/~reza/files/Shokri-SP2019.pdf) in IEEE Symposium on Security and Privacy, 2019.
 
-4. Reza Shokri, Marco Stronati, Congzheng Song, and Vitaly Shmatikov. [Membership Inference Attacks against Machine Learning Models](https://www.comp.nus.edu.sg/~reza/files/Shokri-SP2017.pdf) in IEEE Symposium on Security and Privacy, 2017.
+5. Reza Shokri, Marco Stronati, Congzheng Song, and Vitaly Shmatikov. [Membership Inference Attacks against Machine Learning Models](https://www.comp.nus.edu.sg/~reza/files/Shokri-SP2017.pdf) in IEEE Symposium on Security and Privacy, 2017.
 
 ## Authors
 
