@@ -2,7 +2,7 @@
 
 For training target and reference models and for ease of comparison, we use the tool provided by Carlini et al. in [https://github.com/carlini/privacy/tree/better-mi/research/mi_lira_2021](https://github.com/carlini/privacy/tree/better-mi/research/mi_lira_2021).
 
-To train models and infer logits, you need to be in the /scripts folder [there](/code/philippe/scripts/).
+To train models and infer logits, you need to be in the /scripts folder [there](/research/2023_rmia/scripts/).
 
 #### Training/Inference Environment
 
@@ -22,9 +22,6 @@ For example, to train the whole set of CIFAR-10 models used in our paper (Using 
 ```
 bash train_cifar10.sh
 ```
-
-Note: For CIFAR-10, CIFAR-100 and CINIC-10 we use Wide Resnet 28-2 and for Purchase-100 we use a simple MLP (see [mlp.py](/code/philippe/scripts/mlp.py)).
-
 ##### Changing the number of reference models
 
 To change the number of reference models, you can train a separate set of reference models that contains exactly the number of reference model you want. For example, if you want to train 4 reference models for the online setting (or 2=4/2 reference models for the offline one), you can use the following bash script (you can just comment/uncomment the relevant lines in the train and infer bash files):
@@ -55,7 +52,7 @@ You can change the dataset you train on to CIFAR-100 by redefining the dataset f
 python3 -u train.py --dataset=cifar100 --epochs=100 --save_steps=100 --arch wrn28-2 --num_experiments $N --expid $idx --logdir exp/$path &> 'logs/$path/log_$idx'
 ```
 
-For CINIC-10 and Purchase-100, you can download reformatted datasets' files (`x_train.npy`,`y_train.npy`,`x_test.npy` and `y_test.npy`) [there](https://drive.google.com/drive/folders/1cIJlbLlgqDSJKd8YhTucHwaPiLsh6ZyW?usp=sharing). You can then put those files in `exp/cinic10` and `exp/purchase100` (or any other set of models using those datasets) respectively and then use the flag `--dataset=cinic10` or `--dataset=purchase100` in your training and inference commands/bash files (e.g. see in [`train_purchase100.sh`](/code/philippe/scripts/train_purchase100.sh)  and [`infer_purchase100.sh`](/code/philippe/scripts/infer_purchase100.sh)).
+For CINIC-10 and Purchase-100, you can download reformatted datasets' files (`x_train.npy`,`y_train.npy`,`x_test.npy` and `y_test.npy`) [there](https://drive.google.com/drive/folders/1cIJlbLlgqDSJKd8YhTucHwaPiLsh6ZyW?usp=sharing). You can then put those files in `exp/cinic10` and `exp/purchase100` (or any other set of models using those datasets) respectively and then use the flag `--dataset=cinic10` or `--dataset=purchase100` in your training and inference commands/bash files (e.g. see in [`train_purchase100.sh`](/research/2023_rmia/scripts/train_purchase100.sh)  and [`infer_purchase100.sh`](/research/2023_rmia/scripts/infer_purchase100.sh)).
   
 #### Inferring Models
 
@@ -68,7 +65,7 @@ To infer for more augmentations (e.g. 18 or 50), you can change the number in th
 CUDA_VISIBLE_DEVICES='0' python3 inference.py --logdir=exp/cifar10/ --aug=18  --dataset=cifar10
 ```
 
-You need to execute this command for both the set containing your target model and the one containing your reference models: (e.g. see [`infer_cifar10.sh`](/code/philippe/scripts/infer_cifar10.sh))
+You need to execute this command for both the set containing your target model and the one containing your reference models: (e.g. see [`infer_cifar10.sh`](/research/2023_rmia/scripts/infer_cifar10.sh))
 
 ```
 # infer for target models
