@@ -34,8 +34,6 @@ def threshold_func(distribution: List[float], alpha: List[float], **kwargs) -> f
 def linear_itp_threshold_func(
     distribution: List[float],
     alpha: List[float],
-    signal_min=0,
-    signal_max=1000,
     **kwargs,
 ) -> float:
     """
@@ -46,8 +44,6 @@ def linear_itp_threshold_func(
         the threshold is computed. (Here we only consider positive signal values.)
         alpha: Quantile value that will be used to obtain the threshold from the
             distribution.
-        signal_min: minimum of all possible signal values, default value is zero
-        signal_max: maximum of all possible signal values, default vaule is 1000
     Returns:
         threshold: alpha quantile of the provided distribution.
     """
@@ -58,11 +54,21 @@ def linear_itp_threshold_func(
             distribution, q=alpha[1:-1], method="linear", axis=1, **kwargs
         )
         threshold = np.concatenate(
-            [threshold, np.repeat(signal_max, distribution.shape[0]).reshape(1, -1)],
+            [
+                threshold,
+                np.repeat(distribution.max() + 1e-4, distribution.shape[0]).reshape(
+                    1, -1
+                ),
+            ],
             axis=0,
         )
         threshold = np.concatenate(
-            [np.repeat(signal_min, distribution.shape[0]).reshape(1, -1), threshold],
+            [
+                np.repeat(distribution.min() - 1e-4, distribution.shape[0]).reshape(
+                    1, -1
+                ),
+                threshold,
+            ],
             axis=0,
         )
 
@@ -70,9 +76,9 @@ def linear_itp_threshold_func(
         threshold = np.quantile(distribution, q=alpha[1:-1], method="linear", **kwargs)
         threshold = np.concatenate(
             [
-                np.array(signal_min).reshape(-1),
+                np.array(distribution.min() - 1e-4).reshape(-1),
                 threshold,
-                np.array(signal_max).reshape(-1),
+                np.array(distribution.max() + 1e-4).reshape(-1),
             ],
             axis=0,
         )
@@ -170,8 +176,6 @@ def gaussian_threshold_func(
 def min_linear_logit_threshold_func(
     distribution: List[float],
     alpha: List[float],
-    signal_min=0,
-    signal_max=1000,
     **kwargs,
 ) -> float:
     """
@@ -184,15 +188,11 @@ def min_linear_logit_threshold_func(
         the threshold is computed. (Here we only consider positive signal values.)
         alpha: Quantile value that will be used to obtain the threshold from the
             distribution.
-        signal_min: minimum of all possible signal values, default value is zero
-        signal_max: maximum of all possible signal values, default vaule is 1000
     Returns:
         threshold: alpha quantile of the provided distribution.
     """
 
-    threshold_linear = linear_itp_threshold_func(
-        distribution, alpha, signal_min, signal_max, **kwargs
-    )
+    threshold_linear = linear_itp_threshold_func(distribution, alpha, **kwargs)
     threshold_logit = logit_rescale_threshold_func(distribution, alpha, **kwargs)
 
     threshold = np.minimum(threshold_logit, threshold_linear)
