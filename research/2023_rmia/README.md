@@ -8,7 +8,7 @@ This directory contains code to reproduce our paper's attack. More specifically,
 
 For training target and reference models and for ease of comparison, we use the tool provided by Carlini et al. in [https://github.com/carlini/privacy/tree/better-mi/research/mi_lira_2021](https://github.com/carlini/privacy/tree/better-mi/research/mi_lira_2021).
 
-To train models and infer logits, you need to be in the /scripts folder [there](/code/philippe/scripts/).
+To train models and infer logits, you need to be in the /scripts folder [there](/research/2023_rmia/scripts/).
 
 #### Training/Inference Environment
 
@@ -58,7 +58,7 @@ You can change the dataset you train on to CIFAR-100 by redefining the dataset f
 python3 -u train.py --dataset=cifar100 --epochs=100 --save_steps=100 --arch wrn28-2 --num_experiments $N --expid $idx --logdir exp/$path &> 'logs/$path/log_$idx'
 ```
 
-For CINIC-10 and Purchase-100, you can download reformatted datasets' files (`x_train.npy`,`y_train.npy`,`x_test.npy` and `y_test.npy`) [there](https://drive.google.com/drive/folders/1cIJlbLlgqDSJKd8YhTucHwaPiLsh6ZyW?usp=sharing). You can then put those files in `exp/cinic10` and `exp/purchase100` (or any other set of models using those datasets) respectively and then use the flag `--dataset=cinic10` or `--dataset=purchase100` in your training and inference commands/bash files (e.g. see in [`train_purchase100.sh`](/code/philippe/scripts/train_purchase100.sh)  and [`infer_purchase100.sh`](/code/philippe/scripts/infer_purchase100.sh)).
+For CINIC-10 and Purchase-100, you can download reformatted datasets' files (`x_train.npy`,`y_train.npy`,`x_test.npy` and `y_test.npy`) [there](https://drive.google.com/drive/folders/1cIJlbLlgqDSJKd8YhTucHwaPiLsh6ZyW?usp=sharing). You can then put those files in `exp/cinic10` and `exp/purchase100` (or any other set of models using those datasets) respectively and then use the flag `--dataset=cinic10` or `--dataset=purchase100` in your training and inference commands/bash files (e.g. see in [`train_purchase100.sh`](/research/2023_rmia/scripts/train_purchase100.sh)  and [`infer_purchase100.sh`](/research/2023_rmia/scripts/infer_purchase100.sh)).
   
 #### Inferring Models
 
@@ -71,7 +71,7 @@ To infer for more augmentations (e.g. 18 or 50), you can change the number in th
 CUDA_VISIBLE_DEVICES='0' python3 inference.py --logdir=exp/cifar10/ --aug=18  --dataset=cifar10
 ```
 
-You need to execute this command for both the set containing your target model and the one containing your reference models: (e.g. see [`infer_cifar10.sh`](/code/philippe/scripts/infer_cifar10.sh))
+You need to execute this command for both the set containing your target model and the one containing your reference models: (e.g. see [`infer_cifar10.sh`](/research/2023_rmia/scripts/infer_cifar10.sh))
 
 ```
 # infer for target models
@@ -107,7 +107,7 @@ Under `audit`:
 - `report_log`: name of the folder under `log_dir` in which we save the attack's results
 
 Under `data`:
-- `target_dir` and `reference_dir`: the target_dir and reference_dir containing all the models trained using `train.py` in the [/script folder](/code/philippe/scripts/). Note: `target_dir` and `reference_dir` can point to the same folder, in which case given a target model in that folder, the other models will be used as reference models.
+- `target_dir` and `reference_dir`: the target_dir and reference_dir containing all the models trained using `train.py` in the [/script folder](/research/2023_rmia/scripts/). Note: `target_dir` and `reference_dir` can point to the same folder, in which case given a target model in that folder, the other models will be used as reference models.
 - `dataset_size`: the total number of samples used to train all the models (e.g. 50000 across all the experiments, each model trained on half of it.)
 - `epoch`: the epoch for which you want to attack. (e.g 100)
 
@@ -167,7 +167,7 @@ bash attack_cifar10.sh
 To check the results of a particular attack, you can go into the report folder and check the `log_time_analysis.log` file, which should contain the results (AUC and TPR@lowFPR).
 
 #### To plot the results
-You can directly change [`plot.py`](/code/philippe/plot.py). To compare different results, change `attack_list_and_paths` and the `--log_dir` flag (and rename the .png file name it will be saved to):
+You can directly change [`plot.py`](/research/2023_rmia/plot.py). To compare different results, change `attack_list_and_paths` and the `--log_dir` flag (and rename the .png file name it will be saved to):
 
 ```
 attack_list_and_paths  = [
@@ -182,4 +182,4 @@ python plot.py --log_dir "demo_cifar10"
 
 #### To reproduce figures
 
-To reproduce the main figures in the paper, you can first execute the corresponding training/infer bash script in [/code/philippe/scripts/figure_scripts](/code/philippe/scripts/figure_scripts) (e.g. `bash figure_scripts/figure_X.sh` inside `scripts/`), then execute the corresponding attack script in [/code/philippe/figure_scripts](/code/philippe/figure_scripts). (e.g. `bash figure_scripts/figure_X.sh` in the current folder)
+To reproduce the main figures in the paper, you can first execute the corresponding training/infer bash script in [/research/2023_rmia/scripts/figure_scripts](/research/2023_rmia/scripts/figure_scripts) (e.g. `bash figure_scripts/figure_X.sh` inside `scripts/`), then execute the corresponding attack script in [/research/2023_rmia/figure_scripts](/research/2023_rmia/figure_scripts). (e.g. `bash figure_scripts/figure_X.sh` in the current folder)
