@@ -1,4 +1,5 @@
 #!/bin/bash
+# compares RMIA and prior works on only 1 reference model
 
 python main.py --cf attack_configs/cifar10/attack_P.yaml
 

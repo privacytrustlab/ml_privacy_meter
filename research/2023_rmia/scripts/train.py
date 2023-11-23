@@ -167,7 +167,13 @@ class MemModule(TrainLoop):
 
 
 def network(arch: str):
-    if arch == 'cnn32-3-max':
+    if arch == 'cnn16-3-max':
+        return functools.partial(convnet.ConvNet, scales=3, filters=16, filters_max=1024,
+                                 pooling=objax.functional.max_pool_2d)
+    elif arch == 'cnn16-3-mean':
+        return functools.partial(convnet.ConvNet, scales=3, filters=16, filters_max=1024,
+                                 pooling=objax.functional.average_pool_2d)
+    elif arch == 'cnn32-3-max':
         return functools.partial(convnet.ConvNet, scales=3, filters=32, filters_max=1024,
                                  pooling=objax.functional.max_pool_2d)
     elif arch == 'cnn32-3-mean':

@@ -1,5 +1,5 @@
 #!/bin/bash
-
+# Compares RMIA with prior works using different number of queries and different settings (online/offline)
 ### using all 256 ref model
 target_idx="ten" # average over 10 target models from target_dir (e.g. model 0 to 9)
 datasets=("cifar10")

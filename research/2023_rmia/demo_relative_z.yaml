@@ -7,8 +7,7 @@ audit: # Configurations for auditing
   privacy_game: privacy_loss_model # Indicate the privacy game from privacy_loss_model, privacy_loss_sample
   report_log: report_relative_z_25 # String that indicates the folder where we save the and auditing report.
   offline: False # Indicate whether to use the offline setting (only out models) or the online settings (both in and out models)
-  offline_a: 0.33 # parameter from which we compute p(x) from p_OUT(x) such that p_IN(x) = a p_OUT(x) + b. If unknown: a=1
-  offline_b: 0.66 # parameter from which we compute p(x) from p_OUT(x) such that p_IN(x) = a p_OUT(x) + b. If unknown: b=0
+  offline_a: 0.33 # parameter from which we compute p(x) from p_OUT(x) such that p_IN(x) = a p_OUT(x) + (1-a). If unknown: a=1
   num_ref_models: 14 # number of reference models can be between 1 and 254. Beware of putting the right data_dir in data to select the right set of models. (below)
   augmentation: none # Indicate whether to use augmentation for the query points
   nb_augmentation: 2 # number of queries used for the attack (should have been computed beforehand)

@@ -1,5 +1,5 @@
 #!/bin/bash
-
+# RMIA with different ways to compute p(x|theta)
 target_idx="ten"
 
 ### no augmentation

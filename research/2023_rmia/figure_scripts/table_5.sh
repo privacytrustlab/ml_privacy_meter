@@ -1,5 +1,5 @@
 #!/bin/bash
-
+# RMIA with various number of z samples
 target_idx="ten"
 
 zs=(25 250 1250 2500 6250 12500 25000)

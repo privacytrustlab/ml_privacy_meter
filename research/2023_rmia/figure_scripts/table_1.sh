@@ -1,5 +1,5 @@
 #!/bin/bash
-
+# Compares RMIA with prior works using limited number of reference models
 target_idx="ten" # average over 10 target models from target_dir (e.g. model 0 to 9)
 datasets=("cifar10" "cifar100" "cinic10")
 

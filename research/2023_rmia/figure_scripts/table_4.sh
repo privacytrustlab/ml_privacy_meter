@@ -1,5 +1,5 @@
 #!/bin/bash
-
+# Compares RMIA with prior works using reference models trained on CINIC-10 to attack target on CIFAR-10
 target_idx="ten"
 
 num_ref_models=2

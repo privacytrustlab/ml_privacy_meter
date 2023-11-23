@@ -1,5 +1,5 @@
 #!/bin/bash
-
+# compares RMIA and prior works on multiple datasets using 2 (1 IN 1 OUT) reference model
 target_idx=0 # average over 10 target models from target_dir (e.g. model 0 to 9)
 datasets=("cifar10" "cifar100" "cinic10" "purchase100")
 

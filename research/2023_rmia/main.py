@@ -162,7 +162,7 @@ def collect_signal_lira(models_path,
 
     def load_or_compute_logits():
         ## Loading or Computing the logits
-        primary_signal = "logits" + f"_augmented_{nb_augmentations}" * (config["audit"]["augmentation"] == "augmented") + f"_num_ref_{nb_refs}"
+        primary_signal = "logits" + f"_augmented_{nb_augmentations}" * (config["audit"]["augmentation"] == "augmented") + f"_num_ref_{nb_refs}" + last_folder
 
         if not os.path.exists(f"{log_dir}/{signal_folder}/{primary_signal}/"):
             os.makedirs(f"{log_dir}/{signal_folder}/{primary_signal}/")
@@ -187,7 +187,7 @@ def collect_signal_lira(models_path,
     if signal_name == "softmax_relative" :
         extra = {}
         temperature = float(config['audit']['temperature'])
-        primary_signal = "softmax" + f"_t_{temperature:.1f}" + f"_augmented_{nb_augmentations}" * (config["audit"]["augmentation"] == "augmented") + f"_num_ref_{nb_refs}" 
+        primary_signal = "softmax" + f"_t_{temperature:.1f}" + f"_augmented_{nb_augmentations}" * (config["audit"]["augmentation"] == "augmented") + f"_num_ref_{nb_refs}" + last_folder
 
         if not os.path.exists(f"{log_dir}/{signal_folder}/{primary_signal}/"):
             os.makedirs(f"{log_dir}/{signal_folder}/{primary_signal}/")
@@ -216,7 +216,7 @@ def collect_signal_lira(models_path,
         extra = {}
         temperature = float(config['audit']['temperature'])
         extra["taylor_m"] = config['audit']['taylor_m'] # float
-        primary_signal = f"softmax_margin_m_{config['audit']['taylor_m']}" + f"_t_{temperature:.1f}" + f"_augmented_{nb_augmentations}" * (config["audit"]["augmentation"] == "augmented") + f"_num_ref_{nb_refs}" 
+        primary_signal = f"softmax_margin_m_{config['audit']['taylor_m']}" + f"_t_{temperature:.1f}" + f"_augmented_{nb_augmentations}" * (config["audit"]["augmentation"] == "augmented") + f"_num_ref_{nb_refs}" + last_folder
 
         if not os.path.exists(f"{log_dir}/{signal_folder}/{primary_signal}/"):
             os.makedirs(f"{log_dir}/{signal_folder}/{primary_signal}/")
@@ -396,7 +396,6 @@ def aggregate_signals(signal_name,
         if str2bool(configs["audit"]["offline"]): # only taking out signals
             ref_signals = out_signals.transpose(0, 1) 
             offline_a = float(configs["audit"]["offline_a"])
-            offline_b = float(configs["audit"]["offline_b"])
         elif str(configs["audit"]["offline"]).replace(".", "").isnumeric():
             if float(configs["audit"]["offline"]) <= 1.0 and 0.0 <= float(configs["audit"]["offline"]):
                 
@@ -425,15 +424,22 @@ def aggregate_signals(signal_name,
                 all_mean_x = trim_mean(ref_signals[:,target_indices,:], proportiontocut=proptocut, axis=0)
                 all_mean_z = trim_mean(ref_signals[:,population_indices,:], proportiontocut=proptocut, axis=0)
 
+                np.savez(f"{log_dir}/{configs['audit']['report_log']}/p_x_{model_index}",
+                        mean_x=all_mean_x, # p(x)
+                        mean_z=all_mean_z,
+                        true_mean_x=ref_signals[:,target_indices,:].mean(0),
+                        true_mean_z=ref_signals[:,population_indices,:].mean(0),
+                    )
+
                 for k in tqdm(range(0, nb_augmentations), desc=f"Relative attack for each query..."): # computing attack scores for each augmentation
 
                     mean_x = all_mean_x[:,k]
                     mean_z = all_mean_z[:,k]
 
                     if str2bool(configs["audit"]["offline"]):
-                        # P(x) = (1+a)/2 P_OUT + b/2
-                        prob_ratio_x = (target_signal[target_indices, k].ravel() / ((1+offline_a)/2 * mean_x + offline_b /2))
-                        prob_ratio_z_rev = 1 / (target_signal[population_indices, k].ravel() / ((1+offline_a)/2 * mean_z + offline_b /2))
+                        # P(x) = (1+a)/2 P_OUT + (1-a)/2
+                        prob_ratio_x = (target_signal[target_indices, k].ravel() / ((1+offline_a)/2 * mean_x + (1-offline_a) /2))
+                        prob_ratio_z_rev = 1 / (target_signal[population_indices, k].ravel() / ((1+offline_a)/2 * mean_z + (1-offline_a) /2))
                     else:
                         prob_ratio_x = (target_signal[target_indices, k].ravel() / (mean_x))
                         prob_ratio_z_rev = 1 / (target_signal[population_indices, k].ravel() / (mean_z)) # the inverse to compute the outer product
@@ -464,8 +470,8 @@ def aggregate_signals(signal_name,
                 mean_z = trim_mean(ref_signals[:,population_indices, 0], proportiontocut=proptocut, axis=0)
 
                 if str2bool(configs["audit"]["offline"]):
-                    prob_ratio_x = (target_signal[target_indices, 0].ravel() / ((1+offline_a)/2 * mean_x + offline_b /2))
-                    prob_ratio_z_rev = 1 / (target_signal[population_indices, 0].ravel() / ((1+offline_a)/2 * mean_z + offline_b /2)) # the inverse to compute quickly
+                    prob_ratio_x = (target_signal[target_indices, 0].ravel() / ((1+offline_a)/2 * mean_x + (1-offline_a) /2))
+                    prob_ratio_z_rev = 1 / (target_signal[population_indices, 0].ravel() / ((1+offline_a)/2 * mean_z + (1-offline_a) /2)) # the inverse to compute quickly
                 else:
                     prob_ratio_x = (target_signal[target_indices, 0].ravel() / (mean_x))
                     prob_ratio_z_rev = 1 / (target_signal[population_indices, 0].ravel() / (mean_z)) # the inverse to compute quickly
@@ -474,8 +480,8 @@ def aggregate_signals(signal_name,
                 mean_z = trim_mean(ref_signals[:,population_indices], proportiontocut=proptocut, axis=0)
 
                 if str2bool(configs["audit"]["offline"]):
-                    prob_ratio_x = (target_signal[target_indices].ravel() / ((1+offline_a)/2 * mean_x + offline_b /2))
-                    prob_ratio_z_rev = 1 / (target_signal[population_indices].ravel() / ((1+offline_a)/2 * mean_z + offline_b /2)) # the inverse to compute quickly
+                    prob_ratio_x = (target_signal[target_indices].ravel() / ((1+offline_a)/2 * mean_x + (1-offline_a) /2))
+                    prob_ratio_z_rev = 1 / (target_signal[population_indices].ravel() / ((1+offline_a)/2 * mean_z + (1-offline_a) /2)) # the inverse to compute quickly
                 else:
                     prob_ratio_x = (target_signal[target_indices].ravel() / (mean_x))
                     prob_ratio_z_rev = 1 / (target_signal[population_indices].ravel() / (mean_z)) # the inverse to compute quickly
@@ -913,31 +919,37 @@ if __name__ == "__main__":
 
         keep_matrix_lower = None
         if target_path != reference_path:
-            all_logits, keep_matrix_lower = load_input_logits(reference_path, epoch, num_augmentations=2)
+            ref_logits, keep_matrix_lower = load_input_logits(reference_path, epoch, num_augmentations=2) # we want all_logits to be from the target_dir for consistent subset selection
             _, targets = load_inputs(reference_path)
 
             if "allout" in configs["audit"].keys(): # reference points are all outside target's training set
                 if str2bool(configs["audit"]["allout"]):
                     keep_matrix_lower[:] = False
-            
-        print("Reference logits shape", all_logits.shape)
 
         if "subset" in configs["audit"].keys(): # typicality is computed from how high the correct logits are over multiple reference models 
             
+            # average_correct_logit = []
+            # convert_signals(all_logits[idx,:,0,:], targets, 'softmax', temp=1.0, extra=None)
 
-            average_correct_logits = []
-            for idx in range(nb_models_reference):
-                model_logits = all_logits[idx,:,0,:].gather(1, targets.reshape(-1, 1)) # size 50k
-                average_correct_logits.append(model_logits)
-            average_correct_logits = torch.stack(average_correct_logits).mean(0).numpy().ravel()
+            # for idx in range(nb_models_reference):
+            #     model_logits = all_logits[idx,:,0,:].gather(1, targets.reshape(-1, 1)) # size 50k
+            #     average_correct_logits.append(model_logits)
+            # average_correct_logits = torch.stack(average_correct_logits).mean(0).numpy().ravel()
 
-            sorted_indices = np.argsort(average_correct_logits)
+            average_correct_softmax = []
+            
+            for idx in range(nb_models_target): # we consider the target_dir to be consistent across all experiments
+                model_softmax = convert_signals(all_logits[idx,:,0,:], targets, 'softmax', temp=1.0, extra=None) # size 50k, get the softmax
+                average_correct_softmax.append(model_softmax)
+            average_correct_softmax = torch.stack(average_correct_softmax).mean(0).numpy().ravel()
 
-            percent = np.ceil(len(average_correct_logits) * 0.2).astype(int)
-            typical_indices = sorted_indices[-percent:] # top 20%
-            atypical_indices = sorted_indices[:percent] # bottom 20%
+            sorted_indices = np.argsort(average_correct_softmax)
 
-            percent = np.ceil(len(average_correct_logits) * 0.3).astype(int)
+            percent = np.ceil(len(average_correct_softmax) * 0.5).astype(int)
+            typical_indices = sorted_indices[-percent:] # top 50%
+            atypical_indices = sorted_indices[:percent] # bottom 50%
+
+            percent = np.ceil(len(average_correct_softmax) * 0.3).astype(int)
             not_typical_indices = sorted_indices[:-percent] # bottom 70%
             not_atypical_indices = sorted_indices[percent:] # top 70%
 
@@ -953,8 +965,11 @@ if __name__ == "__main__":
             elif configs["audit"]["subset"] == "not atypical":
                 target_and_test_idx = not_atypical_indices
 
+            elif configs["audit"]["subset"] == "dp outliers":
+                target_and_test_idx = np.load("scripts/exp/idx_to_flip.npy")
+
             print(f"Subset selected...")
-        print(target_and_test_idx)
+        print(np.sort(target_and_test_idx))
         for model_index in list_target_models:
 
             results_path = f"{log_dir}/{configs['audit']['report_log']}/attack_stats_{model_index}.npz"
@@ -969,6 +984,7 @@ if __name__ == "__main__":
                 if target_path != reference_path: # when the reference models are NOT in the same folder
                     reference_signals = reference_signals_lower
                     reference_keep_matrix = keep_matrix_lower
+                    print(reference_signals[0, 0, 0])
                 else: # when the reference models are in the same folder
                     reference_signals = signals[rest_models, :]
                     reference_keep_matrix = keep_matrix[rest_models]

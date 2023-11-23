@@ -89,7 +89,7 @@ def main(argv):
             print(np.array(outs).shape)
             return np.array(outs).transpose((1, 0, 2))
 
-    N = 5000
+    N = FLAGS.bs
 
     ############################ Added
     if FLAGS.aug == 0: 
@@ -181,5 +181,6 @@ if __name__ == '__main__':
     flags.DEFINE_integer('modulus', 8, 'modulus.')
 
     flags.DEFINE_integer('aug', 0, 'number of queries/augmentations') # Added
+    flags.DEFINE_integer('bs', 5000, 'Inferring Batch Size.') # Added
 
     app.run(main)

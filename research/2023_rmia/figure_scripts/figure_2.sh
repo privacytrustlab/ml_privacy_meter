@@ -1,5 +1,5 @@
 #!/bin/bash
-
+# compares RMIA and prior works on multiple number of reference models on CINIC-10
 ### Attack-P
 python main.py --cf attack_configs/cinic10/attack_P.yaml
 
