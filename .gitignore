@@ -30,7 +30,3 @@ data/*
 */*/model*.pkl
 */*/data_batch*
 */data/*
-
-*.pkl
-*.log
-*.png

@@ -1,0 +1,30 @@
+run: # Configurations for a specific run
+  random_seed: 12345 # Integer number of specifying random seed
+  log_dir: demo_cifar10_cnn32_dp_noise_0.2_c_5 # String for indicating where to save all the information, including computed signals. 
+  time_log: True # Indicate whether to log the time for each step
+
+audit: # Configurations for auditing
+  privacy_game: privacy_loss_model # Indicate the privacy game from privacy_loss_model, privacy_loss_sample
+  report_log: report_relative_online_4_ref_model # String that indicates the folder where we save the and auditing report.
+  offline: False # Indicate whether to use the offline setting (only out models) or the online settings (both in and out models)
+  offline_a: 0.33 # parameter from which we compute p(x) from p_OUT(x) such that p_IN(x) = a p_OUT(x) + b. If unknown: a=1
+  offline_b: 0.66 # parameter from which we compute p(x) from p_OUT(x) such that p_IN(x) = a p_OUT(x) + b. If unknown: b=0
+  num_ref_models: 4 # number of reference models can be between 1 and 254. Beware of putting the right data_dir in data to select the right set of models. (below)
+  augmentation: augmented # Indicate whether to use augmentation for the query points
+  nb_augmentation: 18 # number of queries used for the attack (should have been computed beforehand)
+  top_k: -1 # number of population z to use for the relative attack, can be -1 (all population is used) or anywhere between 1 and around 25K (depends on each dataset's size) 
+  signal: softmax_relative # name of the signal used to perform the relative attack. Can be the parameter for other attacks
+  temperature: 2.0 # float: temperature applied to logits when computing signals
+  gamma: 2.0 # float: gamma threshold for LRT(x,z,theta)
+  proportiontocut: 0.2 # float: which proportion of models left and right to remove to compute the trimmed mean of p(x) or p(z) 
+  taylor_m: 0.6 # float: margin of the soft-margin
+  taylor_n: 4 # int: order of the taylor approximation
+  target_idx: 0 # idx of the target model, can be int, "ten", "fifty", or "all" for an average over multiple models
+  subset: dp outliers # subset on which the attack is performed, can be "all", "typical", "atypical", "not typical", "not atypical"
+  allout: False # True only when reference's logits are performed on a separate dataset
+
+data: # Configuration for input logits
+  target_dir: scripts/exp/dp_cifar10_noise_0.2_c_5 # directory where the set of target models are trained (logits should have already been computed)
+  reference_dir: scripts/exp/dp_cifar10_4_noise_0.2_c_5 # directory where the set of reference models are trained (can be identical to target_dir) (logits should have already been computed)
+  dataset_size: 50000 # the size of the whole dataset for which we have computed the logits. (e.g. 50000, or 60000)
+  epoch: 100 # epoch used for the models
