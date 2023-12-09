@@ -6,7 +6,7 @@ seaborn==0.12.2
 setuptools
 scipy==1.10.0
 pandas==1.5.3
-Pillow==9.4.0
+Pillow==10.0.1
 torchvision==0.14.0
 PyYAML==6.0
 pytest==7.2.1
