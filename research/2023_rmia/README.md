@@ -1,4 +1,4 @@
-# Relative Membership Inference Attacks
+# Robust Membership Inference Attacks (RMIA)
 
 This directory contains code to reproduce our paper's attack. More specifically, this code allows you to train a specific number of target and reference models for a specific dataset, compute the corresponding logits (with and without augmentations) and also allows to customize other parameters of our attack. 
 
