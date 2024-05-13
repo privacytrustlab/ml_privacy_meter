@@ -517,7 +517,7 @@ if __name__ == "__main__":
         fix_variance = configs["audit"]["fix_variance"]
         if fix_variance:
             std_in = np.std(in_signals)
-            std_out = np.std(in_signals)
+            std_out = np.std(out_signals)
         else:
             std_in = np.std(in_signals, 1)
             std_out = np.std(out_signals, 1)
