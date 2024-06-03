@@ -1,1 +1,0 @@
-Those are bash files to train and infer the models required for the given figures. Most of the scripts are redundant with train_dataset.sh and infer_dataset.sh
