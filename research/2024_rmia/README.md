@@ -3,7 +3,7 @@ This directory contains code to reproduce the results in our paper:
 
 "Low-Cost High-Power Membership Inference Attacks"
 https://arxiv.org/pdf/2312.03262
-by Sajjad Zarifzadeh, Philippe Liu, and Reza Shokri.
+by Sajjad Zarifzadeh, Philippe Liu, and Reza Shokri. ICML 2024
 
 ### Training/Inference Setup
 
