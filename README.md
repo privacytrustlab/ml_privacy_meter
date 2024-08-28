@@ -2,7 +2,7 @@
 
 [![PyPI - Python Version](https://img.shields.io/badge/python-3.6%20%7C%203.7%20%7C%203.8-blue)](https://pypi.org/project/privacy-meter/)
 [![Downloads](https://static.pepy.tech/badge/privacy-meter)](https://pepy.tech/project/privacy-meter)
-[![PyPI version](https://img.shields.io/pypi/v/openfl)](https://pypi.org/project/privacy-meter/)
+[![PyPI version](https://img.shields.io/pypi/v/privacy-meter)](https://pypi.org/project/privacy-meter/)
 [<img src="https://img.shields.io/badge/slack-@privacy_meter-blue.svg?logo=slack">](https://join.slack.com/t/privacy-meter/shared_invite/zt-1oge6ovjq-SS4UZnBVB115Tx8Nn3TVhA)
 ![License](https://img.shields.io/github/license/privacytrustlab/ml_privacy_meter)
 [![Citation](https://img.shields.io/badge/cite-citation-brightgreen)](https://arxiv.org/abs/2007.09339)
