@@ -1,20 +1,20 @@
 # Privacy Meter
 
-[![PyPI - Python Version](https://img.shields.io/badge/python-3.6%20%7C%203.7%20%7C%203.8-blue)](https://pypi.org/project/privacy-meter/)
-[![Downloads](https://static.pepy.tech/badge/privacy-meter)](https://pepy.tech/project/privacy-meter)
-[![PyPI version](https://img.shields.io/pypi/v/privacy-meter)](https://pypi.org/project/privacy-meter/)
+![PyPI - Python Version](https://img.shields.io/badge/python-3.12-blue)
 [<img src="https://img.shields.io/badge/slack-@privacy_meter-blue.svg?logo=slack">](https://join.slack.com/t/privacy-meter/shared_invite/zt-1oge6ovjq-SS4UZnBVB115Tx8Nn3TVhA)
 ![License](https://img.shields.io/github/license/privacytrustlab/ml_privacy_meter)
 [![Citation](https://img.shields.io/badge/cite-citation-brightgreen)](https://arxiv.org/abs/2007.09339)
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/privacytrustlab/ml_privacy_meter/blob/master/docs/population_metric.ipynb)
 ![Contributors](https://img.shields.io/github/contributors/privacytrustlab/ml_privacy_meter?color=dark-green)
 ![Forks](https://img.shields.io/github/forks/privacytrustlab/ml_privacy_meter?style=social)
 ![Stargazers](https://img.shields.io/github/stars/privacytrustlab/ml_privacy_meter?style=social)
-![License](https://img.shields.io/github/license/privacytrustlab/ml_privacy_meter)
+
+[//]: # ([![Open In Colab]&#40;https://colab.research.google.com/assets/colab-badge.svg&#41;]&#40;https://colab.research.google.com/github/privacytrustlab/ml_privacy_meter/blob/master/docs/population_metric.ipynb&#41;)
+
 
 ## What is Privacy Meter?
 
-Privacy Meter is an open-source library to audit data privacy in statistical and machine learning algorithms. The tool can help in the data protection impact assessment process by providing a quantitative analysis of the fundamental privacy risks of a (machine learning) model. It uses state-of-the-art inference techniques to audit a wide range of machine learning algorithms for classification, regression, computer vision, and natural language processing. Privacy Meter generates extensive reports about the aggregate and individual privacy risks for data records in the training set, at multiple levels of access to the model.
+Privacy Meter is an open-source library to audit data privacy in a wide range of statistical and machine learning algorithms (classification, regression, computer vision, and natural language processing). The tool enables data protection impact assessment based on the state-of-the-art membership inference attacks. 
+
 
 ## Why Privacy Meter?
 
@@ -22,68 +22,104 @@ Machine learning is playing a central role in automated decision-making in a wid
 
 Data Protection regulations, such as GDPR and AI governance frameworks, require personal data to be protected when used in AI systems, and that the users have control over their data and awareness about how it is being used. For example, [Article 35 of GDPR](https://gdpr-info.eu/art-35-gdpr/) requires organizations to systematically analyze, identify and minimize the data protection risks of a project, especially when the project involves innovative technologies such as Artificial Intelligence, Machine Learning, and Deep Learning. Thus, proper mechanisms need to be in place to quantitatively evaluate and verify the privacy of individuals in every step of the data processing pipeline in AI systems.
 
-ML Privacy Meter is a Python library (`privacy_meter`) that enables quantifying the privacy risks of machine learning models. The tool provides privacy risk scores which help in identifying data records among the training data that are at high risk of being leaked through the model parameters or predictions.
-
 ## Overview
+Privacy Meter supports different types of models, datasets and privacy games, which all need to be specified in a `.yaml` configuration file. The description of the configuration file can be found [here](configs/README.md).
 
-The core of the Privacy Meter consists of three parts: `Information Source`, `Metric` and `Metric Results`.
+<p align="center">
+  <img src="ml-privacy-meter.png" alt="ML Privacy Meter">
+</p>
 
-![alt text](https://github.com/privacytrustlab/ml_privacy_meter/blob/master/source/_static/privacy_meter_architecture.png?raw=true)
+Below is the high level pipeline of the internal mechanism of Privacy Meter, which shows the general procedure involved in auditing privacy according to the configuration.
 
-<!-- Kindly refer to the tutorial on the population attack ([here](advanced/population_metric.ipynb)) to gain familiarity with the utilization of each component. -->
-
-## Installation
-
-Privacy Meter supports Python `>=3.6` and works with `tensorflow>=2.4.0` and `torch>=1.10.0`.
-
-You can install `privacy-meter` using `pip` for the latest stable version of the tool:
-
-<!-- ```bash
-pip install git+https://github.com/privacytrustlab/ml_privacy_meter.git
-``` -->
-
-```bash
-pip install privacy-meter
+```mermaid
+flowchart LR
+    H["**Load Dataset**"] --> J["**Load or Train Models**"]
+    J --> L["**Gather Auditing Dataset**"]
+    L --> M["**Generate Membership Signals**"]
+    M --> O["**Perform Privacy Audit**"]
 ```
 
-<!-- Alternatively, one can install it via conda:
 
-```bash
-conda install privacy-meter
-``` -->
-## User manual
+## User Manual
+### Getting started
+To install the dependencies, run the following command:
+```
+conda env create -f env.yaml
+```
+This should create a conda environment named `privacy_meter` and install all necessary libraries in it.
+To run our demo, you can use the following command
 
-We offer two types of tutorials: basic usage (in the [basic](https://github.com/privacytrustlab/ml_privacy_meter/tree/master/basic/) folder) and advanced usage (in the [advanced](https://github.com/privacytrustlab/ml_privacy_meter/tree/master/advanced/) folder). The goal of the basic tutorials is to provide users with a seamless experience in working with various predefined privacy games, algorithms, and signals. These components represent state-of-the-art membership inference attacks and can be configured easily without requiring users to write code (See instructions [here](https://github.com/privacytrustlab/ml_privacy_meter/tree/master/basic/README.md)). On the other hand, the advanced usage is tailored for professional users who seek to conduct sophisticated auditing. It allows them to utilize both pre-existing and customized algorithms, signals, and models, empowering them to perform advanced auditing tasks at a higher level of complexity and customization. Specifically, we provide the following tutorials for advanced usage:
+```
+python main.py --cf configs/config.yaml
+```
 
-1. [Understanding low-level APIs: Acquire a fundamental understanding of the Privacy Meter by executing a population attack on the CIFAR10 dataset.](https://github.com/privacytrustlab/ml_privacy_meter/tree/master/advanced/population_metric.ipynb)
-2. [Understanding low-level APIs: Enhance your knowledge by conducting a reference attack on the CIFAR10 dataset.](https://github.com/privacytrustlab/ml_privacy_meter/tree/master/advanced/reference_metric.ipynb)
-3. [Implementing a simple white-box attack using the Privacy Meter.](https://github.com/privacytrustlab/ml_privacy_meter/tree/master/advanced/white_box_attack.ipynb)
-4. [Expanding the Privacy Meter to encompass OpenVINO models.](https://github.com/privacytrustlab/ml_privacy_meter/tree/master/advanced/openvino_models.ipynb)
-5. [Integrating the Privacy Meter with HuggingFace models.](https://github.com/privacytrustlab/ml_privacy_meter/tree/master/advanced/hf_causal_language_models.ipynb)
+The `.yaml` file allows you to specify the hyperparameters for training the model, and the details of the membership inference attack. 
+
+For a comprehensive explanation of each parameter, please refer to each `.yaml` file. Upon completion, you will find the results in the `demo` folder, with the attack results saved in `demo/report`. Furthermore, we also offer a timing log for each run, which can be found in the file `log_time_analysis.log`. We recommend running each new set of experiments with different hyperparameters under a different `log_dir` to avoid misusing old trained models or losing previous results.
+
+### Supported dataset and models by default
+
+By default, Privacy Meter supports various datasets widely used in the MIA literature, including CIFAR10 (`cifar10`), CIFAR100 (`cifar100`), Purchase (`purchase100`), Texas (`texas100`), and AG News (`agnews`). In terms of models, we provide support for CNN (`cnn`), AlexNet (`alexnet`), WideResNet (`wrn28-1`, `wrn28-2`, `wrn28-10`), MLP (`mlp`), and GPT-2 (`gpt2`) models. To specify the dataset and model, you can use the `dataset` and `model_name` parameters in the configuration file. Sample configurations have been provided in the `configs` folder for Purchase-100, CIFAR-10 and AG News dtasets.
+
+## Extending to Other Datasets and Models
+### Attacking LLMs with other datasets
+
+To use other datasets supported by HuggingFace's `datasets` library, after specifying it in the configuration file, you need to additionally follow these steps:
+- Create `/dataset/<hf_dataset>.py`: this file handles the loading and preprocessing of the new huggingface dataset. You can refer to `/dataset/agnews.py` for an example.
+- Modify `/dataset/utils.py` to include the new dataset in the `get_dataset` function.
+
+For other dataset, you can simply modify the `get_dataset` function in `/dataset/utils.py` to support loading the new dataset.
+
+### Attacking other transformers
+
+To attack other transformers from Huggingface's `transformers` library, you need to modify `/models/utils.py` to include the new model in the `get_model` function.  If you want to use different training pipelines, you can modify `/trainers/train_transformer.py` accordingly. You can also use other PEFT methods in the same file if you want to use more than LoRA.
+
+For other Pytorch models, you can create a new model architecture in `/models/` and modify the `get_model` function in `/models/utils.py` to include the new model.
+
+### Use custom training scripts
+
+We integrate a fast training library, [hlb-CIFAR10](https://github.com/tysam-code/hlb-CIFAR10), developed by [tysam-code](https://github.com/tysam-code), into Privacy Meter as an example of incorporating custom training scripts. This library achieves an impressive training accuracy of 94% on CIFAR-10 in approximately 6.84 seconds on a single A100 GPU, setting a new world speed record. This integration allows users to efficiently evaluate the effectiveness of the newly proposed algorithm against existing attack algorithms using the CIFAR-10 dataset. To leverage this fast training library, simply specify the `model_name` as `speedyresnet` in the configuration file. 
+
+To use other training scripts, you can refer to how `speedyresnet` and `/trainers/fast_train.py` is integrated into Privacy Meter for an example.
+
+## Auditing Trained Models
+
+By default, the Privacy Meter checks if the experiment directory specified by the configuration file contains `models_metadata.json`, which contains the model path to be loaded. To audit trained models obtained outside the Privacy Meter, you should follow the file structure (see `<log_dir>/<models>` in the next section) and create a `models_metadata.json` file that shares the same structure as the one generated by Privacy Meter. You can also run the demo configuration file with a few epochs to generate a demo directory to start with.
+
+## Audit Results
+The audit results will be saved in the `log_dir` specified in the configuration file. The results include the following:
+```
+<log_dir>/
+    ├── models/
+        ├── models_metadata.json: the meta information of the run and each trained model
+        ├── model_<model_id>.pkl: the trained models
+        └── memberships.npy: the membership labels of the training data for each model
+    ├── report/
+        ├── exp/: contains attack results and (log) ROC cureves for each target model    
+        ├── log_time_analysis.log: log with timing information for each run
+        ├── attack_result_average.csv: the aggregate attack results of the run
+        └── ROC_(log_)average.png: the aggregate (log) ROC of the run
+    └── signals/: contains the attack signals computed for each target and reference model, 
+                    according to the attack type specified in the configuration file
+```
 
 ## Video (Talks)
 
-- [Auditing Data Privacy in Machine Learning: A Comprehensive Introduction](https://www.sigsac.org/ccs/CCS2022/workshops/workshops.html#:~:text=Auditing%20Data%20Privacy%20in%20Machine%20Learning%3A%20A%20Comprehensive%20Introduction) at CCS 2022, by Reza Shokri.
+- [Quantitative Reasoning About Data Privacy in Machine Learning](https://icml.cc/virtual/2022/tutorial/18439) at ICML 2022, by Reza Shokri (with Chuan Guo).
 - [Auditing Data Privacy in Machine Learning](https://youtu.be/sqCd5A1UTrQ) at USENIX Enigma 2022, by Reza Shokri.
 - [Machine Learning Privacy Meter Tool](https://youtu.be/DWqnKNZTz10) at HotPETS 2020, by Sasi Kumar Murakonda.
 
-## Contributing
-
-If you wish to add new ways of analyzing the privacy risk or add new model support, please follow our [guidelines](CONTRIBUTING.md).
-
-## Contact / Feedback
+## Discussion
 
 Please feel free to join our [Slack Channel](https://join.slack.com/t/privacy-meter/shared_invite/zt-1oge6ovjq-SS4UZnBVB115Tx8Nn3TVhA) to provide your feedback and your thoughts on the project!
 
-## Citing Privacy Meter
-
-To cite this repository, please include the following references (or you can download the [bib file](CITATION.bib)).
+## References
+The Privacy Meter is built upon the following research papers ([bib file](CITATION.bib)):
 
 1. Sasi Kumar Murakonda, Reza Shokri. [MLPrivacy Meter: Aiding Regulatory Compliance by Quantifying the Privacy Risks of Machine Learning](https://arxiv.org/pdf/2007.09339.pdf) in Workshop on Hot Topics in Privacy Enhancing Technologies (HotPETs), 2020.
    
 2. Jiayuan Ye, Aadyaa Maddi, Sasi Kumar Murakonda, Reza Shokri. [Enhanced Membership Inference Attacks against Machine Learning Models](https://arxiv.org/pdf/2111.09679.pdf) in Proceedings of the 2022 ACM SIGSAC Conference on Computer and Communications Security, 2022.
-
-3. Nicholas Carlini, Steve Chien, Milad Nasr, Shuang Song, Andreas Terzis, Florian Tramer. [Membership Inference Attacks From First Principles](https://arxiv.org/abs/2112.03570) in IEEE Symposium on Security and Privacy, 2022.
+3. Zarifzadeh, Sajjad, Philippe Liu, and Reza Shokri. [Low-Cost High-Power Membership Inference Attacks.](https://openreview.net/pdf?id=sT7UJh5CTc) in Forty-first International Conference on Machine Learning, 2024.
 
 4. Milad Nasr, Reza Shokri, and Amir Houmansadr. [Comprehensive Privacy Analysis of Deep Learning: Stand-alone and Federated Learning under Passive and Active White-box Inference Attacks](https://www.comp.nus.edu.sg/~reza/files/Shokri-SP2019.pdf) in IEEE Symposium on Security and Privacy, 2019.
 
