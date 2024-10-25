@@ -7,8 +7,7 @@
 ![Contributors](https://img.shields.io/github/contributors/privacytrustlab/ml_privacy_meter?color=dark-green)
 ![Forks](https://img.shields.io/github/forks/privacytrustlab/ml_privacy_meter?style=social)
 ![Stargazers](https://img.shields.io/github/stars/privacytrustlab/ml_privacy_meter?style=social)
-
-[//]: # ([![Open In Colab]&#40;https://colab.research.google.com/assets/colab-badge.svg&#41;]&#40;https://colab.research.google.com/github/privacytrustlab/ml_privacy_meter/blob/master/docs/population_metric.ipynb&#41;)
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/privacytrustlab/ml_privacy_meter/blob/master/demo.ipynb)
 
 
 ## What is Privacy Meter?
@@ -18,7 +17,7 @@ Privacy Meter is an open-source library to audit data privacy in a wide range of
 
 ## Why Privacy Meter?
 
-Machine learning is playing a central role in automated decision-making in a wide range of organizations and service providers. The data, which is used to train the models, typically contain sensitive information about individuals. Although the data in most cases cannot be released, due to privacy concerns, the models are usually made public or deployed as a service for inference on new test data. For a safe and secure use of machine learning models, it is important to have a quantitative assessment of the privacy risks of these models, and to make sure that they do not reveal sensitive information about their training data. This is of great importance as there has been a surge in the use of machine learning in sensitive domains such as medical and finance applications.
+Machine learning is playing a central role in automated decision-making in a wide range of organizations and service providers. The data, which are used to train the models, typically contain sensitive information about individuals. Although the data in most cases cannot be released, due to privacy concerns, the models are usually made public or deployed as a service for inference on new test data. For a safe and secure use of machine learning models, it is important to have a quantitative assessment of the privacy risks of these models, and to make sure that they do not reveal sensitive information about their training data. This is of great importance as there has been a surge in the use of machine learning in sensitive domains such as medical and finance applications.
 
 Data Protection regulations, such as GDPR and AI governance frameworks, require personal data to be protected when used in AI systems, and that the users have control over their data and awareness about how it is being used. For example, [Article 35 of GDPR](https://gdpr-info.eu/art-35-gdpr/) requires organizations to systematically analyze, identify and minimize the data protection risks of a project, especially when the project involves innovative technologies such as Artificial Intelligence, Machine Learning, and Deep Learning. Thus, proper mechanisms need to be in place to quantitatively evaluate and verify the privacy of individuals in every step of the data processing pipeline in AI systems.
 
@@ -68,7 +67,7 @@ To use other datasets supported by HuggingFace's `datasets` library, after speci
 - Create `/dataset/<hf_dataset>.py`: this file handles the loading and preprocessing of the new huggingface dataset. You can refer to `/dataset/agnews.py` for an example.
 - Modify `/dataset/utils.py` to include the new dataset in the `get_dataset` function.
 
-For other dataset, you can simply modify the `get_dataset` function in `/dataset/utils.py` to support loading the new dataset.
+For other datasets, you can simply modify the `get_dataset` function in `/dataset/utils.py` to support loading the new dataset.
 
 ### Attacking other transformers
 
@@ -95,7 +94,7 @@ The audit results will be saved in the `log_dir` specified in the configuration 
         ├── model_<model_id>.pkl: the trained models
         └── memberships.npy: the membership labels of the training data for each model
     ├── report/
-        ├── exp/: contains attack results and (log) ROC cureves for each target model    
+        ├── exp/: contains attack results and (log) ROC curves for each target model    
         ├── log_time_analysis.log: log with timing information for each run
         ├── attack_result_average.csv: the aggregate attack results of the run
         └── ROC_(log_)average.png: the aggregate (log) ROC of the run
