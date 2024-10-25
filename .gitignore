@@ -1,5 +1,5 @@
 .idea*
 __pycache__/
 data/
-demo*
+demo*/
 exp_*
