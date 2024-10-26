@@ -104,7 +104,7 @@ The audit results will be saved in the `log_dir` specified in the configuration 
 
 ## Video (Talks)
 
-- [Quantitative Reasoning About Data Privacy in Machine Learning](https://icml.cc/virtual/2022/tutorial/18439) at ICML 2022, by Reza Shokri (with Chuan Guo).
+- [Low-Cost High-Power Membership Inference Attacks](https://icml.cc/virtual/2024/oral/35455) at ICML 2024, by Reza Shokri.
 - [Auditing Data Privacy in Machine Learning](https://youtu.be/sqCd5A1UTrQ) at USENIX Enigma 2022, by Reza Shokri.
 - [Machine Learning Privacy Meter Tool](https://youtu.be/DWqnKNZTz10) at HotPETS 2020, by Sasi Kumar Murakonda.
 
