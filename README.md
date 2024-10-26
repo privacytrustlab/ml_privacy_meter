@@ -2,13 +2,12 @@
 
 ![PyPI - Python Version](https://img.shields.io/badge/python-3.12-blue)
 [<img src="https://img.shields.io/badge/slack-@privacy_meter-blue.svg?logo=slack">](https://join.slack.com/t/privacy-meter/shared_invite/zt-1oge6ovjq-SS4UZnBVB115Tx8Nn3TVhA)
-![License](https://img.shields.io/github/license/privacytrustlab/ml_privacy_meter)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Citation](https://img.shields.io/badge/cite-citation-brightgreen)](https://arxiv.org/abs/2007.09339)
 ![Contributors](https://img.shields.io/github/contributors/privacytrustlab/ml_privacy_meter?color=dark-green)
 ![Forks](https://img.shields.io/github/forks/privacytrustlab/ml_privacy_meter?style=social)
 ![Stargazers](https://img.shields.io/github/stars/privacytrustlab/ml_privacy_meter?style=social)
-
-[//]: # ([![Open In Colab]&#40;https://colab.research.google.com/assets/colab-badge.svg&#41;]&#40;https://colab.research.google.com/github/privacytrustlab/ml_privacy_meter/blob/master/docs/population_metric.ipynb&#41;)
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/privacytrustlab/ml_privacy_meter/blob/master/demo.ipynb)
 
 
 ## What is Privacy Meter?
@@ -18,7 +17,7 @@ Privacy Meter is an open-source library to audit data privacy in a wide range of
 
 ## Why Privacy Meter?
 
-Machine learning is playing a central role in automated decision-making in a wide range of organizations and service providers. The data, which is used to train the models, typically contain sensitive information about individuals. Although the data in most cases cannot be released, due to privacy concerns, the models are usually made public or deployed as a service for inference on new test data. For a safe and secure use of machine learning models, it is important to have a quantitative assessment of the privacy risks of these models, and to make sure that they do not reveal sensitive information about their training data. This is of great importance as there has been a surge in the use of machine learning in sensitive domains such as medical and finance applications.
+Machine learning is playing a central role in automated decision-making in a wide range of organizations and service providers. The data, which are used to train the models, typically contain sensitive information about individuals. Although the data in most cases cannot be released, due to privacy concerns, the models are usually made public or deployed as a service for inference on new test data. For a safe and secure use of machine learning models, it is important to have a quantitative assessment of the privacy risks of these models, and to make sure that they do not reveal sensitive information about their training data. This is of great importance as there has been a surge in the use of machine learning in sensitive domains such as medical and finance applications.
 
 Data Protection regulations, such as GDPR and AI governance frameworks, require personal data to be protected when used in AI systems, and that the users have control over their data and awareness about how it is being used. For example, [Article 35 of GDPR](https://gdpr-info.eu/art-35-gdpr/) requires organizations to systematically analyze, identify and minimize the data protection risks of a project, especially when the project involves innovative technologies such as Artificial Intelligence, Machine Learning, and Deep Learning. Thus, proper mechanisms need to be in place to quantitatively evaluate and verify the privacy of individuals in every step of the data processing pipeline in AI systems.
 
@@ -55,7 +54,7 @@ python main.py --cf configs/config.yaml
 
 The `.yaml` file allows you to specify the hyperparameters for training the model, and the details of the membership inference attack. 
 
-For a comprehensive explanation of each parameter, please refer to each `.yaml` file. Upon completion, you will find the results in the `demo` folder, with the attack results saved in `demo/report`. Furthermore, we also offer a timing log for each run, which can be found in the file `log_time_analysis.log`. We recommend running each new set of experiments with different hyperparameters under a different `log_dir` to avoid misusing old trained models or losing previous results.
+For a comprehensive explanation of each parameter, please refer to each `.yaml` file and the explanation [here](configs/README.md). You can also refer to the [demo notebook](demo.ipynb) for a step-by-step walkthrough. Upon audit completion, you will find the results in the `demo` folder, with the attack results saved in `demo/report`. Furthermore, we also offer a timing log for each run, which can be found in the file `log_time_analysis.log`. We recommend running each new set of experiments with different hyperparameters under a different `log_dir` to avoid misusing old trained models or losing previous results.
 
 ### Supported dataset and models by default
 
@@ -68,7 +67,7 @@ To use other datasets supported by HuggingFace's `datasets` library, after speci
 - Create `/dataset/<hf_dataset>.py`: this file handles the loading and preprocessing of the new huggingface dataset. You can refer to `/dataset/agnews.py` for an example.
 - Modify `/dataset/utils.py` to include the new dataset in the `get_dataset` function.
 
-For other dataset, you can simply modify the `get_dataset` function in `/dataset/utils.py` to support loading the new dataset.
+For other datasets, you can simply modify the `get_dataset` function in `/dataset/utils.py` to support loading the new dataset.
 
 ### Attacking other transformers
 
@@ -95,7 +94,7 @@ The audit results will be saved in the `log_dir` specified in the configuration 
         ├── model_<model_id>.pkl: the trained models
         └── memberships.npy: the membership labels of the training data for each model
     ├── report/
-        ├── exp/: contains attack results and (log) ROC cureves for each target model    
+        ├── exp/: contains attack results and (log) ROC curves for each target model    
         ├── log_time_analysis.log: log with timing information for each run
         ├── attack_result_average.csv: the aggregate attack results of the run
         └── ROC_(log_)average.png: the aggregate (log) ROC of the run
@@ -105,7 +104,7 @@ The audit results will be saved in the `log_dir` specified in the configuration 
 
 ## Video (Talks)
 
-- [Quantitative Reasoning About Data Privacy in Machine Learning](https://icml.cc/virtual/2022/tutorial/18439) at ICML 2022, by Reza Shokri (with Chuan Guo).
+- [Low-Cost High-Power Membership Inference Attacks](https://icml.cc/virtual/2024/oral/35455) at ICML 2024, by Reza Shokri.
 - [Auditing Data Privacy in Machine Learning](https://youtu.be/sqCd5A1UTrQ) at USENIX Enigma 2022, by Reza Shokri.
 - [Machine Learning Privacy Meter Tool](https://youtu.be/DWqnKNZTz10) at HotPETS 2020, by Sasi Kumar Murakonda.
 
@@ -116,10 +115,12 @@ Please feel free to join our [Slack Channel](https://join.slack.com/t/privacy-me
 ## References
 The Privacy Meter is built upon the following research papers ([bib file](CITATION.bib)):
 
-1. Sasi Kumar Murakonda, Reza Shokri. [MLPrivacy Meter: Aiding Regulatory Compliance by Quantifying the Privacy Risks of Machine Learning](https://arxiv.org/pdf/2007.09339.pdf) in Workshop on Hot Topics in Privacy Enhancing Technologies (HotPETs), 2020.
+1. **Zarifzadeh, Sajjad, Philippe Liu, and Reza Shokri. [Low-Cost High-Power Membership Inference Attacks.](https://openreview.net/pdf?id=sT7UJh5CTc) in Forty-first International Conference on Machine Learning, 2024.**
+
+2. Sasi Kumar Murakonda, Reza Shokri. [MLPrivacy Meter: Aiding Regulatory Compliance by Quantifying the Privacy Risks of Machine Learning](https://arxiv.org/pdf/2007.09339.pdf) in Workshop on Hot Topics in Privacy Enhancing Technologies (HotPETs), 2020.
    
-2. Jiayuan Ye, Aadyaa Maddi, Sasi Kumar Murakonda, Reza Shokri. [Enhanced Membership Inference Attacks against Machine Learning Models](https://arxiv.org/pdf/2111.09679.pdf) in Proceedings of the 2022 ACM SIGSAC Conference on Computer and Communications Security, 2022.
-3. Zarifzadeh, Sajjad, Philippe Liu, and Reza Shokri. [Low-Cost High-Power Membership Inference Attacks.](https://openreview.net/pdf?id=sT7UJh5CTc) in Forty-first International Conference on Machine Learning, 2024.
+3. Jiayuan Ye, Aadyaa Maddi, Sasi Kumar Murakonda, Reza Shokri. [Enhanced Membership Inference Attacks against Machine Learning Models](https://arxiv.org/pdf/2111.09679.pdf) in Proceedings of the 2022 ACM SIGSAC Conference on Computer and Communications Security, 2022.
+
 
 4. Milad Nasr, Reza Shokri, and Amir Houmansadr. [Comprehensive Privacy Analysis of Deep Learning: Stand-alone and Federated Learning under Passive and Active White-box Inference Attacks](https://www.comp.nus.edu.sg/~reza/files/Shokri-SP2019.pdf) in IEEE Symposium on Security and Privacy, 2019.
 
