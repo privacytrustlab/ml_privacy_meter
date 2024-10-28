@@ -1,7 +1,7 @@
 # Privacy Meter
 
 ![PyPI - Python Version](https://img.shields.io/badge/python-3.12-blue)
-[<img src="https://img.shields.io/badge/slack-@privacy_meter-blue.svg?logo=slack">](https://join.slack.com/t/privacy-meter/shared_invite/zt-1oge6ovjq-SS4UZnBVB115Tx8Nn3TVhA)
+[<img src="https://img.shields.io/badge/slack-@privacy_meter-blue.svg?logo=slack">](https://join.slack.com/t/privacy-meter/shared_invite/zt-2t6881rtz-gNitEpoaO7MDU4wT3n7Gyw)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Citation](https://img.shields.io/badge/cite-citation-brightgreen)](https://arxiv.org/abs/2007.09339)
 ![Contributors](https://img.shields.io/github/contributors/privacytrustlab/ml_privacy_meter?color=dark-green)
@@ -110,7 +110,7 @@ The audit results will be saved in the `log_dir` specified in the configuration 
 
 ## Discussion
 
-Please feel free to join our [Slack Channel](https://join.slack.com/t/privacy-meter/shared_invite/zt-1oge6ovjq-SS4UZnBVB115Tx8Nn3TVhA) to provide your feedback and your thoughts on the project!
+Please feel free to join our [Slack Channel](https://join.slack.com/t/privacy-meter/shared_invite/zt-2t6881rtz-gNitEpoaO7MDU4wT3n7Gyw) to discuss with us on the project!
 
 ## References
 The Privacy Meter is built upon the following research papers ([bib file](CITATION.bib)):
@@ -131,5 +131,5 @@ The Privacy Meter is built upon the following research papers ([bib file](CITATI
 The tool is designed and developed at NUS Data Privacy and Trustworthy Machine Learning Lab. We also welcome contributions from the community.
 
 <a href="https://github.com/privacytrustlab/ml_privacy_meter/graphs/contributors">
-  <img src="https://stg.contrib.rocks/image?repo=privacytrustlab/ml_privacy_meter" />
+  <img src="https://contrib.rocks/image?repo=privacytrustlab/ml_privacy_meter" />
 </a>
