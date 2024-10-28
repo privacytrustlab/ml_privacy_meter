@@ -131,5 +131,5 @@ The Privacy Meter is built upon the following research papers ([bib file](CITATI
 The tool is designed and developed at NUS Data Privacy and Trustworthy Machine Learning Lab. We also welcome contributions from the community.
 
 <a href="https://github.com/privacytrustlab/ml_privacy_meter/graphs/contributors">
-  <img src="https://stg.contrib.rocks/image?repo=privacytrustlab/ml_privacy_meter" />
+  <img src="https://contrib.rocks/image?repo=privacytrustlab/ml_privacy_meter" />
 </a>
