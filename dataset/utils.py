@@ -114,9 +114,9 @@ def get_dataset(dataset_name: str, data_dir: str, logger: Any, **kwargs: Any) ->
                 logger.info(f"{dataset_name} not found in {data_dir}/dataset_purchase. Downloading to /data...")
                 try:
                     # Download the dataset to /data
-                    subprocess.run(["wget", "-P", "/data", "https://www.comp.nus.edu.sg/~reza/files/dataset_purchase.tgz"], check=True)
+                    subprocess.run(["wget", "https://www.comp.nus.edu.sg/~reza/files/dataset_purchase.tgz", "-P", f"./{data_dir}"], check=True)
                     # Extract the dataset to /data
-                    subprocess.run(["tar", "-xf", "/data/dataset_purchase.tgz", "-C", "/data"], check=True)
+                    subprocess.run(["tar", "-xf", f"./{data_dir}/dataset_purchase.tgz", "-C", f"./{data_dir}"], check=True)
                     logger.info("Dataset downloaded and extracted to /data successfully.")
                 except subprocess.CalledProcessError as e:
                     logger.error(f"Error during download or extraction: {e}")
@@ -148,9 +148,9 @@ def get_dataset(dataset_name: str, data_dir: str, logger: Any, **kwargs: Any) ->
                 logger.info(f"{dataset_name} not found in {data_dir}/dataset_purchase. Downloading to /data...")
                 try:
                     # Download the dataset to /data
-                    subprocess.run(["wget", "-P", "/data", "https://www.comp.nus.edu.sg/~reza/files/dataset_texas.tgz"], check=True)
+                    subprocess.run(["wget", "https://www.comp.nus.edu.sg/~reza/files/dataset_texas.tgz", "-P", f"./{data_dir}"], check=True)
                     # Extract the dataset to /data
-                    subprocess.run(["tar", "-xf", "/data/dataset_texas.tgz", "-C", "/data"], check=True)
+                    subprocess.run(["tar", "-xf",f"./{data_dir}/dataset_texas.tgz", "-C", "./data"], check=True)
                     logger.info("Dataset downloaded and extracted to /data successfully.")
                 except subprocess.CalledProcessError as e:
                     logger.error(f"Error during download or extraction: {e}")
