@@ -3,6 +3,7 @@
 import math
 import os
 import pickle
+import subprocess
 from typing import List, Tuple, Any
 
 import numpy as np
@@ -110,9 +111,16 @@ def get_dataset(dataset_name: str, data_dir: str, logger: Any, **kwargs: Any) ->
                     pickle.dump(all_data, file)
                 logger.info(f"Save data to {path}.pkl")
             else:
-                raise NotImplementedError(
-                    f"{dataset_name} is not installed correctly in {data_dir}/dataset_purchase"
-                )
+                logger.info(f"{dataset_name} not found in {data_dir}/dataset_purchase. Downloading to /data...")
+                try:
+                    # Download the dataset to /data
+                    subprocess.run(["wget", "-P", "/data", "https://www.comp.nus.edu.sg/~reza/files/dataset_purchase.tgz"], check=True)
+                    # Extract the dataset to /data
+                    subprocess.run(["tar", "-xf", "/data/dataset_purchase.tgz", "-C", "/data"], check=True)
+                    logger.info("Dataset downloaded and extracted to /data successfully.")
+                except subprocess.CalledProcessError as e:
+                    logger.error(f"Error during download or extraction: {e}")
+                    raise RuntimeError("Failed to download or extract the dataset.")
         elif dataset_name == "texas100":
             if os.path.exists(f"{data_dir}/dataset_texas/feats"):
                 X = (
@@ -137,9 +145,16 @@ def get_dataset(dataset_name: str, data_dir: str, logger: Any, **kwargs: Any) ->
                     pickle.dump(all_data, file)
                 logger.info(f"Save data to {path}.pkl")
             else:
-                raise NotImplementedError(
-                    f"{dataset_name} is not installed correctly in {data_dir}/dataset_texas"
-                )
+                logger.info(f"{dataset_name} not found in {data_dir}/dataset_purchase. Downloading to /data...")
+                try:
+                    # Download the dataset to /data
+                    subprocess.run(["wget", "-P", "/data", "https://www.comp.nus.edu.sg/~reza/files/dataset_texas.tgz"], check=True)
+                    # Extract the dataset to /data
+                    subprocess.run(["tar", "-xf", "/data/dataset_texas.tgz", "-C", "/data"], check=True)
+                    logger.info("Dataset downloaded and extracted to /data successfully.")
+                except subprocess.CalledProcessError as e:
+                    logger.error(f"Error during download or extraction: {e}")
+                    raise RuntimeError("Failed to download or extract the dataset.")
         elif dataset_name == "agnews":
             tokenizer = kwargs.get("tokenizer")
             if tokenizer is None:
