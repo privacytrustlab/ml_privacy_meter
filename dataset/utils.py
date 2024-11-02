@@ -3,6 +3,7 @@
 import math
 import os
 import pickle
+import subprocess
 from typing import List, Tuple, Any
 
 import numpy as np
@@ -99,47 +100,103 @@ def get_dataset(dataset_name: str, data_dir: str, logger: Any, **kwargs: Any) ->
                 pickle.dump(all_data, file)
             logger.info(f"Save data to {path}.pkl")
         elif dataset_name == "purchase100":
-            if os.path.exists(f"{data_dir}/dataset_purchase"):
-                df = pd.read_csv(
-                    f"{data_dir}/dataset_purchase", header=None, encoding="utf-8"
-                ).to_numpy()
-                y = df[:, 0] - 1
-                X = df[:, 1:].astype(np.float32)
-                all_data = TabularDataset(X, y)
-                with open(f"{path}.pkl", "wb") as file:
-                    pickle.dump(all_data, file)
-                logger.info(f"Save data to {path}.pkl")
-            else:
-                raise NotImplementedError(
-                    f"{dataset_name} is not installed correctly in {data_dir}/dataset_purchase"
+            if not os.path.exists(f"{data_dir}/dataset_purchase"):
+                logger.info(
+                    f"{dataset_name} not found in {data_dir}/dataset_purchase. Downloading to /data..."
                 )
+                try:
+                    # Download the dataset to /data
+                    subprocess.run(
+                        [
+                            "wget",
+                            "https://www.comp.nus.edu.sg/~reza/files/dataset_purchase.tgz",
+                            "-P",
+                            f"./{data_dir}",
+                        ],
+                        check=True,
+                    )
+                    # Extract the dataset to /data
+                    subprocess.run(
+                        [
+                            "tar",
+                            "-xf",
+                            f"./{data_dir}/dataset_purchase.tgz",
+                            "-C",
+                            f"./{data_dir}",
+                        ],
+                        check=True,
+                    )
+                    logger.info(
+                        "Dataset downloaded and extracted to /data successfully."
+                    )
+                except subprocess.CalledProcessError as e:
+                    logger.error(f"Error during download or extraction: {e}")
+                    raise RuntimeError("Failed to download or extract the dataset.")
+
+            df = pd.read_csv(
+                f"{data_dir}/dataset_purchase", header=None, encoding="utf-8"
+            ).to_numpy()
+            y = df[:, 0] - 1
+            X = df[:, 1:].astype(np.float32)
+            all_data = TabularDataset(X, y)
+            with open(f"{path}.pkl", "wb") as file:
+                pickle.dump(all_data, file)
+            logger.info(f"Save data to {path}.pkl")
         elif dataset_name == "texas100":
-            if os.path.exists(f"{data_dir}/dataset_texas/feats"):
-                X = (
-                    pd.read_csv(
-                        f"{data_dir}/dataset_texas/feats", header=None, encoding="utf-8"
+            if not os.path.exists(f"{data_dir}/dataset_texas/feats"):
+                logger.info(
+                    f"{dataset_name} not found in {data_dir}/dataset_purchase. Downloading to /data..."
+                )
+                try:
+                    # Download the dataset to /data
+                    subprocess.run(
+                        [
+                            "wget",
+                            "https://www.comp.nus.edu.sg/~reza/files/dataset_texas.tgz",
+                            "-P",
+                            f"./{data_dir}",
+                        ],
+                        check=True,
                     )
-                    .to_numpy()
-                    .astype(np.float32)
-                )
-                y = (
-                    pd.read_csv(
-                        f"{data_dir}/dataset_texas/labels",
-                        header=None,
-                        encoding="utf-8",
+                    # Extract the dataset to /data
+                    subprocess.run(
+                        [
+                            "tar",
+                            "-xf",
+                            f"./{data_dir}/dataset_texas.tgz",
+                            "-C",
+                            "./data",
+                        ],
+                        check=True,
                     )
-                    .to_numpy()
-                    .reshape(-1)
-                    - 1
+                    logger.info(
+                        "Dataset downloaded and extracted to /data successfully."
+                    )
+                except subprocess.CalledProcessError as e:
+                    logger.error(f"Error during download or extraction: {e}")
+                    raise RuntimeError("Failed to download or extract the dataset.")
+                
+            X = (
+                pd.read_csv(
+                    f"{data_dir}/dataset_texas/feats", header=None, encoding="utf-8"
                 )
-                all_data = TabularDataset(X, y)
-                with open(f"{path}.pkl", "wb") as file:
-                    pickle.dump(all_data, file)
-                logger.info(f"Save data to {path}.pkl")
-            else:
-                raise NotImplementedError(
-                    f"{dataset_name} is not installed correctly in {data_dir}/dataset_texas"
+                .to_numpy()
+                .astype(np.float32)
+            )
+            y = (
+                pd.read_csv(
+                    f"{data_dir}/dataset_texas/labels",
+                    header=None,
+                    encoding="utf-8",
                 )
+                .to_numpy()
+                .reshape(-1)
+                - 1
+            )
+            all_data = TabularDataset(X, y)
+            with open(f"{path}.pkl", "wb") as file:
+                pickle.dump(all_data, file)
+            logger.info(f"Save data to {path}.pkl")
         elif dataset_name == "agnews":
             tokenizer = kwargs.get("tokenizer")
             if tokenizer is None:
