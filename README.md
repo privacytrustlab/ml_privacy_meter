@@ -43,6 +43,10 @@ flowchart LR
 ### Getting started
 To install the dependencies, run the following command:
 ```
+pip install -r requirements.txt
+```
+Alternatively, if you prefer using conda, you can create a new environment using the provided `env.yaml` file:
+```
 conda env create -f env.yaml
 ```
 This should create a conda environment named `privacy_meter` and install all necessary libraries in it. If conda takes too much time (more than a few minutes) to solve the environment, we suggest updating the conda default solver by following this official [article](https://www.anaconda.com/blog/a-faster-conda-for-a-growing-community).
