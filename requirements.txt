@@ -40,7 +40,7 @@ ipython==8.29.0
 ipywidgets==8.1.5
 isoduration==20.11.0
 jedi==0.19.1
-Jinja2==3.1.3
+Jinja2==3.1.4
 joblib==1.4.2
 json5==0.9.25
 jsonpointer==3.0.0
