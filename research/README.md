@@ -5,4 +5,4 @@ This directory contains research papers that are relevant to the privacy auditin
 | Paper Title | Code Implementation |
 | --- | --- |
 | [Enhanced Membership Inference Attacks against Machine Learning Models](https://dl.acm.org/doi/abs/10.1145/3548606.3560675) | [Code](https://github.com/privacytrustlab/ml_privacy_meter/tree/295e7e37e889e12df4083b812f71ed2e2ddd8b4a/research/2022_enhanced_mia) |
-| [Low-Cost High-Power Membership Inference Attacks](https://openreview.net/pdf?id=sT7UJh5CTc)| [Code](2024_rmia/) |
+| [Low-Cost High-Power Membership Inference Attacks](https://openreview.net/pdf?id=sT7UJh5CTc)| [Code](https://github.com/privacytrustlab/ml_privacy_meter/tree/d32734161a3395211fe5f3cd461932290b1fafbe/research/2024_rmia) |
