@@ -1,5 +1,6 @@
 import torch
 from torch.utils.data import Dataset
+from transformers import AutoTokenizer
 
 from range_samplers import *
 
@@ -66,9 +67,10 @@ class RangeSampler:
 
 
 class RangeDataset(Dataset):
-    def __init__(self, dataset: Dataset, sampler: RangeSampler):
+    def __init__(self, dataset: Dataset, sampler: RangeSampler, config: dict):
         self.dataset = dataset
         self.sampler = sampler
+        self.config = config
 
     def __len__(self):
         return len(self.dataset)
@@ -80,6 +82,11 @@ class RangeDataset(Dataset):
             if self.sampler.range_fn != "word_replace":
                 raise ValueError("Range sampler is not compatible with text data.")
             range_text = self.sampler.sample(text)
+            tokenizer = AutoTokenizer.from_pretrained(self.config["data"]["tokenizer"])
+            range_data = tokenizer(range_text, rpadding="max_length", truncation=True, max_length=512)
+            data = range_data.input_ids[idx][:-1]
+            target = range_data.input_ids[idx][1:]
+            return data, target
         except:
             range_data = self.sampler.sample(self.dataset[idx][0])
             range_labels = torch.tensor(self.dataset[idx][1], dtype=torch.long).repeat(range_data.shape[0], 1)

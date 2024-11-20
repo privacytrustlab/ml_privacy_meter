@@ -93,11 +93,19 @@ def main():
         "Model loading/training took %0.1f seconds", time.time() - baseline_time
     )
 
+    # Creating the range dataset
+    dataset = RangeDataset(dataset,
+                           RangeSampler(range_fn=configs["ramia"]["range_function"],
+                                        sample_size=configs["ramia"]["sample_size"],
+                                        config=configs),
+                           configs)
+
+    # Subsampling the dataset for auditing
     auditing_dataset, auditing_membership = sample_auditing_dataset(
         configs, dataset, logger, memberships
     )
 
-    auditing_dataset = RangeDataset(auditing_dataset, RangeSampler(configs["ramia"]["range_function"], configs["ramia"]["sample_size"], configs))
+    # TODO: save the auditing dataset to disk
 
     # Generate signals (softmax outputs) for all models
     baseline_time = time.time()
@@ -110,10 +118,10 @@ def main():
     target_model_indices = list(range(num_experiments))
     # Expand the membership_list to match the shape of the auditing dataset
     mia_score_list, membership_list = audit_models(
-        f"{directories['report_dir']}/exp",
+        f"{directories['report_dir']}/exp_ramia",
         target_model_indices,
         signals,
-        auditing_membership,
+        auditing_membership.repeat(len(signals)//len(auditing_membership), 1),
         num_reference_models,
         logger,
         configs,
@@ -121,7 +129,7 @@ def main():
 
     # TODO: postprocess the sample MIA scores to get the range MIA scores
     mia_score_list = np.array(mia_score_list).reshape(len(auditing_dataset), -1)
-    mia_score_list = mia_score_list
+    mia_score_list = mia_score_list.tolist()
 
     if len(target_model_indices) > 1:
         logger.info(
