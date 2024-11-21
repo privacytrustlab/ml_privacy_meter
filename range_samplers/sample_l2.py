@@ -1,3 +1,5 @@
+import pdb
+
 import numpy as np
 import torch
 
@@ -11,13 +13,12 @@ def sample_l2(range_center, radius, sample_size):
         radius (float): The radius of the L2 ball.
         sample_size (int): The number of points to sample.
     Returns:
-        np.ndarray: Points sampled within the L2 ball.
+        list: Points sampled within the L2 ball.
     """
     if type(range_center) == torch.Tensor:
         range_center = range_center.numpy()
 
     sampled_points = []
-
     if range_center.shape[0] == 1:
         range_center = range_center.squeeze(0)
 
@@ -29,9 +30,9 @@ def sample_l2(range_center, radius, sample_size):
         candidate = np.random.normal(loc=range_center, scale=scale, size=range_center.shape)
         # Check if the candidate point lies within the L2 ball
         if np.linalg.norm(candidate - range_center) <= radius:
-            sampled_points.append(candidate)
+            sampled_points.append(torch.tensor(candidate, dtype=torch.float32))
 
-    return np.array(sampled_points)
+    return sampled_points
 
 # Test
 # range_center = np.random.rand(1, 28,28,3)# Center of the 3D ball

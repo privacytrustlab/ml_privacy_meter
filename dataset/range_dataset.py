@@ -1,3 +1,5 @@
+from itertools import chain
+
 import torch
 from torch.utils.data import Dataset
 from transformers import AutoTokenizer
@@ -11,13 +13,20 @@ class RangeSampler:
         self.sample_size = sample_size
         self.config = config
 
-    def sample(self, range_center):
+    def sample(self, range_centers):
+        # samples = []
+        # for range_center in range_centers:
+        #     print(range_center.shape)
+        #     samples.append(self._sample(range_center))
+        # return samples
+        return self._sample(range_centers)
+
+    def _sample(self, range_center):
         if self.sample_size == 1:
             print("Sample size is 1, returning range center.")
             return range_center
         elif self.sample_size < 1:
             raise ValueError("Sample size must be greater than 0.")
-
         if self.range_fn == "l2":
             radius = self.config["ramia"].get("radius", None)
             if radius is None:
@@ -76,18 +85,31 @@ class RangeDataset(Dataset):
         return len(self.dataset)
 
     def __getitem__(self, idx):
-        try:
+        if self.sampler.range_fn == "word_replace" and hasattr(self.dataset, "get_text"):
             # Determining if it is a text dataset
             text = self.dataset.get_text(idx)
             if self.sampler.range_fn != "word_replace":
                 raise ValueError("Range sampler is not compatible with text data.")
             range_text = self.sampler.sample(text)
             tokenizer = AutoTokenizer.from_pretrained(self.config["data"]["tokenizer"])
-            range_data = tokenizer(range_text, rpadding="max_length", truncation=True, max_length=512)
+            range_data = tokenizer(list(chain.from_iterable(range_text)), padding="max_length", truncation=True,
+                                   max_length=512)
             data = range_data.input_ids[idx][:-1]
             target = range_data.input_ids[idx][1:]
             return data, target
-        except:
+        else:
             range_data = self.sampler.sample(self.dataset[idx][0])
-            range_labels = torch.tensor(self.dataset[idx][1], dtype=torch.long).repeat(range_data.shape[0], 1)
-            return torch.tensor(range_data, dtype=torch.float32), range_labels
+            # print("Length of range_data is: ", len(range_data))
+            # print("The length of the first range data is: ", range_data[0].shape)
+            if len(range_data) == 1:
+                range_data = range_data[0]
+            else:
+                range_data = torch.stack(range_data)
+            # print("Shape of the stacked range data is: ", range_data.shape)
+            if type(self.dataset[idx][1]) == int:
+                range_labels = torch.tensor(self.dataset[idx][1], dtype=torch.long).repeat(
+                    self.config["ramia"]["sample_size"])
+            else:
+                range_labels = self.dataset[idx][1].repeat_interleave(
+                    self.config["ramia"]["sample_size"])
+            return range_data, range_labels

@@ -34,6 +34,7 @@ def get_rmia_out_signals(
     selected_signals = all_signals[:, columns]
     non_members = ~all_memberships[:, columns]
     out_signals = selected_signals * non_members
+    # Sort the signals such that only the non-zero signals (out signals) are kept
     out_signals = -np.sort(-out_signals, axis=1)[:, :num_reference_models]
     return out_signals
 

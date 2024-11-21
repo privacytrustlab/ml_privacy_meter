@@ -2,6 +2,8 @@
 
 import argparse
 import math
+import os
+import pickle
 import time
 
 import numpy as np
@@ -53,7 +55,7 @@ def main():
     log_dir = configs["run"]["log_dir"]
     directories = {
         "log_dir": log_dir,
-        "report_dir": f"{log_dir}/report",
+        "report_dir": f"{log_dir}/report_ramia",
         "signal_dir": f"{log_dir}/signals",
         "data_dir": configs["data"]["data_dir"],
     }
@@ -93,23 +95,31 @@ def main():
         "Model loading/training took %0.1f seconds", time.time() - baseline_time
     )
 
-    # Creating the range dataset
-    dataset = RangeDataset(dataset,
-                           RangeSampler(range_fn=configs["ramia"]["range_function"],
-                                        sample_size=configs["ramia"]["sample_size"],
-                                        config=configs),
-                           configs)
+    # TODO: abstract the range dataset creation
+    if os.path.exists(f"{directories['data_dir']}/{configs["data"]["dataset"]}_range_auditing.pkl"):
+        with open(f"{directories['data_dir']}/{configs["data"]["dataset"]}_range_auditing.pkl", "rb") as file:
+            dataset = pickle.load(file)
+        logger.info(f"Load range data from {directories['data_dir']}/{configs["data"]["dataset"]}_range_auditing.pkl")
+    else:
+        # Creating the range dataset
+        logger.info("Creating range dataset.")
+        dataset = RangeDataset(dataset,
+                               RangeSampler(range_fn=configs["ramia"]["range_function"],
+                                            sample_size=configs["ramia"]["sample_size"],
+                                            config=configs),
+                               configs)
+
+        with open(f"{directories['data_dir']}/{configs["data"]["dataset"]}_range_auditing.pkl", "wb") as f:
+            pickle.dump(dataset, f)
+        logger.info("Range dataset saved to disk.")
 
     # Subsampling the dataset for auditing
     auditing_dataset, auditing_membership = sample_auditing_dataset(
         configs, dataset, logger, memberships
     )
 
-    # TODO: save the auditing dataset to disk
-
     # Generate signals (softmax outputs) for all models
     baseline_time = time.time()
-    # TODO: Flatten the range auditing dataset to [n*k, d] and get the signals for the auditing dataset
     signals = get_model_signals(models_list, auditing_dataset, configs, logger)
     logger.info("Preparing signals took %0.5f seconds", time.time() - baseline_time)
 
@@ -118,18 +128,18 @@ def main():
     target_model_indices = list(range(num_experiments))
     # Expand the membership_list to match the shape of the auditing dataset
     mia_score_list, membership_list = audit_models(
-        f"{directories['report_dir']}/exp_ramia",
+        f"{directories['report_dir']}/exp",
         target_model_indices,
         signals,
-        auditing_membership.repeat(len(signals)//len(auditing_membership), 1),
+        np.repeat(auditing_membership, configs["ramia"]["sample_size"], axis=1),
         num_reference_models,
         logger,
         configs,
     )
 
-    # TODO: postprocess the sample MIA scores to get the range MIA scores
     mia_score_list = np.array(mia_score_list).reshape(len(auditing_dataset), -1)
-    mia_score_list = mia_score_list.tolist()
+    # TODO: abstract the aggregation function
+    mia_score_list = mia_score_list.mean(axis=1)
 
     if len(target_model_indices) > 1:
         logger.info(

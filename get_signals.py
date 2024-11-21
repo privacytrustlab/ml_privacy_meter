@@ -11,13 +11,13 @@ from dataset.utils import load_dataset_subsets
 
 
 def get_softmax(
-    model: PreTrainedModel,
-    samples: torch.Tensor,
-    labels: torch.Tensor,
-    batch_size: int,
-    device: str,
-    temp: float = 1.0,
-    pad_token_id: Optional[int] = None,
+        model: PreTrainedModel,
+        samples: torch.Tensor,
+        labels: torch.Tensor,
+        batch_size: int,
+        device: str,
+        temp: float = 1.0,
+        pad_token_id: Optional[int] = None,
 ) -> np.ndarray:
     """
     Get the model's softmax probabilities for the given inputs and expected outputs.
@@ -42,9 +42,9 @@ def get_softmax(
         batched_labels = torch.split(labels, batch_size)
 
         for x, y in tqdm(
-            zip(batched_samples, batched_labels),
-            total=len(batched_samples),
-            desc="Computing softmax",
+                zip(batched_samples, batched_labels),
+                total=len(batched_samples),
+                desc="Computing softmax",
         ):
             x = x.to(device)
             y = y.to(device)
@@ -82,12 +82,12 @@ def get_softmax(
 
 
 def get_loss(
-    model: PreTrainedModel,
-    samples: torch.Tensor,
-    labels: torch.Tensor,
-    batch_size: int,
-    device: str,
-    pad_token_id: Optional[int] = None,
+        model: PreTrainedModel,
+        samples: torch.Tensor,
+        labels: torch.Tensor,
+        batch_size: int,
+        device: str,
+        pad_token_id: Optional[int] = None,
 ) -> np.ndarray:
     """
     Get the model's loss for the given inputs and expected outputs.
@@ -145,18 +145,28 @@ def get_model_signals(models_list, dataset, configs, logger):
         signals (np.array): Signal value for all samples in all models
     """
     # Check if signals are available on disk
+    signal_file_name = f"{configs['audit']['algorithm'].lower()}_ramia_signals.npy" if configs.get("ramia",
+                                                                                                   None) else f"{configs['audit']['algorithm'].lower()}_signals.npy"
     if os.path.exists(
-        f"{configs['run']['log_dir']}/signals/{configs['audit']['algorithm'].lower()}_signals.npy",
+            f"{configs['run']['log_dir']}/signals/{signal_file_name}",
     ):
         signals = np.load(
-            f"{configs['run']['log_dir']}/signals/{configs['audit']['algorithm'].lower()}_signals.npy",
+            f"{configs['run']['log_dir']}/signals/{signal_file_name}",
         )
-        if signals.shape[0] == len(dataset):
-            logger.info("Signals loaded from disk.")
+        if configs.get("ramia", None) is None:
+            expected_size = len(dataset)
+            signal_source = "training data size"
+        else:
+            expected_size = len(dataset) * configs["ramia"]["sample_size"]
+            signal_source = f"training data size multiplied by ramia sample size ({configs['ramia']['sample_size']})"
+
+        if signals.shape[0] == expected_size:
+            logger.info("Signals loaded from disk successfully.")
             return signals
         else:
             logger.warning(
-                "Signals shape does not match the audit data size. This is probably due to a different audit data size than the training data size."
+                f"Signals shape ({signals.shape[0]}) does not match the expected size ({expected_size}). "
+                f"This mismatch is likely due to a change in the {signal_source}."
             )
             logger.info("Ignoring the signals on disk and recomputing.")
 
@@ -179,6 +189,10 @@ def get_model_signals(models_list, dataset, configs, logger):
     )
 
     signals = []
+    logger.info("Computing signals for all models.")
+    if configs.get("ramia", None):
+        data = data.view(-1, *data.shape[2:])
+        targets = targets.view(-1)
     for model in models_list:
         if configs["audit"]["algorithm"] == "RMIA":
             signals.append(
@@ -199,7 +213,7 @@ def get_model_signals(models_list, dataset, configs, logger):
 
     signals = np.concatenate(signals, axis=1)
     np.save(
-        f"{configs['run']['log_dir']}/signals/{configs['audit']['algorithm'].lower()}_signals.npy",
+        f"{configs['run']['log_dir']}/signals/{signal_file_name}",
         signals,
     )
     logger.info("Signals saved to disk.")

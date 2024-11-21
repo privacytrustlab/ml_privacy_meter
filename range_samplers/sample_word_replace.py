@@ -17,7 +17,7 @@ def sample_word_replace(range_center, mask_model, mask_tokenizer, num_masks, sam
         sample_size (int): The number of sentences to sample.
         device (str): The device to run the masked language model on.
     Returns:
-        list: Sentences sampled with word replacements.
+        list[str]: Sentences sampled with word replacements.
     """
     # Load the masked language model
     mlm_model = AutoModelForMaskedLM.from_pretrained(mask_model).to(device)

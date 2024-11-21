@@ -22,7 +22,7 @@ def sample_geometric(range_center, transformations_list, sample_size):
         sample_size (int): The number of samples to generate.
 
     Returns:
-        np.ndarray: The samples in the geometric range.
+        list[torch.tensors]: The samples in the geometric range.
     """
     # Initialize the samples list
     if len(transformations_list) == sample_size - 1:
@@ -37,7 +37,7 @@ def sample_geometric(range_center, transformations_list, sample_size):
         else:
             raise ValueError(f"Invalid transformation: {transformation}")
 
-    return np.array(samples)
+    return samples
 
 
 # Test
