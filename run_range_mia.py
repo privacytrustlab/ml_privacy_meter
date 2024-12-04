@@ -21,6 +21,7 @@ from util import (
     create_directories,
     load_dataset,
 )
+from ramia_scores import trim_mia_scores
 
 # Enable benchmark mode in cudnn to improve performance when input sizes are consistent
 torch.backends.cudnn.benchmark = True
@@ -139,7 +140,7 @@ def main():
 
     mia_score_list = np.array(mia_score_list).reshape(len(auditing_dataset), -1)
     # TODO: abstract the aggregation function
-    mia_score_list = mia_score_list.mean(axis=1)
+    mia_score_list = trim_mia_scores(mia_score_list, configs["ramia"]["sample_size"])
 
     if len(target_model_indices) > 1:
         logger.info(
