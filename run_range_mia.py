@@ -10,7 +10,7 @@ import numpy as np
 import torch
 import yaml
 
-from audit import get_average_audit_results, audit_models, sample_auditing_dataset
+from audit import get_average_audit_results, audit_models_range, sample_auditing_dataset
 from dataset.range_dataset import RangeDataset, RangeSampler
 from get_signals import get_model_signals
 from models.utils import load_models, train_models, split_dataset_for_training
@@ -21,7 +21,6 @@ from util import (
     create_directories,
     load_dataset,
 )
-from ramia_scores import trim_mia_scores
 
 # Enable benchmark mode in cudnn to improve performance when input sizes are consistent
 torch.backends.cudnn.benchmark = True
