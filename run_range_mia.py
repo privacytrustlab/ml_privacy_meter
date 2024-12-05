@@ -97,20 +97,34 @@ def main():
     )
 
     # TODO: abstract the range dataset creation
-    if os.path.exists(f"{directories['data_dir']}/{configs["data"]["dataset"]}_range_auditing.pkl"):
-        with open(f"{directories['data_dir']}/{configs["data"]["dataset"]}_range_auditing.pkl", "rb") as file:
+    if os.path.exists(
+        f"{directories['data_dir']}/{configs["data"]["dataset"]}_range_auditing.pkl"
+    ):
+        with open(
+            f"{directories['data_dir']}/{configs["data"]["dataset"]}_range_auditing.pkl",
+            "rb",
+        ) as file:
             dataset = pickle.load(file)
-        logger.info(f"Load range data from {directories['data_dir']}/{configs["data"]["dataset"]}_range_auditing.pkl")
+        logger.info(
+            f"Load range data from {directories['data_dir']}/{configs["data"]["dataset"]}_range_auditing.pkl"
+        )
     else:
         # Creating the range dataset
         logger.info("Creating range dataset.")
-        dataset = RangeDataset(dataset,
-                               RangeSampler(range_fn=configs["ramia"]["range_function"],
-                                            sample_size=configs["ramia"]["sample_size"],
-                                            config=configs),
-                               configs)
+        dataset = RangeDataset(
+            dataset,
+            RangeSampler(
+                range_fn=configs["ramia"]["range_function"],
+                sample_size=configs["ramia"]["sample_size"],
+                config=configs,
+            ),
+            configs,
+        )
 
-        with open(f"{directories['data_dir']}/{configs["data"]["dataset"]}_range_auditing.pkl", "wb") as f:
+        with open(
+            f"{directories['data_dir']}/{configs["data"]["dataset"]}_range_auditing.pkl",
+            "wb",
+        ) as f:
             pickle.dump(dataset, f)
         logger.info("Range dataset saved to disk.")
 
@@ -128,7 +142,7 @@ def main():
     baseline_time = time.time()
     target_model_indices = list(range(num_experiments))
     # Expand the membership_list to match the shape of the auditing dataset
-    mia_score_list, membership_list = audit_models(
+    mia_score_list, membership_list = audit_models_range(
         f"{directories['report_dir']}/exp",
         target_model_indices,
         signals,
@@ -137,10 +151,6 @@ def main():
         logger,
         configs,
     )
-
-    mia_score_list = np.array(mia_score_list).reshape(len(auditing_dataset), -1)
-    # TODO: abstract the aggregation function
-    mia_score_list = trim_mia_scores(mia_score_list, configs["ramia"]["sample_size"])
 
     if len(target_model_indices) > 1:
         logger.info(

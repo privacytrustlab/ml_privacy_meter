@@ -7,6 +7,7 @@ from sklearn.metrics import roc_curve, auc
 from torch.utils.data import Subset
 
 from attacks import tune_offline_a, run_rmia, run_loss
+from ramia_scores import get_topk, get_bottomk, trim_mia_scores
 from visualize import plot_roc, plot_roc_log
 
 
@@ -170,7 +171,7 @@ def audit_models(
         if configs["audit"]["algorithm"] == "RMIA":
             offline_a = tune_offline_a(
                 target_model_idx, all_signals, all_memberships, logger
-            )
+            )[0]
             logger.info(f"The best offline_a is %0.1f", offline_a)
             mia_scores = run_rmia(
                 target_model_idx,
@@ -190,6 +191,116 @@ def audit_models(
 
         mia_score_list.append(mia_scores.copy())
         membership_list.append(target_memberships.copy())
+
+        _ = get_audit_results(
+            report_dir, target_model_idx, mia_scores, target_memberships, logger
+        )
+
+        logger.info(
+            "Auditing the privacy risks of target model %d costs %0.1f seconds",
+            target_model_idx,
+            time.time() - baseline_time,
+        )
+
+    return mia_score_list, membership_list
+
+
+def audit_models_range(
+    report_dir,
+    target_model_indices,
+    all_signals,
+    all_memberships,
+    num_reference_models,
+    logger,
+    configs,
+):
+    """
+    Audit target model(s) using a Membership Inference Attack algorithm.
+
+    Args:
+        report_dir (str): Folder to save attack result.
+        target_model_indices (list): List of the target model indices.
+        all_signals (np.array): Signal value of all samples in all models (target and reference models).
+        all_memberships (np.array): Membership matrix for all models.
+        num_reference_models (int): Number of reference models used for performing the attack.
+        logger (logging.Logger): Logger object for the current run.
+        configs (dict): Configs provided by the user.
+
+    Returns:
+        list: List of MIA score arrays for all audited target models.
+        list: List of membership labels for all target models.
+    """
+    all_memberships = np.transpose(all_memberships)
+
+    if configs["ramia"].get("trim_ratio", None) is not None:
+        if configs["ramia"].get("trim_direction", None) is None:
+            raise ValueError("Need to specify trim_direction!")
+        else:
+            tune_trim_ratio = True
+    else:
+        tune_trim_ratio = False
+        trim_ratio = configs["ramia"]["trim_ratio"]
+        trim_direction = configs["ramia"]["trim_direction"]
+
+    sample_size = configs["ramia"]["sample_size"]
+
+    mia_score_list = []
+    membership_list = []
+
+    for target_model_idx in target_model_indices:
+        baseline_time = time.time()
+
+        if configs["audit"]["algorithm"] == "RMIA":
+            offline_a, ref_mia_scores, ref_membership = tune_offline_a(
+                target_model_idx, all_signals, all_memberships, logger
+            )
+            logger.info(f"The best offline_a is %0.1f", offline_a)
+            mia_scores = run_rmia(
+                target_model_idx,
+                all_signals,
+                all_memberships,
+                num_reference_models,
+                offline_a,
+            )
+        else:
+            raise NotImplementedError(
+                f"{configs['audit']['algorithm']} is not implemented for RaMIA"
+            )
+
+        if tune_trim_ratio:
+            ref_mia_scores = ref_mia_scores.reshape(-1, sample_size)
+            ref_membership = ref_membership.reshape(-1, sample_size)[:, 0]
+            max_auc = 0
+
+            logger.info(
+                "Finding the optimal trim ratio and direction using the paired model"
+            )
+            for k in range(1, sample_size + 1):
+                fpr, tpr, _ = roc_curve(ref_membership, get_bottomk(ref_mia_scores, k))
+                roc_auc = auc(fpr, tpr)
+                if roc_auc > max_auc:
+                    max_auc = roc_auc
+                    trim_ratio = k / sample_size
+                    trim_direction = "top"
+
+                fpr, tpr, _ = roc_curve(ref_membership, get_topk(ref_mia_scores, k))
+                roc_auc = auc(fpr, tpr)
+                if roc_auc > max_auc:
+                    max_auc = roc_auc
+                    trim_ratio = k / sample_size
+                    trim_direction = "bottom"
+            logger.info(
+                "The optimal trim ratio is %.2f and the direction is %s",
+                trim_ratio,
+                trim_direction,
+            )
+
+        target_memberships = all_memberships[:, target_model_idx]
+
+        mia_score_list.append(
+            trim_mia_scores(mia_scores.copy(), trim_ratio, trim_direction)
+        )
+        membership_list.append(target_memberships.copy().reshape(-1, sample_size)[:, 0])
 
         _ = get_audit_results(
             report_dir, target_model_idx, mia_scores, target_memberships, logger

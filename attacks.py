@@ -73,8 +73,10 @@ def tune_offline_a(
         if roc_auc > max_auc:
             max_auc = roc_auc
             offline_a = test_a
+            mia_scores_array = mia_scores.ravel().copy()
+            membership_array = paired_memberships.ravel().copy()
         logger.info(f"offline_a={test_a:.2f}: AUC {roc_auc:.4f}")
-    return offline_a
+    return offline_a, mia_scores_array, membership_array
 
 
 def run_rmia(
