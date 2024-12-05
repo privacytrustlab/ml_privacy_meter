@@ -2,8 +2,6 @@
 
 import argparse
 import math
-import os
-import pickle
 import time
 
 import numpy as np
@@ -95,37 +93,17 @@ def main():
         "Model loading/training took %0.1f seconds", time.time() - baseline_time
     )
 
-    # TODO: abstract the range dataset creation
-    if os.path.exists(
-        f"{directories['data_dir']}/{configs["data"]["dataset"]}_range_auditing.pkl"
-    ):
-        with open(
-            f"{directories['data_dir']}/{configs["data"]["dataset"]}_range_auditing.pkl",
-            "rb",
-        ) as file:
-            dataset = pickle.load(file)
-        logger.info(
-            f"Load range data from {directories['data_dir']}/{configs["data"]["dataset"]}_range_auditing.pkl"
-        )
-    else:
-        # Creating the range dataset
-        logger.info("Creating range dataset.")
-        dataset = RangeDataset(
-            dataset,
-            RangeSampler(
-                range_fn=configs["ramia"]["range_function"],
-                sample_size=configs["ramia"]["sample_size"],
-                config=configs,
-            ),
-            configs,
-        )
-
-        with open(
-            f"{directories['data_dir']}/{configs["data"]["dataset"]}_range_auditing.pkl",
-            "wb",
-        ) as f:
-            pickle.dump(dataset, f)
-        logger.info("Range dataset saved to disk.")
+    # Creating the range dataset
+    logger.info("Creating range dataset.")
+    dataset = RangeDataset(
+        dataset,
+        RangeSampler(
+            range_fn=configs["ramia"]["range_function"],
+            sample_size=configs["ramia"]["sample_size"],
+            config=configs,
+        ),
+        configs,
+    )
 
     # Subsampling the dataset for auditing
     auditing_dataset, auditing_membership = sample_auditing_dataset(

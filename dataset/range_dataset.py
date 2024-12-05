@@ -30,7 +30,9 @@ class RangeSampler:
         if self.range_fn == "l2":
             radius = self.config["ramia"].get("radius", None)
             if radius is None:
-                raise ValueError("L2 range sampler requires a radius parameter in the config.")
+                raise ValueError(
+                    "L2 range sampler requires a radius parameter in the config."
+                )
             return sample_l2(range_center, radius, self.sample_size)
         elif self.range_fn == "geometric":
             transformations_list = self.config["ramia"].get("transformations", None)
@@ -40,9 +42,17 @@ class RangeSampler:
                 )
             if len(transformations_list) == 0:
                 raise ValueError("Transformations list cannot be empty.")
-            elif len(transformations_list) != self.sample_size - 1 and len(transformations_list) != self.sample_size:
-                raise ValueError("Transformations list must have length sample_size - 1 or sample_size.")
-            return sample_geometric(range_center, transformations_list, self.sample_size)
+            elif (
+                len(transformations_list) != self.sample_size - 1
+                and len(transformations_list) != self.sample_size
+            ):
+                raise ValueError(
+                    f"Transformations list must have length sample_size - 1 or sample_size. Current transformations list "
+                    f"length: {len(transformations_list)}, sample size {self.sample_size}"
+                )
+            return sample_geometric(
+                range_center, transformations_list, self.sample_size
+            )
         elif self.range_fn == "word_replace":
             mask_model = self.config["ramia"].get("mask_model", None)
             if mask_model is None:
@@ -56,7 +66,14 @@ class RangeSampler:
                     "Word replace range sampler requires a num_masks parameter in the config."
                 )
             device = self.config["ramia"].get("device", "cuda")
-            return sample_word_replace(range_center, mask_model, mask_tokenizer, num_masks, self.sample_size, device)
+            return sample_word_replace(
+                range_center,
+                mask_model,
+                mask_tokenizer,
+                num_masks,
+                self.sample_size,
+                device,
+            )
         # elif self.range_fn == "ownership":
         #     ownership_dict_path = self.config["ramia"].get("ownership_dict_path", None)
         #     if ownership_dict_path is None:
@@ -85,15 +102,21 @@ class RangeDataset(Dataset):
         return len(self.dataset)
 
     def __getitem__(self, idx):
-        if self.sampler.range_fn == "word_replace" and hasattr(self.dataset, "get_text"):
+        if self.sampler.range_fn == "word_replace" and hasattr(
+            self.dataset, "get_text"
+        ):
             # Determining if it is a text dataset
             text = self.dataset.get_text(idx)
             if self.sampler.range_fn != "word_replace":
                 raise ValueError("Range sampler is not compatible with text data.")
             range_text = self.sampler.sample(text)
             tokenizer = AutoTokenizer.from_pretrained(self.config["data"]["tokenizer"])
-            range_data = tokenizer(list(chain.from_iterable(range_text)), padding="max_length", truncation=True,
-                                   max_length=512)
+            range_data = tokenizer(
+                list(chain.from_iterable(range_text)),
+                padding="max_length",
+                truncation=True,
+                max_length=512,
+            )
             data = range_data.input_ids[idx][:-1]
             target = range_data.input_ids[idx][1:]
             return data, target
@@ -107,9 +130,11 @@ class RangeDataset(Dataset):
                 range_data = torch.stack(range_data)
             # print("Shape of the stacked range data is: ", range_data.shape)
             if type(self.dataset[idx][1]) == int:
-                range_labels = torch.tensor(self.dataset[idx][1], dtype=torch.long).repeat(
-                    self.config["ramia"]["sample_size"])
+                range_labels = torch.tensor(
+                    self.dataset[idx][1], dtype=torch.long
+                ).repeat(self.config["ramia"]["sample_size"])
             else:
-                range_labels = self.dataset[idx][1].repeat_interleave(
-                    self.config["ramia"]["sample_size"])
+                range_labels = torch.tensor(self.dataset[idx][1]).repeat_interleave(
+                    self.config["ramia"]["sample_size"]
+                )
             return range_data, range_labels

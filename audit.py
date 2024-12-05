@@ -236,11 +236,11 @@ def audit_models_range(
         if configs["ramia"].get("trim_direction", None) is None:
             raise ValueError("Need to specify trim_direction!")
         else:
-            tune_trim_ratio = True
+            tune_trim_ratio = False
+            trim_ratio = configs["ramia"]["trim_ratio"]
+            trim_direction = configs["ramia"]["trim_direction"]
     else:
-        tune_trim_ratio = False
-        trim_ratio = configs["ramia"]["trim_ratio"]
-        trim_direction = configs["ramia"]["trim_direction"]
+        tune_trim_ratio = True
 
     sample_size = configs["ramia"]["sample_size"]
 
@@ -275,19 +275,24 @@ def audit_models_range(
             logger.info(
                 "Finding the optimal trim ratio and direction using the paired model"
             )
+
             for k in range(1, sample_size + 1):
-                fpr, tpr, _ = roc_curve(ref_membership, get_bottomk(ref_mia_scores, k))
+                fpr, tpr, _ = roc_curve(
+                    ref_membership, get_bottomk(ref_mia_scores, k).mean(1)
+                )
                 roc_auc = auc(fpr, tpr)
                 if roc_auc > max_auc:
                     max_auc = roc_auc
                     trim_ratio = k / sample_size
                     trim_direction = "top"
 
-                fpr, tpr, _ = roc_curve(ref_membership, get_topk(ref_mia_scores, k))
+                fpr, tpr, _ = roc_curve(
+                    ref_membership, get_topk(ref_mia_scores, k).mean(1)
+                )
                 roc_auc = auc(fpr, tpr)
                 if roc_auc > max_auc:
                     max_auc = roc_auc
-                    trim_ratio = k / sample_size
+                    trim_ratio = 1 - k / sample_size
                     trim_direction = "bottom"
             logger.info(
                 "The optimal trim ratio is %.2f and the direction is %s",
@@ -298,7 +303,9 @@ def audit_models_range(
         target_memberships = all_memberships[:, target_model_idx]
 
         mia_score_list.append(
-            trim_mia_scores(mia_scores.copy(), trim_ratio, trim_direction)
+            trim_mia_scores(
+                mia_scores.copy().reshape(-1, sample_size), trim_ratio, trim_direction
+            )
         )
         membership_list.append(target_memberships.copy().reshape(-1, sample_size)[:, 0])
 
