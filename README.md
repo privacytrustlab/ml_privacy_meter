@@ -45,10 +45,20 @@ Below is the high level pipeline of the internal mechanism of Privacy Meter, whi
 flowchart LR
     H["**Load Dataset**"] --> J["**Load or Train Models**"]
     J --> L["**Gather Auditing Dataset**"]
-    L --> M["**Generate Membership Signals**"]
+    L --> M["**Compute Membership Signals**"]
     M --> O["**Perform Privacy Audit**"]
 ```
 
+For **Range membership inference**, we modify the pipeline in auditing dataset creation by replacing each point query to range query. In the signal computation step, samples are taken in each range query, before their signals are aggregated in the new signal aggregation step to create the RangeMIA score. Below is the flowchart for RaMIA:
+
+```mermaid
+flowchart LR
+    H["**Load Dataset**"] --> J["**Load or Train Models**"]
+    J --> L["**Create Range Auditing Dataset**"]
+    L --> M["**Compute Membership Signals**"]
+    M -- >N["**Aggregate Signals in Each Range**"]
+    N --> O["**Perform Privacy Audit**"]
+```
 
 ## User Manual
 ### Getting started
