@@ -56,7 +56,7 @@ flowchart LR
     H["**Load Dataset**"] --> J["**Load or Train Models**"]
     J --> L["**Create Range Auditing Dataset**"]
     L --> M["**Compute Membership Signals**"]
-    M -- >N["**Aggregate Signals in Each Range**"]
+    M --> N["**Aggregate Signals in Each Range**"]
     N --> O["**Perform Privacy Audit**"]
 ```
 
