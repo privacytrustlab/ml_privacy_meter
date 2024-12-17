@@ -5,10 +5,10 @@
 RaMIA should be the attack class to use if the attacker is not confident that auditing/attack set contains the exact training points. Although "noisy" training points can leak privacy, they are, by definition of the membership inference game, non-members. 
 
 1. Testing if any variation (e.g. flipping, rotation, small perturbation) of a point is used in training.
-2. Testing privacy leakge with partial data records (e.g. with missing or redacted features).
+2. Testing information leakage with partial data records (e.g. with missing or redacted features).
 3. Testing if other data from the same owner are used in training.
 4. Evaluating data reconstruction attack by predicting if a given point is within the specific distance to any training point.
-5. Evaluating machine unlearning algorithms by measuring privacy leakge from similar data to the unlearned data.
+5. Evaluating machine unlearning algorithms by measuring privacy leakage from similar data to the unlearned data.
 
 ## Pipeline
 In Privacy Meter, RaMIA is conducted to audit privacy in the following way:
@@ -35,3 +35,6 @@ To audit privacy using range membership inference, you can use the following com
 python run_range_mia.py --cf configs/config_range.yaml
 ```
 We provide a template of the config file at this [folder](configs/ramia/). The explanations of each field in the config can be found in this [document](configs/ramia/README.md).
+
+## Auditing Results
+The auditing results will be stored in the same way as running the base membership inference attack. They can be found at `<log_dir>/report_ramia`. The `attack_result_x.npz` file contains the FPR, TPR, AUC, TPR at small FPR values from attacking target model `x`. A plot of the ROC can also be found at the same folder. Here we attach a sample ROC by attacking the Purchase-100 dataset with L2 distance being the range function and 10 being the range size.
