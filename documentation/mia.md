@@ -24,3 +24,10 @@ For a comprehensive explanation of each parameter, please refer to each `.yaml` 
 
 ## Auditing Results
 Upon audit completion, you will find the results in the `demo` folder, with the attack results saved in `demo/report`. Furthermore, we also offer a timing log for each run, which can be found in the file `log_time_analysis.log`. We recommend running each new set of experiments with different hyperparameters under a different `log_dir` to avoid misusing old trained models or losing previous results.
+
+Below are the ROC and log scale ROC of the auditing result on CIFAR-10 dataset with a WideResNet.
+
+<div style="display: flex; justify-content: space-between;">
+    <img src="../demo_cifar10/report/exp/ROC_0.png" alt="ROC" width="45%" />
+    <img src="../demo_cifar10/report/exp/ROC_log_0.png" alt="ROC (log)" width="45%" />
+</div>

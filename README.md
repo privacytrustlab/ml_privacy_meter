@@ -25,7 +25,7 @@ Data Protection regulations, such as GDPR and AI governance frameworks, require 
 Privacy Meter is a versatile tool that can be used with different types of models, datasets and privacy games, which all need to be specified in a `.yaml` configuration file. The description of the configuration file can be found [here](configs/README.md).
 
 <p align="center">
-  <img src="ml-privacy-meter.png" alt="ML Privacy Meter">
+  <img src="documentation/ml-privacy-meter.png" alt="ML Privacy Meter">
 </p>
 
 ## Auditing Methodology
