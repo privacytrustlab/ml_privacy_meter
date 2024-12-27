@@ -25,6 +25,8 @@ from trainers.fast_train import (
     fast_train_fun,
 )
 from trainers.train_transformers import *
+from peft import get_peft_model
+
 
 INPUT_OUTPUT_SHAPE = {
     "cifar10": [3, 10],
@@ -34,20 +36,24 @@ INPUT_OUTPUT_SHAPE = {
 }
 
 
-def get_model(model_type: str, dataset_name: str):
+def get_model(model_type: str, dataset_name: str, configs: dict):
     """
     Instantiate and return a model based on the given model type and dataset name.
 
     Args:
         model_type (str): Type of the model to be instantiated.
         dataset_name (str): Name of the dataset the model will be used for.
-
+        configs (dict): Configuration dictionary containing information about the model.
     Returns:
         torch.nn.Module or PreTrainedModel: An instance of the specified model, ready for training or inference.
     """
     if model_type == "gpt2":
-        return AutoModelForCausalLM.from_pretrained("gpt2")
-
+        if configs.get("peft_type", None) is None:
+            return AutoModelForCausalLM.from_pretrained(model_type)
+        else:
+            peft_config = get_peft_model_config(configs)
+            return get_peft_model(AutoModelForCausalLM.from_pretrained(model_type), peft_config)
+       
     num_classes = INPUT_OUTPUT_SHAPE[dataset_name][1]
     in_shape = INPUT_OUTPUT_SHAPE[dataset_name][0]
     if model_type == "CNN":
@@ -69,7 +75,7 @@ def get_model(model_type: str, dataset_name: str):
 
 
 def load_existing_model(
-    model_metadata: dict, dataset: torchvision.datasets, device: str
+    model_metadata: dict, dataset: torchvision.datasets, device: str, config: dict
 ):
     """Load an existing model from disk based on the provided metadata.
 
@@ -77,7 +83,7 @@ def load_existing_model(
         model_metadata (dict): Metadata dictionary containing information about the model.
         dataset (torchvision.datasets): Dataset object used to instantiate the model.
         device (str): The device on which to load the model, such as 'cpu' or 'cuda'.
-
+        config (dict): Configuration dictionary containing information about the model.
     Returns:
         model (torch.nn.Module): Loaded model object with weights restored from disk.
     """
@@ -85,23 +91,25 @@ def load_existing_model(
     dataset_name = model_metadata["dataset"]
 
     if model_name != "speedyresnet":
-        model = get_model(model_name, dataset_name)
+        model = get_model(model_name, dataset_name, config)
     else:
         data = load_cifar10_data(dataset, [0], [0], device=device)
         model = NetworkEMA(make_net(data, device=device))
 
     model_checkpoint_extension = os.path.splitext(model_metadata["model_path"])[1]
-    if model_checkpoint_extension == "pkl":
+    if model_checkpoint_extension == ".pkl":
         with open(model_metadata["model_path"], "rb") as file:
             model_weight = pickle.load(file)
         model.load_state_dict(model_weight)
-    elif model_checkpoint_extension == "pt" or model_checkpoint_extension == "pth":
+    elif model_checkpoint_extension == ".pt" or model_checkpoint_extension == ".pth":
         model.load_state_dict(torch.load(model_metadata["model_path"]))
     elif model_checkpoint_extension == "":
         if isinstance(model, PreTrainedModel):
             model = model.from_pretrained(model_metadata["model_path"])
         else:
             raise ValueError(f"Model path is invalid.")
+    else:
+        raise ValueError(f"Model path is invalid.")
     return model
 
 
@@ -137,6 +145,7 @@ def load_models(log_dir, dataset, num_models, configs, logger):
             model_metadata_dict[str(model_idx)],
             dataset,
             configs["audit"]["device"],
+            configs,
         )
         model_list.append(model_obj)
         if len(model_list) == num_models:
@@ -254,12 +263,21 @@ def prepare_models(
 
         if model_name == "gpt2":
             hf_dataset = dataset.hf_dataset
-            model, train_loss, test_loss = train_transformer(
-                hf_dataset.select(split_info["train"]),
-                get_model(model_name, dataset_name),
-                configs,
-                hf_dataset.select(split_info["test"]),
-            )
+            if configs.get("peft_type", None) is None:
+                model, train_loss, test_loss = train_transformer(
+                    hf_dataset.select(split_info["train"]),
+                    get_model(model_name, dataset_name, configs),
+                    configs,
+                    hf_dataset.select(split_info["test"]),
+                )
+            else:
+                # Fine-tuning with PEFT
+                model, train_loss, test_loss = train_transformer_with_peft(
+                    hf_dataset.select(split_info["train"]),
+                    get_peft_model(get_model(model_name, dataset_name, configs), get_peft_model_config(configs)),
+                    configs,
+                    hf_dataset.select(split_info["test"]),
+                )
             train_acc, test_acc = None, None
         elif model_name != "speedyresnet":
             train_loader = get_dataloader(
