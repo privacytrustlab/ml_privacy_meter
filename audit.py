@@ -586,8 +586,3 @@ def get_eps_audit(m, r, v, delta, p):
   return eps_min
 
 
-
-
-# todo: add canary data (mislabelled data)
-
-
