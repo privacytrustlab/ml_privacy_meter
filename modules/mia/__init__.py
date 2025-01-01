@@ -1,1 +1,1 @@
-from .attack import run_mia
+from .attack import MIA

@@ -106,7 +106,7 @@ def main():
 
     ######################################  Perform DUCI ######################################
     baseline_time = time.time()
-    target_model_indices = list(range(num_experiments))
+    target_model_indices = list(range(2*(num_experiments+1))) # Each run uses one model as target model
 
     ############################  Input your own reference model indices ############################
     #Sample: construct reference models
@@ -125,7 +125,13 @@ def main():
 
 
     logger.info(f"Initiate DUCI for target models: {target_model_indices}")
-    DUCI_instance = DUCI(logger)
+    args = {
+        "attack": "RMIA",
+        "dataset": configs["data"]["dataset"], # TODO: have DUCI config
+        "model": configs["train"]["model_name"],
+        "offline_a": 0.3
+    }
+    DUCI_instance = DUCI(logger, args)
 
     logger.info("Collecting membership prediction for each sample in the target dataset on target models and reference models.")
     logger.info("Predicting the proportion of dataset usage on target models.")

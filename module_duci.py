@@ -1,13 +1,13 @@
-from typing import Tuple, List, Any
+from typing import Tuple, List, Any, Dict
 import numpy as np
 from sklearn.metrics import roc_curve
 import logging
 import time
 
-import modules.mia
+from modules.mia import MIA
 
 class DUCI:
-    def __init__(self, logger: logging.Logger):
+    def __init__(self, logger: logging.Logger, args: Dict[str, Any]):
         """
         Initialize the DUCI object.
 
@@ -22,12 +22,14 @@ class DUCI:
         self.tpr = None
         self.fpr = None
         self.logger = logger
+        self.args = args
 
     def debias_pred(self, 
             target_model_idx: int,
             reference_model_indices: np.ndarray,
             all_signals: np.ndarray,
             all_memberships: np.ndarray,
+            MIA_instance: MIA
         ) -> Tuple[float, float]:
         """
         This functions debiases the MIA signals over the target dataset received on the target model 
@@ -62,32 +64,34 @@ class DUCI:
         """
         # Conduct MIA on the target model using privacy meter tools
         baseline_time = time.time()
-        args = {
-            "attack": "RMIA",
-            "offline_a": None
-        }
-        mia_scores, target_memberships = modules.mia(
+        mia_scores, target_memberships = MIA_instance.run_mia(
             all_signals, 
             all_memberships, 
             target_model_idx, 
             reference_model_indices, 
             self.logger, 
-            args
+            self.args,
+            reuse_offline_a=False
         )
         self.logger.info("Collect membership prediction for target dataset on target model %d costs %0.1f seconds",
             target_model_idx, time.time() - baseline_time,
         )
 
-        # Conduct MIA on the reference model using privacy meter tools
+        # Conduct MIA on the paired model using privacy meter tools
         ref_score_all, ref_membership_all = [], []
-        for ref_model_idx in reference_model_indices:
-            ref_mia_scores, ref_target_memberships = modules.mia(
+        paired_model_idx = (
+            target_model_idx + 1 if target_model_idx % 2 == 0 else target_model_idx - 1
+        )
+        for ref_model_idx in [paired_model_idx]: #TODO: add population data in RMIA for reference model debiasing
+        # for ref_model_idx in reference_model_indices:
+            ref_mia_scores, ref_target_memberships = MIA_instance.run_mia(
                 all_signals,
                 all_memberships,
                 ref_model_idx,
                 reference_model_indices,
                 self.logger,
-                args
+                self.args,
+                reuse_offline_a=False
             )
             ref_score_all.append(ref_mia_scores)
             ref_membership_all.append(ref_target_memberships)
@@ -96,9 +100,10 @@ class DUCI:
 
         # Find the optimal threshold
         fpr_list, tpr_list, thresholds = roc_curve(debias_memberships.ravel(), debias_scores.ravel())
-        self.best_threshold = thresholds[np.argmax(tpr_list - fpr_list)]
-        self.tpr = np.max(tpr_list)
-        self.fpr = np.min(fpr_list)
+        best_idx = np.argmax(tpr_list - fpr_list)
+        self.best_threshold = thresholds[best_idx]
+        self.tpr = tpr_list[best_idx]
+        self.fpr = fpr_list[best_idx]
 
         self.logger.info(f"Best threshold = {self.best_threshold} (Maximize TPR - FPR) = {self.tpr} - {self.fpr}")
 
@@ -139,6 +144,8 @@ class DUCI:
 
         debiased_preds_list, true_proportion_list = [], []
         error_list = []
+        # Initialize MIA instance
+        MIA_instance = MIA(self.logger)
         # for target_model_idx in target_model_indices:
         for target_model_idx, reference_model_indices in zip(target_model_indices, reference_model_indices_all):
             debiased_pres, true_proportion = self.debias_pred(
@@ -146,6 +153,7 @@ class DUCI:
                 reference_model_indices,
                 all_signals,
                 all_memberships,
+                MIA_instance
             )
 
             post_debias_error = np.abs(np.mean(debiased_pres) - true_proportion)
@@ -154,7 +162,7 @@ class DUCI:
                 post_debias_error
             )
 
-            debiased_preds_list.append(debiased_pres)
+            debiased_preds_list.append(np.mean(debiased_pres))
             true_proportion_list.append(true_proportion)
             error_list.append(post_debias_error)
 
