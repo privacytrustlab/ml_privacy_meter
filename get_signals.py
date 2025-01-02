@@ -12,7 +12,7 @@ from dataset.utils import load_dataset_subsets
 
 
 def get_softmax(
-    model: PreTrainedModel,
+    model: PreTrainedModel | torch.nn.Module,
     samples: torch.Tensor,
     labels: torch.Tensor,
     batch_size: int,
@@ -49,28 +49,28 @@ def get_softmax(
         ):
             x = x.to(device)
             y = y.to(device)
-            # pdb.set_trace()
 
             pred = model(x)
             if isinstance(model, PreTrainedModel):
                 logits = pred.logits
                 logit_signals = torch.div(logits, temp)
-                softmax_probs = torch.log_softmax(logit_signals, dim=-1)
-                true_class_probs = softmax_probs.gather(2, y.unsqueeze(-1)).squeeze(-1)
+                log_probs = torch.log_softmax(logit_signals, dim=-1)
+                true_class_log_probs = log_probs.gather(2, y.unsqueeze(-1)).squeeze(-1)
                 # Mask out padding tokens
                 mask = (
                     y != pad_token_id
                     if pad_token_id is not None
                     else torch.ones_like(y, dtype=torch.bool)
                 )
-                true_class_probs = true_class_probs * mask
+                true_class_log_probs = true_class_log_probs * mask
                 sequence_probs = torch.exp(
-                    (true_class_probs * mask).sum(1) / mask.sum(1)
+                    (true_class_log_probs * mask).sum(1) / mask.sum(1)
                 )
                 softmax_list.append(sequence_probs.to("cpu").view(-1, 1))
             else:
                 logit_signals = torch.div(pred, temp)
                 max_logit_signals, _ = torch.max(logit_signals, dim=1)
+                # This is to avoid overflow when exp(logit_signals)
                 logit_signals = torch.sub(
                     logit_signals, max_logit_signals.reshape(-1, 1)
                 )
@@ -84,7 +84,7 @@ def get_softmax(
 
 
 def get_loss(
-    model: PreTrainedModel,
+    model: PreTrainedModel | torch.nn.Module,
     samples: torch.Tensor,
     labels: torch.Tensor,
     batch_size: int,
