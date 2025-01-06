@@ -1,7 +1,9 @@
 """This file is the main entry point for running the privacy auditing tool."""
 
 import argparse
+import logging
 import math
+import pdb
 import time
 
 import numpy as np
@@ -63,6 +65,7 @@ def main():
     logger = setup_log(
         directories["report_dir"], "time_analysis", configs["run"]["time_log"]
     )
+    logging.getLogger("transformers.modeling_utils").setLevel(logging.ERROR)
 
     start_time = time.time()
 
@@ -110,8 +113,20 @@ def main():
         configs, dataset, logger, memberships
     )
 
+    # auditing_dataset = RangeDataset(
+    #     auditing_dataset,
+    #     RangeSampler(
+    #         range_fn=configs["ramia"]["range_function"],
+    #         sample_size=configs["ramia"]["sample_size"],
+    #         config=configs,
+    #     ),
+    #     configs,
+    # )
+    logger.info("Range dataset has been created")
+
     # Generate signals (softmax outputs) for all models
     baseline_time = time.time()
+    # pdb.set_trace()
     signals = get_model_signals(models_list, auditing_dataset, configs, logger)
     logger.info("Preparing signals took %0.5f seconds", time.time() - baseline_time)
 

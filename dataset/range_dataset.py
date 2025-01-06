@@ -1,8 +1,9 @@
+import pdb
 from itertools import chain
 
 import torch
 from torch.utils.data import Dataset
-from transformers import AutoTokenizer
+from transformers import AutoTokenizer, AutoModelForMaskedLM
 
 from range_samplers import *
 
@@ -12,6 +13,31 @@ class RangeSampler:
         self.range_fn = range_fn
         self.sample_size = sample_size
         self.config = config
+
+        if self.range_fn == "word_replace":
+            # Initialize tokenizer and model only once in the main thread
+            self.mask_model = self.config["ramia"].get("mask_model", None)
+            self.mask_tokenizer = self.config["ramia"].get(
+                "mask_tokenizer", self.mask_model
+            )
+            self.num_masks = self.config["ramia"].get("num_masks", None)
+            self.device = self.config["ramia"].get("device", "cuda")
+
+            # Load model and tokenizer outside of sampling function to avoid reloading during each sample
+            if self.mask_model is None:
+                raise ValueError(
+                    "Word replace range sampler requires a mask_model parameter in the config."
+                )
+            if self.num_masks is None:
+                raise ValueError(
+                    "Word replace range sampler requires a num_masks parameter in the config."
+                )
+
+            # Load the masked language model only once
+            self.mlm_model = AutoModelForMaskedLM.from_pretrained(self.mask_model).to(
+                self.device
+            )
+            self.mlm_tokenizer = AutoTokenizer.from_pretrained(self.mask_tokenizer)
 
     def sample(self, range_centers):
         # samples = []
@@ -24,9 +50,10 @@ class RangeSampler:
     def _sample(self, range_center):
         if self.sample_size == 1:
             print("Sample size is 1, returning range center.")
-            return range_center
+            return [range_center]
         elif self.sample_size < 1:
             raise ValueError("Sample size must be greater than 0.")
+
         if self.range_fn == "l2":
             radius = self.config["ramia"].get("radius", None)
             if radius is None:
@@ -54,42 +81,16 @@ class RangeSampler:
                 range_center, transformations_list, self.sample_size
             )
         elif self.range_fn == "word_replace":
-            mask_model = self.config["ramia"].get("mask_model", None)
-            if mask_model is None:
-                raise ValueError(
-                    "Word replace range sampler requires a mask_model parameter in the config."
-                )
-            mask_tokenizer = self.config["ramia"].get("mask_tokenizer", mask_model)
-            num_masks = self.config["ramia"].get("num_masks", None)
-            if num_masks is None:
-                raise ValueError(
-                    "Word replace range sampler requires a num_masks parameter in the config."
-                )
-            device = self.config["ramia"].get("device", "cuda")
             return sample_word_replace(
                 range_center,
-                mask_model,
-                mask_tokenizer,
-                num_masks,
+                self.mlm_model,
+                self.mlm_tokenizer,
+                self.num_masks,
                 self.sample_size,
-                device,
+                self.device,
             )
-        # elif self.range_fn == "ownership":
-        #     ownership_dict_path = self.config["ramia"].get("ownership_dict_path", None)
-        #     if ownership_dict_path is None:
-        #         raise ValueError(
-        #             "Ownership range sampler requires an ownership_dict_path parameter in the config."
-        #         )
-        #     return sample_ownership(range_center, ownership_dict_path, self.sample_size)
-        # elif self.range_fn == "missing_features":
-        #     missing_features = self.config["ramia"].get("missing_features", None)
-        #     if missing_features is None:
-        #         raise ValueError(
-        #             "Missing features range sampler requires a missing_features parameter in the config."
-        #         )
-        #     return sample_missing_features(range_center, missing_features, self.sample_size)
         else:
-            raise ValueError(f"Range function {self.range_fn} is not supported.")
+            raise ValueError(f"Range function {self.range_fn} is not implemented.")
 
 
 class RangeDataset(Dataset):
@@ -97,28 +98,38 @@ class RangeDataset(Dataset):
         self.dataset = dataset
         self.sampler = sampler
         self.config = config
+        self.tokenizer = (
+            AutoTokenizer.from_pretrained(self.config["data"]["tokenizer"])
+            if self.config["data"].get("tokenizer", None) is not None
+            else None
+        )
 
     def __len__(self):
         return len(self.dataset)
 
     def __getitem__(self, idx):
-        if self.sampler.range_fn == "word_replace" and hasattr(
-            self.dataset, "get_text"
-        ):
-            # Determining if it is a text dataset
-            text = self.dataset.get_text(idx)
-            if self.sampler.range_fn != "word_replace":
-                raise ValueError("Range sampler is not compatible with text data.")
+        if self.sampler.range_fn == "word_replace":
+            if hasattr(self.dataset, "get_text"):
+                # Determining if it is a text dataset
+                text = self.dataset.get_text(idx)
+            else:
+                raise ValueError(
+                    "The underlying dataset does not have a get_text method. Please check the implementation."
+                )
             range_text = self.sampler.sample(text)
-            tokenizer = AutoTokenizer.from_pretrained(self.config["data"]["tokenizer"])
-            range_data = tokenizer(
-                list(chain.from_iterable(range_text)),
+            # tokenizer = AutoTokenizer.from_pretrained(self.config["data"]["tokenizer"])
+            if self.tokenizer.pad_token is None:
+                self.tokenizer.pad_token = self.tokenizer.eos_token
+            range_data = self.tokenizer(
+                # list(chain.from_iterable(range_text)),
+                range_text,
                 padding="max_length",
                 truncation=True,
                 max_length=512,
+                return_tensors="pt",
             )
-            data = range_data.input_ids[idx][:-1]
-            target = range_data.input_ids[idx][1:]
+            data = range_data.input_ids[:, :-1]
+            target = range_data.input_ids[:, 1:]
             return data, target
         else:
             range_data = self.sampler.sample(self.dataset[idx][0])

@@ -268,37 +268,42 @@ def audit_models_range(
             )
 
         if tune_trim_ratio:
-            ref_mia_scores = ref_mia_scores.reshape(-1, sample_size)
-            ref_membership = ref_membership.reshape(-1, sample_size)[:, 0]
-            max_auc = 0
+            if sample_size == 1:
+                # Trimming is trivial in this case.
+                trim_ratio = 0
+                trim_direction = "none"
+            else:
+                ref_mia_scores = ref_mia_scores.reshape(-1, sample_size)
+                ref_membership = ref_membership.reshape(-1, sample_size)[:, 0]
+                max_auc = 0
 
-            logger.info(
-                "Finding the optimal trim ratio and direction using the paired model"
-            )
-
-            for k in range(1, sample_size + 1):
-                fpr, tpr, _ = roc_curve(
-                    ref_membership, get_bottomk(ref_mia_scores, k).mean(1)
+                logger.info(
+                    "Finding the optimal trim ratio and direction using the paired model"
                 )
-                roc_auc = auc(fpr, tpr)
-                if roc_auc > max_auc:
-                    max_auc = roc_auc
-                    trim_ratio = k / sample_size
-                    trim_direction = "top"
 
-                fpr, tpr, _ = roc_curve(
-                    ref_membership, get_topk(ref_mia_scores, k).mean(1)
+                for k in range(1, sample_size + 1):
+                    fpr, tpr, _ = roc_curve(
+                        ref_membership, get_bottomk(ref_mia_scores, k).mean(1)
+                    )
+                    roc_auc = auc(fpr, tpr)
+                    if roc_auc > max_auc:
+                        max_auc = roc_auc
+                        trim_ratio = k / sample_size
+                        trim_direction = "top"
+
+                    fpr, tpr, _ = roc_curve(
+                        ref_membership, get_topk(ref_mia_scores, k).mean(1)
+                    )
+                    roc_auc = auc(fpr, tpr)
+                    if roc_auc > max_auc:
+                        max_auc = roc_auc
+                        trim_ratio = 1 - k / sample_size
+                        trim_direction = "bottom"
+                logger.info(
+                    "The optimal trim ratio is %.2f and the direction is %s",
+                    trim_ratio,
+                    trim_direction,
                 )
-                roc_auc = auc(fpr, tpr)
-                if roc_auc > max_auc:
-                    max_auc = roc_auc
-                    trim_ratio = 1 - k / sample_size
-                    trim_direction = "bottom"
-            logger.info(
-                "The optimal trim ratio is %.2f and the direction is %s",
-                trim_ratio,
-                trim_direction,
-            )
 
         target_memberships = all_memberships[:, target_model_idx]
 

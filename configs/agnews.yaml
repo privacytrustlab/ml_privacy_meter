@@ -11,6 +11,7 @@ audit: # Configurations for auditing
   device: cuda:0 # String for indicating the device we want to use for inferring signals and auditing models
   report_log: report_rmia # String that indicates the folder where we save the log and auditing report
   batch_size: 10 # Integer number for indicating batch size for evaluating models and inferring signals.
+  data_size: 1000
 
 train: # Configuration for training
   model_name: gpt2 # String for indicating the model type. We support CNN, wrn28-1, wrn28-2, wrn28-10, vgg16, mlp, gpt2 and speedyresnet (requires cuda). More model types can be added in model.py.
