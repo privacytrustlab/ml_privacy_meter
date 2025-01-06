@@ -31,6 +31,16 @@ Privacy Meter is a versatile tool that can be used with different types of model
 ## Auditing Methodology
 Privacy Meter encompasses multiple privacy auditing method by considering various sources of information leakage. For information leakage through training points, we recommend using [membership inference attacks](documentation/mia.md). For information leakage in the vicinity of training points, [range membership inference attacks](documentation/ramia.md) should be used. For information leakage in the form of the percentage of dataset used in training the given models, [dataset usage cardinality inference](documentation/duci.md) is the go-to method. The specific details of each inference attack and how to use them in Privacy Meter can be found by clicking the respective link above.
 
+For **auditing differential privacy lower bounds**, we  modify the pipeline in dataset creation by performing i.i.d. Poisson sampling from a prespecified canary dataset, and by combing the subsampled canary data points with the clean dataset. We also extend the pipeline in `perform privacy audit` to provide the audited differential privacy lower bounds under different number of MIA guesses. Below is the flowchart for DP auditing:
+
+```mermaid
+flowchart LR
+    H["**Load Clean Dataset and Canary Dataset**"] --> J["**Load or Train Models**"]
+    J --> L["**Use Canary Data as Audit Dataset**"]
+    L --> M["**Compute Membership Signals**"]
+    M --> O["**Perform Differential Privacy Audit**"]
+```
+
 ## Installation Instructions
 To install the dependencies, run the following command:
 ```
@@ -42,6 +52,18 @@ conda env create -f env.yaml
 ```
 This should create a conda environment named `privacy_meter` and install all necessary libraries in it. If conda takes too much time (more than a few minutes) to solve the environment, we suggest updating the conda default solver by following this official [article](https://www.anaconda.com/blog/a-faster-conda-for-a-growing-community).
 
+### Auditing Differential Privacy Lower Bound
+To audit the differential privacy lower bound of a training algorithm using membership inference attack, you can use the following command
+
+1. Mislabelled image as canary data
+```
+python run_audit_dp.py --cf configs/cifar10_dp_mislabel_1000.yaml
+```
+2. Natural image as canary data
+```
+python run_audit_dp.py --cf configs/cifar10_dp_natural_1000.yaml
+```
+The DP auditing results will be printed. And see `report/dp_audit_average.png` folder for more detailed DP auditing results under various number of MIA guesses. To use your own canary dataset, simply modidfy the `canary_dataset` field in the configuration files; to modify the size of the canary dataset, simply modify the `canary_size` field in the configuration files.
 
 ## Dataset and models
 

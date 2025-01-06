@@ -79,6 +79,26 @@ def get_dataset(dataset_name: str, data_dir: str, logger: Any, **kwargs: Any) ->
             with open(f"{path}.pkl", "wb") as file:
                 pickle.dump(all_data, file)
             logger.info(f"Save data to {path}.pkl")
+        elif dataset_name == "cifar10_canary":
+            transform = transforms.Compose(
+                [
+                    transforms.ToTensor(),
+                    transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5]),
+                ]
+            )
+            all_data = torchvision.datasets.CIFAR10(
+                root=path.replace('cifar10_canary', 'cifar10'), train=True, download=True, transform=transform
+            )
+            test_data = torchvision.datasets.CIFAR10(
+                root=path.replace('cifar10_canary', 'cifar10'), train=False, download=True, transform=transform
+            )
+            all_features = np.concatenate([all_data.data, test_data.data], axis=0)
+            all_targets = np.concatenate([all_data.targets, test_data.targets], axis=0)
+            all_data.data = all_features
+            all_data.targets = all_targets
+            with open(f"{path}.pkl", "wb") as file:
+                pickle.dump(all_data, file)
+            logger.info(f"Save data to {path}.pkl")
         elif dataset_name == "cifar100":
             transform = transforms.Compose(
                 [
