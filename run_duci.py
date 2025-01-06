@@ -18,7 +18,7 @@ from util import (
     create_directories,
     load_dataset,
 )
-from module_duci import DUCI
+from modules.duci import DUCI
 
 # Enable benchmark mode in cudnn to improve performance when input sizes are consistent
 torch.backends.cudnn.benchmark = True

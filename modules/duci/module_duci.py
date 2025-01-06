@@ -98,6 +98,22 @@ class DUCI:
         debias_memberships = np.array(ref_membership_all)
         debias_scores = np.array(ref_score_all)
 
+        # # plot scores distribution
+        # import matplotlib.pyplot as plt
+        # member_scores = debias_scores.ravel()[debias_memberships.ravel() == 1]
+        # non_member_scores = debias_scores.ravel()[debias_memberships.ravel() == 0]
+        # plt.hist(member_scores, bins=50, alpha=0.5, label='ref Members')
+        # plt.hist(non_member_scores, bins=50, alpha=0.5, label='ref Non-members')
+        
+
+        # member_scores = mia_scores.ravel()[target_memberships.ravel() == 1]
+        # non_member_scores = mia_scores.ravel()[target_memberships.ravel() == 0]
+        # plt.hist(member_scores, bins=50, alpha=0.5, label='Members')
+        # plt.hist(non_member_scores, bins=50, alpha=0.5, label='Non-members')
+
+        # plt.legend(loc='upper right')
+        # plt.savefig('ref_scores_distribution.png')
+
         # Find the optimal threshold
         fpr_list, tpr_list, thresholds = roc_curve(debias_memberships.ravel(), debias_scores.ravel())
         best_idx = np.argmax(tpr_list - fpr_list)
