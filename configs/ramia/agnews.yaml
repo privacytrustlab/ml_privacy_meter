@@ -10,7 +10,8 @@ audit: # Configurations for auditing
   num_ref_models: 1 # Number of reference models used to audit each target model
   device: cuda:0 # String for indicating the device we want to use for inferring signals and auditing models
   report_log: report_rmia # String that indicates the folder where we save the log and auditing report
-  batch_size: 20 # Integer number for indicating batch size for evaluating models and inferring signals.
+  batch_size: 1 # Integer number for indicating batch size for evaluating models and inferring signals.
+  data_size: 100
 
 train: # Configuration for training
   model_name: gpt2 # String for indicating the model type. We support CNN, wrn28-1, wrn28-2, wrn28-10, vgg16, mlp, gpt2 and speedyresnet (requires cuda). More model types can be added in model.py.
@@ -21,15 +22,10 @@ train: # Configuration for training
   weight_decay: 0.01
   epochs: 1
   optimizer: adamw_torch
-#  peft: # configuration for peft
-#    type: lora # Specify finetuning method
-#    fan_in_fan_out: True
-#    r: 16
-#    target_modules: ["c_attn", "c_proj", "c_fc"]
 
 ramia:
   range_function: word_replace
-  sample_size: 5
+  sample_size: 10
   mask_model: bert-base-uncased
   mask_tokenizer: bert-base-uncased
   num_masks: 5

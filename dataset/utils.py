@@ -195,7 +195,7 @@ def get_dataset(dataset_name: str, data_dir: str, logger: Any, **kwargs: Any) ->
                 except subprocess.CalledProcessError as e:
                     logger.error(f"Error during download or extraction: {e}")
                     raise RuntimeError("Failed to download or extract the dataset.")
-                
+
             X = (
                 pd.read_csv(
                     f"{data_dir}/dataset_texas/feats", header=None, encoding="utf-8"
@@ -263,11 +263,20 @@ def load_dataset_subsets(
     input_list = []
     targets_list = []
     if model_type != "speedyresnet":
-        data_loader = get_dataloader(
-            torch.utils.data.Subset(dataset, index),
-            batch_size=batch_size,
-            shuffle=False,
-        )
+        if batch_size == 1:
+            # This happens with range dataset. Need to set num_workers to 0 to avoid CUDA error
+            data_loader = get_dataloader(
+                torch.utils.data.Subset(dataset, index),
+                batch_size=batch_size,
+                shuffle=False,
+                num_workers=0,
+            )
+        else:
+            data_loader = get_dataloader(
+                torch.utils.data.Subset(dataset, index),
+                batch_size=batch_size,
+                shuffle=False,
+            )
         for inputs, targets in data_loader:
             input_list.append(inputs)
             targets_list.append(targets)
@@ -302,6 +311,7 @@ def get_dataloader(
     batch_size: int,
     loader_type: str = "torch",
     shuffle: bool = True,
+    num_workers: int = 4,
 ) -> DataLoader:
     """
     Function to get DataLoader.
@@ -321,10 +331,10 @@ def get_dataloader(
             repeated_data,
             batch_size=batch_size,
             shuffle=shuffle,
-            num_workers=4,
+            num_workers=num_workers,
             pin_memory=True,
-            persistent_workers=True,
-            prefetch_factor=16,
+            persistent_workers=True if num_workers > 0 else False,
+            prefetch_factor=16 if num_workers > 0 else None,
         )
     else:
         raise NotImplementedError(f"{loader_type} is not supported")

@@ -1,28 +1,29 @@
-import torch
 import random
-from transformers import (
-    AutoModelForMaskedLM,
-    AutoTokenizer
-)
+
+import torch
 
 
-def sample_word_replace(range_center, mask_model, mask_tokenizer, num_masks, sample_size, device):
+def sample_word_replace(
+    range_center, mlm_model, mlm_tokenizer, num_masks, sample_size, device
+):
     """
     Sample sentences with word replacements using a masked language model.
+
     Args:
         range_center (str): The sentence to sample around.
-        mask_model (str): The masked language model to use.
-        mask_tokenizer (str): The tokenizer for the masked language model.
+        mlm_model (transformers.PreTrainedModel): The masked language model to use.
+            This should be a model from the HuggingFace `transformers` library, such as
+            `AutoModelForMaskedLM` or any subclass of it.
+        mlm_tokenizer (transformers.PreTrainedTokenizer): The tokenizer for the masked language model.
+            This should be a tokenizer from the HuggingFace `transformers` library, such as
+            `AutoTokenizer` or any subclass of it.
         num_masks (int): The number of words to mask in each sentence.
         sample_size (int): The number of sentences to sample.
-        device (str): The device to run the masked language model on.
+        device (str): The device to run the masked language model on (e.g., 'cuda' or 'cpu').
+
     Returns:
         list[str]: Sentences sampled with word replacements.
     """
-    # Load the masked language model
-    mlm_model = AutoModelForMaskedLM.from_pretrained(mask_model).to(device)
-    mlm_tokenizer = AutoTokenizer.from_pretrained(mask_tokenizer)
-
     # Mask the input sentence
     attempts = 0
     new_sentences = [range_center]

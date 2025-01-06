@@ -195,26 +195,28 @@ def get_model_signals(models_list, dataset, configs, logger):
 
     signals = []
     logger.info("Computing signals for all models.")
+    # pdb.set_trace()
     if configs.get("ramia", None):
-        data = data.view(-1, *data.shape[2:])
-        targets = targets.view(-1)
+        if len(data.shape) != 2:
+            data = data.view(-1, *data.shape[2:])
+            targets = targets.view(data.shape[0], -1)
     for model in models_list:
-        if configs["audit"]["algorithm"] == "RMIA":
-            signals.append(
-                get_softmax(
-                    model, data, targets, batch_size, device, pad_token_id=pad_token_id
-                )
+        # if configs["audit"]["algorithm"] == "RMIA":
+        signals.append(
+            get_softmax(
+                model, data, targets, batch_size, device, pad_token_id=pad_token_id
             )
-        elif configs["audit"]["algorithm"] == "LOSS":
-            signals.append(
-                get_loss(
-                    model, data, targets, batch_size, device, pad_token_id=pad_token_id
-                )
-            )
-        else:
-            raise NotImplementedError(
-                f"{configs['audit']['algorithm']} is not implemented"
-            )
+        )
+        # elif configs["audit"]["algorithm"] == "LOSS":
+        #     signals.append(
+        #         get_loss(
+        #             model, data, targets, batch_size, device, pad_token_id=pad_token_id
+        #         )
+        #     )
+        # else:
+        #     raise NotImplementedError(
+        #         f"{configs['audit']['algorithm']} is not implemented"
+        #     )
 
     signals = np.concatenate(signals, axis=1)
     np.save(

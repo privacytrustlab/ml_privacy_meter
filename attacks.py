@@ -44,7 +44,7 @@ def tune_offline_a(
     all_signals: np.ndarray,
     all_memberships: np.ndarray,
     logger: Any,
-) -> float:
+) -> (float, np.ndarray, np.ndarray):
     """
     Fine-tune coefficient offline_a used in RMIA.
 
