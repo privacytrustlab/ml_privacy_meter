@@ -21,44 +21,15 @@ Machine learning is playing a central role in automated decision-making in a wid
 
 Data Protection regulations, such as GDPR and AI governance frameworks, require personal data to be protected when used in AI systems, and that the users have control over their data and awareness about how it is being used. For example, [Article 35 of GDPR](https://gdpr-info.eu/art-35-gdpr/) requires organizations to systematically analyze, identify and minimize the data protection risks of a project, especially when the project involves innovative technologies such as Artificial Intelligence, Machine Learning, and Deep Learning. Thus, proper mechanisms need to be in place to quantitatively evaluate and verify the privacy of individuals in every step of the data processing pipeline in AI systems.
 
-## Functionality
-Privacy Meter supports auditing the privacy risk of ML models with different privacy notions. This is done by supporting multiple inference attacks:
-1. Membership inference attack (MIA)
-2. Range membership inference attack (RaMIA)
-3. Dataset usage cardinality inference attack (DUCI)
-
-It also supports auditing differentially private (DP) algorithms and models with any of these attacks above.
-
-### Applicable model classes and their tasks
-Privacy Meter supports various model classes. By default, we support MLPs and WideResNets for classification tasks. We also support LLMs for text generation.
-
 ## Overview
-Privacy Meter supports different types of models, datasets and privacy games, which all need to be specified in a `.yaml` configuration file. The description of the configuration file can be found [here](configs/README.md).
+Privacy Meter is a versatile tool that can be used with different types of models, datasets and privacy games, which all need to be specified in a `.yaml` configuration file. The description of the configuration file can be found [here](configs/README.md).
 
 <p align="center">
-  <img src="ml-privacy-meter.png" alt="ML Privacy Meter">
+  <img src="documentation/ml-privacy-meter.png" alt="ML Privacy Meter">
 </p>
 
-Below is the high level pipeline of the internal mechanism of Privacy Meter, which shows the general procedure involved in auditing privacy according to the configuration.
-
-```mermaid
-flowchart LR
-    H["**Load Dataset**"] --> J["**Load or Train Models**"]
-    J --> L["**Gather Auditing Dataset**"]
-    L --> M["**Compute Membership Signals**"]
-    M --> O["**Perform Privacy Audit**"]
-```
-
-For **Range membership inference**, we modify the pipeline in auditing dataset creation by replacing each point query to range query. In the signal computation step, samples are taken in each range query, before their signals are aggregated in the new signal aggregation step to create the RangeMIA score. Below is the flowchart for RaMIA:
-
-```mermaid
-flowchart LR
-    H["**Load Dataset**"] --> J["**Load or Train Models**"]
-    J --> L["**Create Range Auditing Dataset**"]
-    L --> M["**Compute Membership Signals**"]
-    M --> N["**Aggregate Signals in Each Range**"]
-    N --> O["**Perform Privacy Audit**"]
-```
+## Auditing Methodology
+Privacy Meter encompasses multiple privacy auditing method by considering various sources of information leakage. For information leakage through training points, we recommend using [membership inference attacks](documentation/mia.md). For information leakage in the vicinity of training points, [range membership inference attacks](documentation/ramia.md) should be used. For information leakage in the form of the percentage of dataset used in training the given models, [dataset usage cardinality inference](documentation/duci.md) is the go-to method. The specific details of each inference attack and how to use them in Privacy Meter can be found by clicking the respective link above.
 
 For **auditing differential privacy lower bounds**, we  modify the pipeline in dataset creation by performing i.i.d. Poisson sampling from a prespecified canary dataset, and by combing the subsampled canary data points with the clean dataset. We also extend the pipeline in `perform privacy audit` to provide the audited differential privacy lower bounds under different number of MIA guesses. Below is the flowchart for DP auditing:
 
@@ -70,8 +41,7 @@ flowchart LR
     M --> O["**Perform Differential Privacy Audit**"]
 ```
 
-## User Manual
-### Getting started
+## Installation Instructions
 To install the dependencies, run the following command:
 ```
 pip install -r requirements.txt
@@ -81,25 +51,6 @@ Alternatively, if you prefer using conda, you can create a new environment using
 conda env create -f env.yaml
 ```
 This should create a conda environment named `privacy_meter` and install all necessary libraries in it. If conda takes too much time (more than a few minutes) to solve the environment, we suggest updating the conda default solver by following this official [article](https://www.anaconda.com/blog/a-faster-conda-for-a-growing-community).
-
-### Membership inference attacks
-To run our demo, you can use the following command
-
-```
-python main.py --cf configs/config.yaml
-```
-
-The `.yaml` file allows you to specify the hyperparameters for training the model, and the details of the membership inference attack. To shorten the time to run the demo, we set the number of epochs to 10. To properly audit the privacy risk, we suggest change the number of epochs to 100 or whatever is appropriate for your use case.
-
-For a comprehensive explanation of each parameter, please refer to each `.yaml` file and the explanation [here](configs/README.md). You can also refer to the [demo notebook](demo.ipynb) for a step-by-step walkthrough. Upon audit completion, you will find the results in the `demo` folder, with the attack results saved in `demo/report`. Furthermore, we also offer a timing log for each run, which can be found in the file `log_time_analysis.log`. We recommend running each new set of experiments with different hyperparameters under a different `log_dir` to avoid misusing old trained models or losing previous results.
-
-### Range membership inference attacks
-To audit privacy using range membership inference, you can use the following command
-```
-python run_range_mia.py --cf configs/config_range.yaml
-```
-Note there should be some extra fields in the configuration file for RaMIA compared to MIA that specifies the range attack.
-
 
 ### Auditing Differential Privacy Lower Bound
 To audit the differential privacy lower bound of a training algorithm using membership inference attack, you can use the following command
@@ -114,12 +65,12 @@ python run_audit_dp.py --cf configs/cifar10_dp_natural_1000.yaml
 ```
 The DP auditing results will be printed. And see `report/dp_audit_average.png` folder for more detailed DP auditing results under various number of MIA guesses. To use your own canary dataset, simply modidfy the `canary_dataset` field in the configuration files; to modify the size of the canary dataset, simply modify the `canary_size` field in the configuration files.
 
-### Supported dataset and models by default
+## Dataset and models
 
-By default, Privacy Meter supports various datasets widely used in the MIA literature, including CIFAR10 (`cifar10`), CIFAR100 (`cifar100`), Purchase (`purchase100`), Texas (`texas100`), and AG News (`agnews`). In terms of models, we provide support for CNN (`cnn`), AlexNet (`alexnet`), WideResNet (`wrn28-1`, `wrn28-2`, `wrn28-10`), MLP (`mlp`), and GPT-2 (`gpt2`) models. To specify the dataset and model, you can use the `dataset` and `model_name` parameters in the configuration file. Sample configurations have been provided in the `configs` folder for Purchase-100, CIFAR-10 and AG News datasets.
+Privacy Meter can be used with all datasets and model classes. Here, we provide examples of using Privacy Meter on CIFAR10 (`cifar10`), CIFAR100 (`cifar100`), Purchase (`purchase100`), Texas (`texas100`), and AG News (`agnews`). In terms of models, we provide examples for CNN (`cnn`), AlexNet (`alexnet`), WideResNet (`wrn28-1`, `wrn28-2`, `wrn28-10`), MLP (`mlp`), and GPT-2 (`gpt2`) models. To specify the dataset and model, you can use the `dataset` and `model_name` parameters in the configuration file. Sample configurations have been provided in the `configs` folder for Purchase-100, CIFAR-10 and AG News datasets.
 
-## Extending to Other Datasets and Models
-### Attacking LLMs with other datasets
+### Extending to Other Datasets and Models
+#### Attacking LLMs with other datasets
 
 To use other datasets supported by HuggingFace's `datasets` library, after specifying it in the configuration file, you need to additionally follow these steps:
 - Create `/dataset/<hf_dataset>.py`: this file handles the loading and preprocessing of the new huggingface dataset. You can refer to `/dataset/agnews.py` for an example.
@@ -127,19 +78,19 @@ To use other datasets supported by HuggingFace's `datasets` library, after speci
 
 For other datasets, you can simply modify the `get_dataset` function in `/dataset/utils.py` to support loading the new dataset.
 
-### Attacking other transformers
+#### Attacking other transformers
 
 To attack other transformers from Huggingface's `transformers` library, you need to modify `/models/utils.py` to include the new model in the `get_model` function.  If you want to use different training pipelines, you can modify `/trainers/train_transformer.py` accordingly. You can also use other PEFT methods in the same file if you want to use more than LoRA.
 
 For other Pytorch models, you can create a new model architecture in `/models/` and modify the `get_model` function in `/models/utils.py` to include the new model.
 
-### Use custom training scripts
+#### Use custom training scripts
 
 We integrate a fast training library, [hlb-CIFAR10](https://github.com/tysam-code/hlb-CIFAR10), developed by [tysam-code](https://github.com/tysam-code), into Privacy Meter as an example of incorporating custom training scripts. This library achieves an impressive training accuracy of 94% on CIFAR-10 in approximately 6.84 seconds on a single A100 GPU, setting a new world speed record. This integration allows users to efficiently evaluate the effectiveness of the newly proposed algorithm against existing attack algorithms using the CIFAR-10 dataset. To leverage this fast training library, simply specify the `model_name` as `speedyresnet` in the configuration file. 
 
 To use other training scripts, you can refer to how `speedyresnet` and `/trainers/fast_train.py` is integrated into Privacy Meter for an example.
 
-## Auditing Trained Models
+### Auditing Trained Models
 
 By default, the Privacy Meter checks if the experiment directory specified by the configuration file contains `models_metadata.json`, which contains the model path to be loaded. To audit trained models obtained outside the Privacy Meter, you should follow the file structure (see `<log_dir>/<models>` in the next section) and create a `models_metadata.json` file that shares the same structure as the one generated by Privacy Meter. You can also run the demo configuration file with a few epochs to generate a demo directory to start with.
 
