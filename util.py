@@ -151,7 +151,7 @@ def split_dataset_for_training_poisson(dataset_size, num_model_pairs):
         if i == 0:
             keep = np.random.choice(2, dataset_size, p=[0.5, 0.5]).astype(bool)
             master_keep[i * 2, :] = keep
-            master_keep[i * 2 + 1, :] = keep
+            master_keep[i * 2 + 1, :] = ~keep
             train_indices = np.where(keep)[0]
             test_indices = np.where(~keep)[0]
         else:

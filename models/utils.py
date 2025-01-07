@@ -15,7 +15,7 @@ from transformers import AutoModelForCausalLM
 
 from dataset.utils import get_dataloader
 from models import AlexNet, CNN, MLP, WideResNet
-from trainers.default_trainer import train, inference
+from trainers.default_trainer import train, inference, dp_train
 from trainers.fast_train import (
     load_cifar10_data,
     NetworkEMA,
@@ -178,6 +178,30 @@ def train_models(log_dir, dataset, data_split_info, all_memberships, configs, lo
     return model_list
 
 
+def dp_train_models(log_dir, dataset, data_split_info, all_memberships, configs, logger):
+    """
+    Train models based on the dataset split information.
+
+    Args:
+        log_dir (str): Path to the directory where models and logs will be saved.
+        dataset (torchvision.datasets): Dataset object used for training the models.
+        data_split_info (list): List of dictionaries containing training and test split information for each model.
+        all_memberships (np.array): Membership matrix indicating which samples were used in training each model.
+        configs (dict): Configuration dictionary containing training settings.
+        logger (logging.Logger): Logger object for logging the training process.
+
+    Returns:
+        model_list (list of nn.Module): List of trained model objects.
+    """
+    experiment_dir = f"{log_dir}/models"
+    Path(experiment_dir).mkdir(parents=True, exist_ok=True)
+    logger.info(f"Training {len(data_split_info)} models")
+
+    model_list = dp_prepare_models(
+        experiment_dir, dataset, data_split_info, all_memberships, configs, logger
+    )
+    return model_list
+
 def split_dataset_for_training(dataset_size, num_model_pairs):
     """
     Split dataset into training and test partitions for model pairs.
@@ -290,7 +314,7 @@ def prepare_models(
                 batch_size=batch_size,
             )
             model = train(
-                get_model(model_name, dataset_name),
+                get_model(model_name, dataset_name, configs),
                 train_loader,
                 configs["train"],
                 test_loader,
@@ -353,6 +377,120 @@ def prepare_models(
             "train_loss": train_loss,
             "test_loss": test_loss,
             "dataset": dataset_name,
+        }
+
+    with open(f"{log_dir}/models_metadata.json", "w") as f:
+        json.dump(model_metadata_dict, f, indent=4)
+
+    return model_list
+
+
+
+
+def dp_prepare_models(
+    log_dir: str,
+    dataset: torchvision.datasets,
+    data_split_info: list,
+    all_memberships: np.array,
+    configs: dict,
+    logger,
+):
+    """
+    Train models based on the dataset split information and save their metadata.
+
+    Args:
+        log_dir (str): Path to the directory where model logs and metadata will be saved.
+        dataset (torchvision.datasets): Dataset object used for training.
+        data_split_info (list): List of dictionaries containing training and test split indices for each model.
+        all_memberships (np.array): Membership matrix indicating which samples were used in training each model.
+        configs (dict): Configuration dictionary containing training settings.
+        logger (logging.Logger): Logger object for logging the training process.
+
+    Returns:
+        list: List of trained model objects.
+    """
+    np.save(f"{log_dir}/memberships.npy", all_memberships)
+
+    model_metadata_dict = {}
+    model_list = []
+
+    # for split, split_info in enumerate(data_split_info):
+    for split in range(len(data_split_info)):
+        split_info = data_split_info[split]
+        baseline_time = time.time()
+        logger.info(50 * "-")
+        logger.info(
+            f"Training model {split}: Train size {len(split_info['train'])}, Test size {len(split_info['test'])}"
+        )
+
+        model_name, dataset_name, batch_size, device = (
+            configs["train"]["model_name"],
+            configs["data"]["dataset"],
+            configs["train"]["batch_size"],
+            configs["train"]["device"],
+        )
+
+        if model_name == "gpt2":
+            raise ValueError(
+                f"DP training is not supported for model {model_name} and dataset {dataset_name}"
+            )
+        elif model_name != "speedyresnet":
+            train_loader = get_dataloader(
+                torch.utils.data.Subset(dataset, split_info["train"]),
+                batch_size=batch_size,
+                shuffle=True,
+            )
+            test_loader = get_dataloader(
+                torch.utils.data.Subset(dataset, split_info["test"]),
+                batch_size=batch_size,
+            )
+            model, epsilon = dp_train(
+                get_model(model_name, dataset_name, configs),
+                train_loader,
+                configs["train"],
+                test_loader,
+            )
+            test_loss, test_acc = inference(model, test_loader, device)
+            train_loss, train_acc = inference(model, train_loader, device)
+            logger.info(f"Train accuracy {train_acc}, Train Loss {train_loss} (epsilon = {epsilon}, delta = 1e-5)")
+            logger.info(f"Test accuracy {test_acc}, Test Loss {test_loss}")
+        elif model_name == "speedyresnet" and dataset_name == "cifar10":
+            raise ValueError(
+                f"DP training is not supported for model {model_name} and dataset {dataset_name}"
+            )
+        else:
+            raise ValueError(
+                f"The {model_name} is not supported for the {dataset_name}"
+            )
+
+        model_list.append(copy.deepcopy(model))
+        logger.info(
+            "Training model %s took %s seconds",
+            split,
+            time.time() - baseline_time,
+        )
+
+        model_idx = split
+
+        with open(f"{log_dir}/model_{model_idx}.pkl", "wb") as f:
+            pickle.dump(model.state_dict(), f)
+
+        model_metadata_dict[model_idx] = {
+            "num_train": len(split_info["train"]),
+            "optimizer": configs["train"]["optimizer"],
+            "batch_size": batch_size,
+            "epochs": configs["train"]["epochs"],
+            "model_name": model_name,
+            "learning_rate": configs["train"]["learning_rate"],
+            "weight_decay": configs["train"]["weight_decay"],
+            "model_path": f"{log_dir}/model_{model_idx}.pkl",
+            "train_acc": train_acc,
+            "test_acc": test_acc,
+            "train_loss": train_loss,
+            "test_loss": test_loss,
+            "dataset": dataset_name,
+            "epsilon": epsilon,
+            "delta": 1e-5
         }
 
     with open(f"{log_dir}/models_metadata.json", "w") as f:

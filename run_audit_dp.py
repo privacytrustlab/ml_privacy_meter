@@ -10,7 +10,7 @@ import numpy as np
 
 from audit import get_average_audit_results, audit_models, get_all_dp_audit_results, get_dp_audit_results_for_k_pos_k_neg
 from get_signals import get_model_signals
-from models.utils import load_models, train_models
+from models.utils import load_models, train_models, dp_train_models
 from util import (
     check_configs,
     setup_log,
@@ -69,20 +69,26 @@ def main():
 
     # Load the dataset
     baseline_time = time.time()
-    clean_dataset = load_dataset(configs, directories["data_dir"], logger)
-    if configs['dp_audit'].get('canary_dataset', 'none') != 'none':
+    if configs['dp_audit'].get('canary_dataset', 'none') == 'none':
+        dataset = load_dataset(configs, directories["data_dir"], logger)
+        canary_dataset = torch.utils.data.Subset(
+            dataset, np.arange(configs['dp_audit']['canary_size'])
+        )
+    elif configs['dp_audit'].get('canary_dataset', 'none') == 'cifar10_canary':
         canary_dataset = load_canary_dataset(configs, directories["data_dir"], logger)
         if configs["dp_audit"]['canary_size']>len(canary_dataset):
             raise ValueError("canary data size cannot be larger than the whole cifar10 dataset.")
         canary_dataset = torch.utils.data.Subset(
             canary_dataset, np.arange(configs['dp_audit']['canary_size'])
         )
+        clean_dataset = load_dataset(configs, directories["data_dir"], logger)
+        # subsample clean dataset to ensure that the number of clean samples + the number of canary samples = size of the whole training dataset
+        clean_dataset = torch.utils.data.Subset(
+            clean_dataset, np.arange(configs['dp_audit']['canary_size'], len(clean_dataset))
+        )
         dataset = torch.utils.data.ConcatDataset([canary_dataset, clean_dataset])
     else:
-        canary_dataset = torch.utils.data.Subset(
-            clean_dataset, np.arange(configs['dp_audit']['canary_size'])
-        )
-        dataset = clean_dataset
+        raise NotImplementedError(f"canary dataset {configs['dp_audit']} is not supported")
     
     logger.info("Loading dataset took %0.5f seconds", time.time() - baseline_time)
 
@@ -101,9 +107,14 @@ def main():
         data_splits, memberships = split_dataset_for_training_poisson(
             len(dataset), num_model_pairs
         )
-        models_list = train_models(
-            log_dir, dataset, data_splits, memberships, configs, logger
-        ) 
+        if configs['dp_audit']['training_alg'] == 'dp':
+            models_list = dp_train_models(
+                log_dir, dataset, data_splits, memberships, configs, logger
+            ) 
+        elif configs['dp_audit']['training_alg'] == 'nondp':
+            models_list = train_models(
+                log_dir, dataset, data_splits, memberships, configs, logger
+            )
     logger.info(
         "Model loading/training took %0.1f seconds", time.time() - baseline_time
     )
