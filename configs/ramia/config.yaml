@@ -1,6 +1,6 @@
 run: # Configurations for a specific run
   random_seed: 12345 # Integer number of specifying random seed
-  log_dir: demo_purchase # String for indicating where to save all the information, including models and computed signals. We can reuse the models saved in the same log_dir.
+  log_dir: demo_cifar10 # String for indicating where to save all the information, including models and computed signals. We can reuse the models saved in the same log_dir.
   time_log: True # Indicate whether to log the time for each step
   num_experiments: 1 # Number of total experiments
 
@@ -12,10 +12,9 @@ audit: # Configurations for auditing
   report_log: report_rmia # String that indicates the folder where we save the log and auditing report
   batch_size: 5000 # Integer number for indicating batch size for evaluating models and inferring signals.
   data_size: 10000 # Integer number for indicating the size of the dataset in auditing. If not specified, the entire dataset is used.
-  population_size: 10000 # Integer number for indicating the size of the population data used in auditing.
 
 train: # Configuration for training
-  model_name: mlp # String for indicating the model type. We support CNN, wrn28-1, wrn28-2, wrn28-10, vgg16, mlp and speedyresnet (requires cuda). More model types can be added in model.py.
+  model_name: wrn28-2 # String for indicating the model type. We support CNN, wrn28-1, wrn28-2, wrn28-10, vgg16, mlp and speedyresnet (requires cuda). More model types can be added in model.py.
   device: cuda:0 # String for indicating the device we want to use for training models.
   batch_size: 256
   optimizer: SGD
@@ -23,6 +22,11 @@ train: # Configuration for training
   weight_decay: 0
   epochs: 100
 
+ramia:
+  range_function: geometric
+  sample_size: 4
+  transformations: [horizontal_flip, vertical_flip, rotate]
+
 data: # Configuration for data
-  dataset: purchase100 # String indicates the name of the dataset. We support cifar10, cifar100, purchase100 and texas100 by default.
+  dataset: cifar10 # String indicates the name of the dataset. We support cifar10, cifar100, purchase100 and texas100 by default.
   data_dir: data
