@@ -1,6 +1,6 @@
 run: # Configurations for a specific run
   random_seed: 12345 # Integer number of specifying random seed
-  log_dir: demo_dp_audit_mislabel_1000 # String for indicating where to save all the information, including models and computed signals. We can reuse the models saved in the same log_dir.
+  log_dir: demo_nondp_train_natural_1000 # String for indicating where to save all the information, including models and computed signals. We can reuse the models saved in the same log_dir.
   time_log: True # Indicate whether to log the time for each step
   num_experiments: 1 # Number of total experiments
 
@@ -24,8 +24,9 @@ train: # Configuration for training
 
 
 dp_audit:
-  canary_dataset: cifar10_canary # String indicates the name of the canary dataset. We support cifar10
+  canary_dataset: none # String indicates the name of the canary dataset. We support cifar10_canary or none
   canary_size: 1000
+  training_alg: 'nondp' # String indicates whether to train with dp. We support 'nondp' or 'dp'.
 
 
 data: # Configuration for data

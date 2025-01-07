@@ -8,7 +8,7 @@ Here, we explain each field in the config files.
 
 - **audit**: Configurations related to auditing
   - **privacy_game**: Indicate the type of privacy game/notion. We currently support the `privacy_loss_model` game. We will add more games in the future.
-  - **algorithm**: The membership inference attack used for auditing. We currently support the RMIA introduced by Zarifzadeh et al. 2024(https://openreview.net/pdf?id=sT7UJh5CTc)) and the LOSS attack
+  - **algorithm**: The membership inference attack used for auditing. We currently support the RMIA introduced by Zarifzadeh et al. 2024(https://openreview.net/pdf?id=sT7UJh5CTc) and the LOSS attack
   - **num_ref_models**: Number of reference models used to audit each target model
   - **device**: The device we want to use for inferring signals and auditing models
   - **report_log**: The folder name where we save the log and auditing report
@@ -30,3 +30,7 @@ Here, we explain each field in the config files.
   - **data_dir**: The directory where the dataset is stored. If the dataset is not found in the directory, it will be downloaded.
   - **tokenize**: Indicate whether to tokenize the dataset. If `True`, the dataset will be tokenized using the tokenizer specified in the next field. It can be dropped if not needed.
   - **tokenizer**: The tokenizer type. It can be any tokenizer or local checkpoint supported by the `transformers` library. For non-text datasets, this field can be dropped.
+- **dp_audit**: Configuration related to dp auditing
+  - **canary_dataset**: the name of the canary dataset. We support cifar10_canary constructed by randomly labelled images from CIFAR10 dataset
+  - **canary_size**: the number of data records to load from the canary dataset
+  - **training_alg**: whether to use `dp` or `nondp` training algorithm
