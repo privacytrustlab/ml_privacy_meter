@@ -32,12 +32,12 @@ class MIA:
     def run_mia(
         self,
         all_signals: np.ndarray,
-        population_signals: np.ndarray,
         all_memberships: np.ndarray,
         target_model_idx: int,
         reference_model_indices: np.ndarray,
         logger: logging.Logger,
         args: Dict[str, Any],
+        population_signals: Optional[np.ndarray],
         reuse_offline_a: Optional[bool] = False,
     ) -> Tuple[np.ndarray, np.ndarray]:
         """
@@ -45,11 +45,12 @@ class MIA:
         
         Args:
             all_signals (np.ndarray): Softmax value of all samples in all models (target and reference models). Shape: (num_samples * num_models)
-            population_signals (np.ndarray): Softmax value of population samples in all models (target and reference models). Shape: (num_population_samples * num_models)
             all_memberships (np.ndarray): Membership matrix for all models. Shape: (num_samples * num_models)
             target_model_idx (int): Index of the target model.
             reference_model_indices (np.ndarray): List of indices of reference models.
             args (Dict[str, Any]): Arguments for the MIA attack.
+            population_signals (Optional[np.ndarray]): Softmax value of population samples in all models (target and reference models). Shape: (num_population_samples * num_models)
+            reuse_offline_a (Optional[bool]): Whether to reuse the offline_a value if it has been computed before. Defaults to False.
 
         Returns:
             Tuple[np.ndarray, np.ndarray]: MIA scores for all samples in the target model and the membership labels for the target model.
@@ -66,6 +67,8 @@ class MIA:
         
         logger.info(f"Args for MIA attack: {args}")
         if args["attack"] == "RMIA":
+            # population_signals are required
+            assert population_signals is not None, "population_signals is required for RMIA attack" 
             if args.get("offline_a") is None:
                 serialized_key = self._serialize_args(args)
                 # Reuse the offline_a if it has been computed before for the same dataset and architecture
