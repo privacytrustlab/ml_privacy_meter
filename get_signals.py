@@ -1,6 +1,6 @@
 import os.path
 import pdb
-from typing import Optional
+from typing import Optional, Union
 
 import numpy as np
 import torch
@@ -12,7 +12,7 @@ from dataset.utils import load_dataset_subsets
 
 
 def get_softmax(
-    model: PreTrainedModel | torch.nn.Module,
+    model: Union[PreTrainedModel, torch.nn.Module],
     samples: torch.Tensor,
     labels: torch.Tensor,
     batch_size: int,
@@ -84,7 +84,7 @@ def get_softmax(
 
 
 def get_loss(
-    model: PreTrainedModel | torch.nn.Module,
+    model: Union[PreTrainedModel, torch.nn.Module],
     samples: torch.Tensor,
     labels: torch.Tensor,
     batch_size: int,
