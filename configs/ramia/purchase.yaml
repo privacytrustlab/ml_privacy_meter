@@ -12,6 +12,7 @@ audit: # Configurations for auditing
   report_log: report_rmia # String that indicates the folder where we save the log and auditing report
   batch_size: 5 # Integer number for indicating batch size for evaluating models and inferring signals.
   data_size: 10000 # Integer number for indicating the size of the dataset in auditing. If not specified, the entire dataset is used.
+  population_size: 10000
 
 train: # Configuration for training
   model_name: mlp # String for indicating the model type. We support CNN, wrn28-1, wrn28-2, wrn28-10, vgg16, mlp and speedyresnet (requires cuda). More model types can be added in model.py.
