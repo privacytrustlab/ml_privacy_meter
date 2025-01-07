@@ -70,18 +70,18 @@ def main():
     # Load the dataset
     baseline_time = time.time()
     if configs['dp_audit'].get('canary_dataset', 'none') == 'none':
-        dataset = load_dataset(configs, directories["data_dir"], logger)
+        dataset, population = load_dataset(configs, directories["data_dir"], logger)
         canary_dataset = torch.utils.data.Subset(
             dataset, np.arange(configs['dp_audit']['canary_size'])
         )
     elif configs['dp_audit'].get('canary_dataset', 'none') == 'cifar10_canary':
-        canary_dataset = load_canary_dataset(configs, directories["data_dir"], logger)
+        canary_dataset, _ = load_canary_dataset(configs, directories["data_dir"], logger)
         if configs["dp_audit"]['canary_size']>len(canary_dataset):
             raise ValueError("canary data size cannot be larger than the whole cifar10 dataset.")
         canary_dataset = torch.utils.data.Subset(
             canary_dataset, np.arange(configs['dp_audit']['canary_size'])
         )
-        clean_dataset = load_dataset(configs, directories["data_dir"], logger)
+        clean_dataset, population = load_dataset(configs, directories["data_dir"], logger)
         # subsample clean dataset to ensure that the number of clean samples + the number of canary samples = size of the whole training dataset
         clean_dataset = torch.utils.data.Subset(
             clean_dataset, np.arange(configs['dp_audit']['canary_size'], len(clean_dataset))
@@ -124,9 +124,21 @@ def main():
             :, : len(canary_dataset)
         ].reshape((memberships.shape[0], len(canary_dataset)))
 
+    population = torch.utils.data.Subset(
+        population,
+        np.random.choice(
+            len(population),
+            configs["audit"].get("population_size", len(population)),
+            replace=False,
+        ),
+    )
+
     # Generate signals (softmax outputs) for all models
     baseline_time = time.time()
     signals = get_model_signals(models_list, auditing_dataset, configs, logger)
+    population_signals = get_model_signals(
+        models_list, population, configs, logger, is_population=True
+    )
     logger.info("Preparing signals took %0.5f seconds", time.time() - baseline_time)
 
     # Perform the privacy audit
@@ -136,6 +148,7 @@ def main():
         f"{directories['report_dir']}/exp",
         target_model_indices,
         signals,
+        population_signals,
         auditing_membership,
         num_reference_models,
         logger,
