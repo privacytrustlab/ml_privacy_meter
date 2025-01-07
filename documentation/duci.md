@@ -1,13 +1,15 @@
 # Dataset Usage Cardinality Inference Attacks
+
 How much of a given dataset was used to train a machine learning model? This is a critical question for data owners assessing the risk of unauthorized data usage and protecting their right (United States Code, 1976). Dataset Usage Cardinality Inference (DUCI) estimats the exact proportion of data used through debiasing and aggregating individual MIA guesses.
 
 ## Problem
+
 <img src="duci_problem.png" alt="Problem Illustration" title="Simple DUCI Pipeline" width="600">
 
 The Dataset Usage Cardinality Inference (DUCI) algorithm---acting as an agent for the dataset owner with full access to a target dataset---aims to estimate the proportion of the target dataset used in training a victim model, given black-box access to the model and knowledge of the training algorithm (e.g., the population data and model archtecture).
 
-
 ## Method
+
 To estimate the proportion of a target dataset being used, the Dataset Usage Cardinality Inference (DUCI) algorithm first debiases the membership predictions \(\hat{m}_i\) provided by any Membership Inference Attack (MIA) method to obtain the probability of each data record being used, using the following formula:
 
 \[
@@ -26,9 +28,9 @@ where \(|X|\) is the size of the target dataset.
 
 In Privacy Meter, DUCI is conducted in the following way:
 
-1. Load the target model and launch the membership inference attack on each record in the target dataset.  
-2. Launch the same membership inference attack on a reference model (reusing the reference models from MIA if available) to calculate the TPR (\(P(\hat{m} = 1 \mid m = 1)\)) and FPR (\(P(\hat{m} = 1 \mid m = 0)\)) used for debiasing.  
-3. Debias the predictions using the estimated errors and aggregate them to estimate the overall proportion.  
+1. Load the target model and launch the membership inference attack on each record in the target dataset.
+2. Launch the same membership inference attack on a reference model (reusing the reference models from MIA if available) to calculate the TPR (\(P(\hat{m} = 1 \mid m = 1)\)) and FPR (\(P(\hat{m} = 1 \mid m = 0)\)) used for debiasing.
+3. Debias the predictions using the estimated errors and aggregate them to estimate the overall proportion.
 
 Here is the graphical illustration of the process.
 
@@ -54,7 +56,7 @@ To run a DUCI on a target model using 50% of the target dataset, you can use the
 
 ```
 
-python run_duci.py --cf configs/config.yaml
+python run_duci.py --cf configs/config_duci.yaml
 
 ```
 
@@ -72,9 +74,10 @@ duci_preds, true_proportions, errors = DUCI_instance.pred_proportions(
     memberships,
 )
 ```
-In this example, there are 4 runs. The target models for the runs are model 0, 1, 2, and 3, respectively, with the corresponding reference models for each run as follows: 
 
-- **Run 1**: Target model is model 0, and the reference models are 2 and 3.  
-- **Run 2**: Target model is model 1, and the reference models are 2 and 3.  
-- **Run 3**: Target model is model 2, and the reference models are 0 and 1.  
-- **Run 4**: Target model is model 3, and the reference models are 0 and 1.  
+In this example, there are 4 runs. The target models for the runs are model 0, 1, 2, and 3, respectively, with the corresponding reference models for each run as follows:
+
+- **Run 1**: Target model is model 0, and the reference models are 2 and 3.
+- **Run 2**: Target model is model 1, and the reference models are 2 and 3.
+- **Run 3**: Target model is model 2, and the reference models are 0 and 1.
+- **Run 4**: Target model is model 3, and the reference models are 0 and 1.
