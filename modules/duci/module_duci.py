@@ -68,12 +68,12 @@ class DUCI:
         baseline_time = time.time()
         mia_scores, target_memberships = MIA_instance.run_mia(
             all_signals,
-            population_signals,
             all_memberships, 
             target_model_idx, 
             reference_model_indices, 
             self.logger, 
             self.args,
+            population_signals,
             reuse_offline_a=False
         )
         self.logger.info("Collect membership prediction for target dataset on target model %d costs %0.1f seconds",
@@ -85,16 +85,16 @@ class DUCI:
         paired_model_idx = (
             target_model_idx + 1 if target_model_idx % 2 == 0 else target_model_idx - 1
         )
-        for ref_model_idx in [paired_model_idx]: #TODO: add population data in RMIA for reference model debiasing
+        for ref_model_idx in [paired_model_idx]:
         # for ref_model_idx in reference_model_indices:
             ref_mia_scores, ref_target_memberships = MIA_instance.run_mia(
                 all_signals,
-                population_signals,
                 all_memberships,
                 ref_model_idx,
                 reference_model_indices,
                 self.logger,
                 self.args,
+                population_signals,
                 reuse_offline_a=False
             )
             ref_score_all.append(ref_mia_scores)
