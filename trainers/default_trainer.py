@@ -8,8 +8,6 @@ import numpy as np
 import torch
 from torch import nn
 from torch.optim import lr_scheduler
-from opacus import PrivacyEngine
-from opacus.validators import ModuleValidator
 
 
 def lr_update(step: int, total_epoch: int, train_size: int, initial_lr: float) -> float:
@@ -110,7 +108,6 @@ def train(
     return model
 
 
-
 def dp_train(
     model: torch.nn.Module,
     train_loader: torch.utils.data.DataLoader,
@@ -129,6 +126,9 @@ def dp_train(
     Returns:
         torch.nn.Module: Trained model.
     """
+    from opacus import PrivacyEngine
+    from opacus.validators import ModuleValidator
+
     # Ensure the model is moved to the correct device (e.g., cuda:1 or cpu)
     device = configs.get("device", "cpu")
     model = model.to(device)  # Make sure the model is on the correct device
@@ -200,6 +200,7 @@ def dp_train(
     model.to("cpu")
     epsilon = privacy_engine.accountant.get_epsilon(delta=1e-5)
     return model, epsilon
+
 
 def inference(
     model: torch.nn.Module, loader: torch.utils.data.DataLoader, device: str
