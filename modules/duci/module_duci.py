@@ -28,6 +28,7 @@ class DUCI:
             target_model_idx: int,
             reference_model_indices: np.ndarray,
             all_signals: np.ndarray,
+            population_signals: np.ndarray,
             all_memberships: np.ndarray,
             MIA_instance: MIA
         ) -> Tuple[float, float]:
@@ -57,6 +58,7 @@ class DUCI:
             target_model_idx (int): Index of the target model.
             mia_scores (np.ndarray): MIA scores for the target model.
             all_signals (np.ndarray): List of signal matrix with shape (samples, models).
+            population_signals (np.ndarray): List of signal matrix with shape (population_samples, models).
             all_memberships (np.ndarray): List of membership matrix with shape (samples, models).
 
         Returns:
@@ -65,12 +67,13 @@ class DUCI:
         # Conduct MIA on the target model using privacy meter tools
         baseline_time = time.time()
         mia_scores, target_memberships = MIA_instance.run_mia(
-            all_signals, 
+            all_signals,
             all_memberships, 
             target_model_idx, 
             reference_model_indices, 
             self.logger, 
             self.args,
+            population_signals,
             reuse_offline_a=False
         )
         self.logger.info("Collect membership prediction for target dataset on target model %d costs %0.1f seconds",
@@ -82,7 +85,7 @@ class DUCI:
         paired_model_idx = (
             target_model_idx + 1 if target_model_idx % 2 == 0 else target_model_idx - 1
         )
-        for ref_model_idx in [paired_model_idx]: #TODO: add population data in RMIA for reference model debiasing
+        for ref_model_idx in [paired_model_idx]:
         # for ref_model_idx in reference_model_indices:
             ref_mia_scores, ref_target_memberships = MIA_instance.run_mia(
                 all_signals,
@@ -91,6 +94,7 @@ class DUCI:
                 reference_model_indices,
                 self.logger,
                 self.args,
+                population_signals,
                 reuse_offline_a=False
             )
             ref_score_all.append(ref_mia_scores)
@@ -142,6 +146,7 @@ class DUCI:
         target_model_indices: List[int],
         reference_model_indices_all: List[np.ndarray],
         all_signals: np.ndarray,
+        population_signals: np.ndarray,
         all_memberships: np.ndarray,
     ) -> Tuple[List[float], List[float], List[float]]:
         """
@@ -151,6 +156,7 @@ class DUCI:
             target_model_indices (list): List of the target model indices.
             reference_model_indices (list): List of the reference model indices array.
             all_signals (np.ndarray): Softmax value of all samples in all models (target and reference models). Shape: (num_samples * num_models)
+            population_signals (np.ndarray): Softmax value of all population samples in the target and reference model. Shape: (num_population_samples * num_models)
             all_memberships (np.ndarray): Membership matrix for all models. Shape: (num_samples * num_models)
         
         Returns:
@@ -168,6 +174,7 @@ class DUCI:
                 target_model_idx,
                 reference_model_indices,
                 all_signals,
+                population_signals,
                 all_memberships,
                 MIA_instance
             )
