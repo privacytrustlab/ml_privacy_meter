@@ -57,7 +57,11 @@ def get_dataset(dataset_name: str, data_dir: str, logger: Any, **kwargs: Any) ->
     if os.path.exists(f"{path}.pkl"):
         with open(f"{path}.pkl", "rb") as file:
             all_data = pickle.load(file)
-        logger.info(f"Load data from {path}.pkl")
+        logger.info(f"Data loaded from {path}.pkl")
+        if os.path.exists(f"{path}_population.pkl"):
+            with open(f"{path}_population.pkl", "rb") as file:
+                test_data = pickle.load(file)
+            logger.info(f"Population data loaded from {path}_population.pkl")
     else:
         if dataset_name == "cifar10":
             transform = transforms.Compose(
@@ -72,13 +76,16 @@ def get_dataset(dataset_name: str, data_dir: str, logger: Any, **kwargs: Any) ->
             test_data = torchvision.datasets.CIFAR10(
                 root=path, train=False, download=True, transform=transform
             )
-            all_features = np.concatenate([all_data.data, test_data.data], axis=0)
-            all_targets = np.concatenate([all_data.targets, test_data.targets], axis=0)
-            all_data.data = all_features
-            all_data.targets = all_targets
+            # all_features = np.concatenate([all_data.data, test_data.data], axis=0)
+            # all_targets = np.concatenate([all_data.targets, test_data.targets], axis=0)
+            # all_data.data = all_features
+            # all_data.targets = all_targets
             with open(f"{path}.pkl", "wb") as file:
                 pickle.dump(all_data, file)
             logger.info(f"Save data to {path}.pkl")
+            with open(f"{path}_population.pkl", "wb") as file:
+                pickle.dump(test_data, file)
+            logger.info(f"Save population data to {path}_population.pkl")
         elif dataset_name == "cifar10_canary":
             transform = transforms.Compose(
                 [
@@ -87,18 +94,27 @@ def get_dataset(dataset_name: str, data_dir: str, logger: Any, **kwargs: Any) ->
                 ]
             )
             all_data = torchvision.datasets.CIFAR10(
-                root=path.replace('cifar10_canary', 'cifar10'), train=True, download=True, transform=transform
+                root=path.replace("cifar10_canary", "cifar10"),
+                train=True,
+                download=True,
+                transform=transform,
             )
             test_data = torchvision.datasets.CIFAR10(
-                root=path.replace('cifar10_canary', 'cifar10'), train=False, download=True, transform=transform
+                root=path.replace("cifar10_canary", "cifar10"),
+                train=False,
+                download=True,
+                transform=transform,
             )
-            all_features = np.concatenate([all_data.data, test_data.data], axis=0)
-            all_targets = np.concatenate([all_data.targets, test_data.targets], axis=0)
-            all_data.data = all_features
-            all_data.targets = all_targets
+            # all_features = np.concatenate([all_data.data, test_data.data], axis=0)
+            # all_targets = np.concatenate([all_data.targets, test_data.targets], axis=0)
+            # all_data.data = all_features
+            # all_data.targets = all_targets
             with open(f"{path}.pkl", "wb") as file:
                 pickle.dump(all_data, file)
             logger.info(f"Save data to {path}.pkl")
+            with open(f"{path}_population.pkl", "wb") as file:
+                pickle.dump(test_data, file)
+            logger.info(f"Save population data to {path}_population.pkl")
         elif dataset_name == "cifar100":
             transform = transforms.Compose(
                 [
@@ -112,13 +128,16 @@ def get_dataset(dataset_name: str, data_dir: str, logger: Any, **kwargs: Any) ->
             test_data = torchvision.datasets.CIFAR100(
                 root=path, train=False, download=True, transform=transform
             )
-            all_features = np.concatenate([all_data.data, test_data.data], axis=0)
-            all_targets = np.concatenate([all_data.targets, test_data.targets], axis=0)
-            all_data.data = all_features
-            all_data.targets = all_targets
+            # all_features = np.concatenate([all_data.data, test_data.data], axis=0)
+            # all_targets = np.concatenate([all_data.targets, test_data.targets], axis=0)
+            # all_data.data = all_features
+            # all_data.targets = all_targets
             with open(f"{path}.pkl", "wb") as file:
                 pickle.dump(all_data, file)
             logger.info(f"Save data to {path}.pkl")
+            with open(f"{path}_population.pkl", "wb") as file:
+                pickle.dump(test_data, file)
+            logger.info(f"Save population data to {path}_population.pkl")
         elif dataset_name == "purchase100":
             if not os.path.exists(f"{data_dir}/dataset_purchase"):
                 logger.info(
@@ -158,10 +177,17 @@ def get_dataset(dataset_name: str, data_dir: str, logger: Any, **kwargs: Any) ->
             ).to_numpy()
             y = df[:, 0] - 1
             X = df[:, 1:].astype(np.float32)
-            all_data = TabularDataset(X, y)
+            training_size = int(
+                len(y) * 0.75
+            )  # Splitting to create a population dataset
+            all_data = TabularDataset(X[:training_size], y[:training_size])
+            test_data = TabularDataset(X[training_size:], y[training_size:])
             with open(f"{path}.pkl", "wb") as file:
                 pickle.dump(all_data, file)
             logger.info(f"Save data to {path}.pkl")
+            with open(f"{path}_population.pkl", "wb") as file:
+                pickle.dump(test_data, file)
+            logger.info(f"Save population data to {path}_population.pkl")
         elif dataset_name == "texas100":
             if not os.path.exists(f"{data_dir}/dataset_texas/feats"):
                 logger.info(
@@ -213,14 +239,22 @@ def get_dataset(dataset_name: str, data_dir: str, logger: Any, **kwargs: Any) ->
                 .reshape(-1)
                 - 1
             )
-            all_data = TabularDataset(X, y)
+            training_size = int(
+                len(y) * 0.75
+            )  # Splitting to create a population dataset
+            all_data = TabularDataset(X[:training_size], y[:training_size])
+            test_data = TabularDataset(X[training_size:], y[training_size:])
             with open(f"{path}.pkl", "wb") as file:
                 pickle.dump(all_data, file)
             logger.info(f"Save data to {path}.pkl")
+            with open(f"{path}_population.pkl", "wb") as file:
+                pickle.dump(test_data, file)
+            logger.info(f"Save population data to {path}_population.pkl")
         elif dataset_name == "agnews":
             tokenizer = kwargs.get("tokenizer")
             if tokenizer is None:
                 agnews = load_agnews(tokenize=False)
+                agnews_test = load_agnews(split="test", tokenize=False)
             else:
                 agnews = load_agnews(
                     tokenize=True,
@@ -228,15 +262,28 @@ def get_dataset(dataset_name: str, data_dir: str, logger: Any, **kwargs: Any) ->
                         tokenizer, clean_up_tokenization_spaces=True
                     ),
                 )
+                agnews_test = load_agnews(
+                    split="test",
+                    tokenize=True,
+                    tokenizer=AutoTokenizer.from_pretrained(
+                        tokenizer, clean_up_tokenization_spaces=True
+                    ),
+                )
             all_data = TextDataset(agnews, target_column="labels", text_column="text")
+            test_data = TextDataset(
+                agnews_test, target_column="labels", text_column="text"
+            )
             with open(f"{path}.pkl", "wb") as file:
                 pickle.dump(all_data, file)
             logger.info(f"Save data to {path}.pkl")
+            with open(f"{path}_population.pkl", "wb") as file:
+                pickle.dump(test_data, file)
+            logger.info(f"Save population data to {path}_population.pkl")
         else:
             raise NotImplementedError(f"{dataset_name} is not implemented")
 
     logger.info(f"The whole dataset size: {len(all_data)}")
-    return all_data
+    return all_data, test_data
 
 
 def load_dataset_subsets(

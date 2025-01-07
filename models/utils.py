@@ -52,8 +52,10 @@ def get_model(model_type: str, dataset_name: str, configs: dict):
             return AutoModelForCausalLM.from_pretrained(model_type)
         else:
             peft_config = get_peft_model_config(configs)
-            return get_peft_model(AutoModelForCausalLM.from_pretrained(model_type), peft_config)
-       
+            return get_peft_model(
+                AutoModelForCausalLM.from_pretrained(model_type), peft_config
+            )
+
     num_classes = INPUT_OUTPUT_SHAPE[dataset_name][1]
     in_shape = INPUT_OUTPUT_SHAPE[dataset_name][0]
     if model_type == "CNN":
@@ -298,7 +300,10 @@ def prepare_models(
                 # Fine-tuning with PEFT
                 model, train_loss, test_loss = train_transformer_with_peft(
                     hf_dataset.select(split_info["train"]),
-                    get_peft_model(get_model(model_name, dataset_name, configs), get_peft_model_config(configs)),
+                    get_peft_model(
+                        get_model(model_name, dataset_name, configs),
+                        get_peft_model_config(configs),
+                    ),
                     configs,
                     hf_dataset.select(split_info["test"]),
                 )

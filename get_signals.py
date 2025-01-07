@@ -134,7 +134,7 @@ def get_loss(
     return all_loss_list
 
 
-def get_model_signals(models_list, dataset, configs, logger):
+def get_model_signals(models_list, dataset, configs, logger, is_population=False):
     """Function to get models' signals (softmax, loss, logits) on a given dataset.
 
     Args:
@@ -142,16 +142,18 @@ def get_model_signals(models_list, dataset, configs, logger):
         dataset (torchvision.datasets): The whole dataset.
         configs (dict): Configurations of the tool.
         logger (logging.Logger): Logger object for the current run.
+        is_population (bool): Whether the signals are computed on population data.
 
     Returns:
         signals (np.array): Signal value for all samples in all models
     """
     # Check if signals are available on disk
     signal_file_name = (
-        f"{configs['audit']['algorithm'].lower()}_ramia_signals.npy"
+        f"{configs['audit']['algorithm'].lower()}_ramia_signals"
         if configs.get("ramia", None)
-        else f"{configs['audit']['algorithm'].lower()}_signals.npy"
+        else f"{configs['audit']['algorithm'].lower()}_signals"
     )
+    signal_file_name += "_pop.npy" if is_population else ".npy"
     if os.path.exists(
         f"{configs['run']['log_dir']}/signals/{signal_file_name}",
     ):
