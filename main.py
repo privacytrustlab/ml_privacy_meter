@@ -5,8 +5,10 @@ import math
 import pdb
 import time
 
+import numpy as np
 import torch
 import yaml
+from torch.utils.data import Subset
 
 from audit import get_average_audit_results, audit_models, sample_auditing_dataset
 from get_signals import get_model_signals
@@ -67,7 +69,7 @@ def main():
 
     # Load the dataset
     baseline_time = time.time()
-    dataset = load_dataset(configs, directories["data_dir"], logger)
+    dataset, population = load_dataset(configs, directories["data_dir"], logger)
     logger.info("Loading dataset took %0.5f seconds", time.time() - baseline_time)
 
     # Define experiment parameters
@@ -96,9 +98,21 @@ def main():
         configs, dataset, logger, memberships
     )
 
+    population = Subset(
+        population,
+        np.random.choice(
+            len(population),
+            configs["audit"].get("population_size", len(population)),
+            replace=False,
+        ),
+    )
+
     # Generate signals (softmax outputs) for all models
     baseline_time = time.time()
     signals = get_model_signals(models_list, auditing_dataset, configs, logger)
+    population_signals = get_model_signals(
+        models_list, population, configs, logger, is_population=True
+    )
     logger.info("Preparing signals took %0.5f seconds", time.time() - baseline_time)
 
     # Perform the privacy audit
@@ -108,6 +122,7 @@ def main():
         f"{directories['report_dir']}/exp",
         target_model_indices,
         signals,
+        population_signals,
         auditing_membership,
         num_reference_models,
         logger,
