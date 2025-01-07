@@ -198,7 +198,7 @@ def get_model_signals(models_list, dataset, configs, logger, is_population=False
     signals = []
     logger.info("Computing signals for all models.")
     # pdb.set_trace()
-    if configs.get("ramia", None):
+    if configs.get("ramia", None) and not is_population:
         if len(data.shape) != 2:
             data = data.view(-1, *data.shape[2:])
             targets = targets.view(data.shape[0], -1)
