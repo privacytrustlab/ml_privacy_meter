@@ -31,6 +31,10 @@ Privacy Meter is a versatile tool that can be used with different types of model
 ## Auditing Methodology
 Privacy Meter encompasses multiple privacy auditing method by considering various sources of information leakage. For information leakage through training points, we recommend using [membership inference attacks](documentation/mia.md). For information leakage in the vicinity of training points, [range membership inference attacks](documentation/ramia.md) should be used. For information leakage in the form of the percentage of dataset used in training the given models, [dataset usage cardinality inference](documentation/duci.md) is the go-to method. Privacy meter also supports [auditing the differential privacy (DP) lower bounds](documentation/dpaudit.md) of (DP or non-DP) training algorithms with membership inference attacks. The specific details of each inference attack and how to use them in Privacy Meter can be found by clicking the respective link above.
 
+<p align="center">
+  <img src="documentation/overview.png" alt="Overview">
+</p>
+
 ## Installation Instructions
 To install the dependencies, run the following command:
 ```
