@@ -1,4 +1,4 @@
-# Dataset Usage Cardinality Inference Attacks
+# Dataset Usage Cardinality Inference
 
 
 Did your model train on my data? More importantly, does its use qualify as fair use, or does it infringe on my copyright? As AI continues to advance, this question becomes increasingly critical. According to Section 107 of the U.S. Copyright Act, determining whether a use constitutes fair use or copyright infringement requires evaluating the "_amount and substantiality of the portion used in relation to the copyrighted work_" under the "_nature of the copyrighted work_." This raises a key question: **how much of a given dataset was used to train a machine learning model?**
@@ -83,7 +83,7 @@ In this example, there are 4 runs. The target models for the runs are model 0, 1
 
 ## Expected Results for $p=0.5$
 
-| RUN | Prediction($\hat{p}$) | Error($\vert\hat{p} - p\vert$) |
+| RUN | Prediction ($\hat{p}$) | Error ($\vert\hat{p} - p\vert$) |
 | :-: | :---------------------: | :------------------: |
 |  1  |         0.5018         |        0.0018        |
 |  2  |         0.4971         |        0.0028        |
