@@ -83,7 +83,7 @@ In this example, there are 4 runs. The target models for the runs are model 0, 1
 
 ## Expected Results for $p=0.5$
 
-| RUN | Prediction ($\hat{p}$) | Error ($\vert\hat{p} - p\vert$) |
+| RUN | Prediction ($\hat{p}$) | Error (\| $\hat{p}-p$ \|) |
 | :-: | :---------------------: | :------------------: |
 |  1  |         0.5018         |        0.0018        |
 |  2  |         0.4971         |        0.0028        |
