@@ -1,6 +1,13 @@
 # Membership Inference Attacks
 How much privacy is leaked by a given model/training algorithm? This question is often referred to as the privacy auditing problem in the field of machine learning privacy, and the de-facto solution is membership inference attacks (MIAs). 
 
+## Membership Inference Game
+
+## Hypothesis Test for Membership Inference
+
+## Test strategy
+### RMIA
+
 ## Pipeline
 Below is the high level pipeline of the internal mechanism of Privacy Meter, which shows the general procedure involved in auditing privacy according to the configuration.
 
@@ -25,10 +32,19 @@ For a comprehensive explanation of each parameter, please refer to each `.yaml` 
 
 ## Auditing Results
 Upon audit completion, you will find the results in the `demo` folder, with the attack results saved in `demo/report`. Furthermore, we also offer a timing log for each run, which can be found in the file `log_time_analysis.log`. We recommend running each new set of experiments with different hyperparameters under a different `log_dir` to avoid misusing old trained models or losing previous results.
-
+### Vision models
 Below are the ROC and log scale ROC of the auditing result on CIFAR-10 dataset with a WideResNet.
 
 <div style="display: flex; justify-content: space-between;">
     <img src="../demo_cifar10/report/exp/ROC_0.png" alt="ROC" width="45%" />
     <img src="../demo_cifar10/report/exp/ROC_log_0.png" alt="ROC (log)" width="45%" />
 </div>
+
+### Language generative models
+
+<div style="display: flex; justify-content: space-between;">
+    <img src="../demo_agnews/report/exp/ROC_0.png" alt="ROC" width="45%" />
+    <img src="../demo_agnews/report/exp/ROC_log_0.png" alt="ROC (log)" width="45%" />
+</div>
+
+### Interpolation of the result

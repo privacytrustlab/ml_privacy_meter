@@ -86,17 +86,17 @@ python run_range_mia.py --cf configs/ramia/config.yaml
 We provide a template of the config file at this [folder](../configs/ramia/). The explanations of each field in the config can be found in this [document](../configs/ramia/README.md).
 
 ## Auditing Results
-The auditing results will be stored in the same way as running the base membership inference attack. They can be found at `<log_dir>/report_ramia`. The `exp/attack_result_x.npz` file contains the FPR, TPR, AUC, TPR at small FPR values from attacking target model `x`. A plot of the ROC can also be found at the same folder. Here we attach a sample ROC and log scale ROC by attacking the Purchase-100 dataset with L2 distance being the range function and 10 being the range size.
+The auditing results will be stored in the same way as running the base membership inference attack. They can be found at `<log_dir>/report_ramia`. The `exp/attack_result_x.npz` file contains the FPR, TPR, AUC, TPR at small FPR values from attacking target model `x`. A plot of the ROC can also be found at the same folder. Here we attach a sample ROC and log scale ROC by attacking the AG News dataset on a GPT-2 with word replacement being the range function and 10 being the range size.
 
 <div style="display: flex; justify-content: space-between;">
-    <img src="../demo_purchase/report_ramia/exp/ROC_0.png" alt="ROC" width="45%">
-    <img src="../demo_purchase/report_ramia/exp/ROC_log_0.png" alt="Log ROC" width="45%">
+    <img src="images/ramia_demo_agnews_roc.png" alt="ROC" width="45%">
+    <img src="images/ramia_demo_agnews_logroc.png.png" alt="Log ROC" width="45%">
 </div>
 
 
 ## Expected Results
 | config | auc |
 |--------|-----|
-| purchase.yaml       |  0.5352   |
-| cifar10.yaml       |  0.5921   |
-| agnews.yaml       | 0.8290   |
+| configs/ramia/purchase.yaml     |  0.5352  |
+| configs/ramia/cifar10.yaml      |  0.5921  |
+| configs/ramia/agnews.yaml       |  0.8290  |

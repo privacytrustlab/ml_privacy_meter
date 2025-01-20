@@ -7,7 +7,7 @@ Dataset Usage Cardinality Inference (DUCI) provides an answer. It enables data o
 
 ## Problem
 
-<img src="duci_problem.png" alt="Problem Illustration" title="Simple DUCI Pipeline" width="600">
+<img src="images/duci_problem.png" alt="Problem Illustration" title="Simple DUCI Pipeline" width="600">
 
 The Dataset Usage Cardinality Inference (DUCI) algorithm---acting as an agent for the dataset owner with full access to a target dataset---aims to estimate the proportion of the target dataset used in training a victim model, given black-box access to the model and knowledge of the training algorithm (e.g., the population data and model archtecture).
 
