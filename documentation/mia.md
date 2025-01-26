@@ -15,7 +15,7 @@ Inferring the membership of data is feasible due to the memorization behavior of
 There are a vast of number of publicly accessible models, either open-sourced or on cloud. Existing attacks have shown impressive attack success rate and result on popular models. We want to raise the public's awareness that ML models can lead to indirect information leakage of data.
 
 ## What is Membership Inference Attack
-Membership inference attack (MIA), is a class of inference attack that aims to determine whether a given point query is from the training set of a target model. Formally put, the adversary aims to output a binary outcome that indicates whether a data point $x$ is part of the training set of a model $f$. Usually the adversary is assumed to only have access to the prediction API of the target model that outputs $f(x)$ for a given input $x$.
+Membership inference attack (MIA) is a class of inference attack that aims to determine whether a given point query is from the training set of a target model. Formally put, the adversary aims to output a binary outcome $b \in [0,1]$ that indicates whether a data point $x$ is part of the training set of a model $f$. Usually the adversary is assumed to only have access to the prediction API of the target model that outputs $f(x)$ for a given input $x$, which makes the attack more feasible on real world models.
 
 <p align="center">
   <img src="images/mia_diagram.png" alt="Membership Inference Attack diagram" width="80%">
@@ -29,7 +29,7 @@ In ML security literature, membership inference is often formulated as a game th
 </p>
 
 ### Evaluating MIAs
-An attack algorithm should assign a numeric score $\text{MIA}(x;f)$ to every query $x$. The membership decision is then obtained by thresholding the membership score. To evaluate the power of the MIA and assess the overall privacy risk of a target model, the commonly used metric is the area under the receiver operating characteristic curve (AUC ROC). The ROC curve has the true positive rate (TPR), which shows the power of the attack, as its y-axis, and the false positive rate (FPR) as its x-axis, which shows the error of the attack. The larger the AUC, the stronger the MIA is. 
+An attack algorithm should assign a numeric score $\text{MIA}(x;f)$ to every query $x$. The membership decision is then obtained by thresholding the membership score. To evaluate the power of the MIA and assess the overall privacy risk of the target model, the commonly used metric is the area under the receiver operating characteristic curve (AUC-ROC). The ROC curve uses the true positive rate (TPR), which shows the power of the attack, as its y-axis, and the false positive rate (FPR), which shows the error of the attack, as its x-axis. The larger the AUC, the stronger the MIA is. A clueless attacker that uniformly randomly outputs 1's and 0's will have an AUC of 0.5.
 
 ## Hypothesis Test for Membership Inference
 Given the game formulation of membership inference, we can construct two "worlds":
@@ -40,16 +40,30 @@ These two worlds can be expressed as the two hypotheses in the hypothesis testin
 - $H_0$: The given point $x$ is part of the training set (IN world)
 - $H_1$: The given point $x$ is not part of the training set (OUT world)
 
+The adversary's task is then to determine which world he is  in with the observable $f$ and $x$.
+
 <p align="center">
   <img src="images/hypothesis_testing.png" alt="Hypothesis Testing" width="100%">
 </p>
 
 ### Test strategy
-The strongest attack for this hypothesis testing problem is to use a likelihood ratio test:
+The strongest attack for this hypothesis testing problem is to use a likelihood ratio test (LRT):
 $LR(f, x)=\frac{L(H_0|f, x)}{L(H_1|f, x)}$, where $L$ is the likelihood function. If the likelihood ratio falls below a threshold, we reject the null hypothesis and conclude that the given point $x$ is not a member.
 
-
 ### RMIA
+There are many ways to formulate the likelihood function $L$ and to construct the threshold. In Privacy Meter, the core membership inference engine is build upon the state-of-the-art method, the Robust Membership Inference Attack (RMIA). RMIA uses Bayes rule to compute the likelihood: $L(\cdot|f, x)=P(f|x)=\frac{P(x|f)P(f)}{P(x)}$. The LRT considers two worlds:
+- the IN world where the model $f$ is trained on a member point $x$
+- the OUT world where the model $f$ is trained on non-member point $z$
+
+In this way, the LRT can be written as $LR=\frac{P(x|f)P(f)}{P(x)} / \frac{P(z|f)P(f)}{P(z)} = \frac{P(x|f)}{P(x)} / \frac{P(z|f)}{P(z)}$. For brevity of the notation, we denote $\frac{P(x|f)}{P(x)}$ as $P_x$, and $\frac{P(z|f)}{P(z)}$ as $P_z$. The $P_x$ term can be understood as a calibrated probability of $x$ as it divides the probability of $x$ under the target model by the base probability of $x$ under all possible worlds. To compute the denominator $P(x)$, RMIA uses references models by expanding it to $P(x) = \sum_{f \in F}P(x|f)P(f)$. Since $x$ can be either IN or OUT for each model with equal probability, there can be two types of reference models: the IN models and OUT models. Hence, the $P(f)$ term can be computed by $P(f)=0.5P_{IN}+0.5P_{OUT}$, where each of the summand is the average of the probability of $x$ over all IN and OUT reference models respectively. For example, $P_{OUT}=\text{Avg}_{f\in F_{OUT}}P(x|f)$.
+
+#### Training reference models
+The reference models should have the same model architecture as the target model, and be trained in similar ways. In Privacy Meter, we adopt the training methodology in [LiRA](https://ieeexplore.ieee.org/stamp/stamp.jsp?tp=&arnumber=9833649) and [RMIA](https://openreview.net/pdf?id=sT7UJh5CTc) where each reference model and target model is trained on a randomly selected half of the full dataset. For example, given a dataset of 10000 samples, each reference model and target model will be trained on a random subset of 5000 samples. The splitting algorithm also ensures that each data sample has an equal chance of being included or excluded from training a model. Hence, each point has an equal number of IN and OUT models.
+
+#### Offline Attack
+It is more realistic to assume that the adversary only has access to OUT data and no access to IN data, which made it impossible to train IN models for IN data points. Privacy Meter acknowledges this and bases the membership inference engine on an attack version that is from this scenario, which is the **offline** RMIA.
+
+In terms of computation, RMIA approximates $P_{IN}$ with $P_{OUT}$ by $P_{IN}=a\cdot P_{OUT}+(1-a)$, where $0\leq a \leq 1$. 
 
 ## Pipeline
 Below is the high level pipeline of the internal mechanism of Privacy Meter, which shows the general procedure involved in auditing privacy according to the configuration.
