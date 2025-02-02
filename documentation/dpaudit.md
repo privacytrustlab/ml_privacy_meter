@@ -50,7 +50,7 @@ python run_audit_dp.py --cf configs/cifar10_dp_train_natural_1000.yaml
 
 ## Estimated Running Time
 
-The **estimated total running time** of the above commands on single RTX 3090 is 3700 seconds under non-DP training, and is 4800 seconds under DP training.
+The **estimated total running time** of the above commands on single RTX 3090 is 3600 seconds under non-DP training, and is 5200 seconds under DP training.
 
 
 ## Expected Outputs
@@ -59,8 +59,9 @@ The DP auditing results will be printed. And see corresponding `report/dp_audit_
 
 | Canary Data | Training Algo. | Audited Lower Bound $\hat{\varepsilon}$ under $\delta = 10^{-5}$ |
 | :-------- | :-------- | :--------|
-|  Mislabelled  |       Non-DP      |         |
-|  Mislabelled  |       DP $(\varepsilon = , \delta = )$           |                  |
-|  Natural      |       Non-DP      |         |
-|  Natural      |       DP $(\varepsilon = , \delta = )$           |           |
+|  Mislabelled  |       Non-DP      |     5.4814    |
+|  Mislabelled  |       DP ($\varepsilon = 68.51, \delta = 10^{-5}$)           |        0.4181          |
+|  Natural      |       Non-DP      |    4.5571     |
+|  Natural      |       DP ($\varepsilon = 68.51, \delta = 10^{-5}$)          |        0.1258   |
 
+As shown in the table, stronger canary design (mislabelled images) allow stronger DP auditing results, and differentially private training effective reduce the audited privacy risk lower bound.
