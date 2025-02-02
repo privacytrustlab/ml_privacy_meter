@@ -58,7 +58,7 @@ The DP auditing results will be printed. And see corresponding `report/dp_audit_
 
 
 | Canary Data | Training Algo. | Audited Lower Bound $\hat{\varepsilon}$ under $\delta = 10^{-5}$ |
-| :-: | :---------------------: | :------------------: |
+| :-------- | :-------- | :--------|
 |  Mislabelled  |       Non-DP      |         |
 |  Mislabelled  |       DP $(\varepsilon = , \delta = )$           |                  |
 |  Natural      |       Non-DP      |         |
