@@ -67,7 +67,7 @@ def main():
 
     start_time = time.time()
 
-    # Load the dataset
+    # Load the canary dataset
     baseline_time = time.time()
     if configs['dp_audit'].get('canary_dataset', 'none') == 'none':
         dataset, population = load_dataset(configs, directories["data_dir"], logger)
