@@ -73,9 +73,9 @@ The term $P(x)$ in the denominator normalizes the probability of observing $x$ b
 
 $$P(x) = \sum_{f \in F} P(x | f) P(f).$$
 
-Since each data point can be either IN or OUT for a given model with equal probability, RMIA estimates $P(f)$ as:
+Since each data point can be either IN or OUT for a given model with equal probability, RMIA estimates $P(x)$ as:
 
-$$P(f) = 0.5 P_{IN} + 0.5 P_{OUT},$$
+$$P(x) = 0.5 P_{IN} + 0.5 P_{OUT},$$
 
 where $P_{IN}$ and $P_{OUT}$ are the average probabilities of $x$ over IN and OUT reference models, respectively. These reference models serve as an approximation of the underlying distribution of models.
 
@@ -87,7 +87,7 @@ $$LR(x, z) = \frac{P(x|f)}{P(x)} \bigg/ \frac{P(z|f)}{P(z)}.$$
 
 By aggregating these pairwise comparisons, RMIA constructs the final membership inference score as:
 
-$$\text{Score}_{\text{RMIA}}(x, f) = P_{z \sim \pi} \left( LR(x, z) \geq \gamma \right),$$
+$$\text{Score}_{\text{RMIA}}(x, f) = P _{z \sim \pi} \left( LR(x, z) \geq \gamma \right),$$
 
 where the probability is computed over multiple population points $z$, and $\gamma \geq 1$ is a threshold controlling how much stronger $x$'s likelihood should be compared to $z$ in order to infer membership. The default value of $\gamma$ is 1.
 
@@ -130,15 +130,17 @@ Upon audit completion, you will find the results in the `demo` folder, with the 
 Below are the ROC and log scale ROC of the auditing result on CIFAR-10 dataset with a WideResNet.
 
 <div style="display: flex; justify-content: space-between;">
-    <img src="../demo_cifar10/report/exp/ROC_0.png" alt="ROC" width="45%" />
-    <img src="../demo_cifar10/report/exp/ROC_log_0.png" alt="ROC (log)" width="45%" />
+    <img src="images/mia_demo_cifar10_roc.png" alt="ROC" width="45%" />
+    <img src="images/mia_demo_cifar10_logroc.png" alt="ROC (log)" width="45%" />
 </div>
 
 ### Language generative models
+Below are the ROC and log scale ROC of the auditing result on AG News dataset with an autoregressive GPT-2.
 
 <div style="display: flex; justify-content: space-between;">
-    <img src="../demo_agnews/report/exp/ROC_0.png" alt="ROC" width="45%" />
-    <img src="../demo_agnews/report/exp/ROC_log_0.png" alt="ROC (log)" width="45%" />
+    <img src="images/mia_demo_agnews_roc.png" alt="ROC" width="45%" />
+    <img src="images/mia_demo_agnews_logroc.png" alt="ROC (log)" width="45%" />
 </div>
 
-### Interpolation of the result
+### Interpretation of the result
+For a fixed attacker, if he cannot infer any private information from the model, he can only randomly assign membership labels to queries. This would lead to an AUC of 0.5. When the model leaks more information, the same attacker can make better predictions, improving his performance in membership inference and achieving larger AUCs.
