@@ -32,17 +32,17 @@ flowchart LR
 
 ## Implementation Details
 ### Creating the range dataset
-The range dataset is created out of a "normal" dataset used to train models. Each range query is wrapped around each original training point with a range sampler, which is created from the specified range function and range size in the config file. The class definition of range dataset and sampler can be found in this [file](dataset/range_dataset.py). Sampling is lazy, which means the range sampler that samples points within each range will not start unless the range dataset is explicitly indexed (e.g. in the signal computation step). 
+The range dataset is created out of a "normal" dataset used to train models. Each range query is wrapped around each original training point with a range sampler, which is created from the specified range function and range size in the config file. The class definition of range dataset and sampler can be found in this [file](../dataset/range_dataset.py). Sampling is lazy, which means the range sampler that samples points within each range will not start unless the range dataset is explicitly indexed (e.g. in the signal computation step). 
 
 ### Aggregating membership scores within each range
-In the [paper](https://arxiv.org/pdf/2408.05131), the aggregation method is to compute the trimmed means. We implement this [here](ramia_scores.py) with an additional averaging option, which can serve as a baseline for comparison. Given this modularity, other aggregation methods can be easily added.
+In the [paper](https://arxiv.org/pdf/2408.05131), the aggregation method is to compute the trimmed means. We implement this [here](../modules/ramia/ramia_scores.py) with an additional averaging option, which can serve as a baseline for comparison. Given this modularity, other aggregation methods can be easily added.
 
 ## How to use RaMIA in Privacy Meter
 To audit privacy using range membership inference, you can use the following command
 ```
 python run_range_mia.py --cf configs/ramia/config.yaml
 ```
-We provide a template of the config file at this [folder](configs/ramia/). The explanations of each field in the config can be found in this [document](configs/ramia/README.md).
+We provide a template of the config file at this [folder](../configs/ramia/). The explanations of each field in the config can be found in this [document](../configs/ramia/README.md).
 
 ## Auditing Results
 The auditing results will be stored in the same way as running the base membership inference attack. They can be found at `<log_dir>/report_ramia`. The `exp/attack_result_x.npz` file contains the FPR, TPR, AUC, TPR at small FPR values from attacking target model `x`. A plot of the ROC can also be found at the same folder. Here we attach a sample ROC and log scale ROC by attacking the Purchase-100 dataset with L2 distance being the range function and 10 being the range size.
