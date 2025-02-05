@@ -1,11 +1,8 @@
-import pdb
-from itertools import chain
-
 import torch
 from torch.utils.data import Dataset
 from transformers import AutoTokenizer, AutoModelForMaskedLM
 
-from range_samplers import *
+from modules.ramia.range_samplers import *
 
 
 class RangeSampler:
@@ -88,6 +85,22 @@ class RangeSampler:
                 self.num_masks,
                 self.sample_size,
                 self.device,
+            )
+        elif self.range_fn == "missing_values":
+            num_missing_feats = self.config["ramia"].get("num_missing_feats", None)
+            col_ranges = self.config["ramia"].get("col_ranges", None)
+            if col_ranges is None:
+                raise ValueError(
+                    "Column data ranges are required for sampling given missing values."
+                )
+            col_ranges = [tuple(sublist) for sublist in col_ranges]
+            is_categorical = self.config["ramia"].get("is_categorical", False)
+            return sample_data_imputation(
+                range_center,
+                self.sample_size,
+                num_missing_feats,
+                col_ranges,
+                is_categorical,
             )
         else:
             raise ValueError(f"Range function {self.range_fn} is not implemented.")
