@@ -115,6 +115,52 @@ def load_existing_model(
     return model
 
 
+def dp_load_existing_model(
+    model_metadata: dict, dataset: torchvision.datasets, device: str, config: dict
+):
+    """Load an existing model from disk based on the provided metadata.
+
+    Args:
+        model_metadata (dict): Metadata dictionary containing information about the model.
+        dataset (torchvision.datasets): Dataset object used to instantiate the model.
+        device (str): The device on which to load the model, such as 'cpu' or 'cuda'.
+        config (dict): Configuration dictionary containing information about the model.
+    Returns:
+        model (torch.nn.Module): Loaded model object with weights restored from disk.
+    """
+    from opacus.validators import ModuleValidator
+
+    model_name = model_metadata["model_name"]
+    dataset_name = model_metadata["dataset"]
+
+    if model_name != "speedyresnet":
+        model = get_model(model_name, dataset_name, config)
+    else:
+        data = load_cifar10_data(dataset, [0], [0], device=device)
+        model = NetworkEMA(make_net(data, device=device))
+    
+    model = ModuleValidator.fix(model)
+
+    def remove_module_from_state_dict(old_state_dict):
+        from collections import OrderedDict
+        new_state_dict = OrderedDict()
+        for k, v in old_state_dict.items():
+            name = k.replace("_module.", "") # removing ‘.moldule’ from key # remove `module.`
+            new_state_dict[name] = v
+        return new_state_dict
+
+    model_checkpoint_extension = os.path.splitext(model_metadata["model_path"])[1]
+    if model_checkpoint_extension == ".pkl":
+        with open(model_metadata["model_path"], "rb") as file:
+            model_weight = pickle.load(file)
+        model_weight = remove_module_from_state_dict(model_weight)
+        model.load_state_dict(model_weight)
+    else:
+        raise ValueError(f"DP Model path is invalid.")
+    return model
+
+
+
 def load_models(log_dir, dataset, num_models, configs, logger):
     """
     Load trained models from disk if available.
@@ -154,6 +200,46 @@ def load_models(log_dir, dataset, num_models, configs, logger):
             break
     return model_list, all_memberships
 
+
+
+def dp_load_models(log_dir, dataset, num_models, configs, logger):
+    """
+    Load trained models from disk if available.
+
+    Args:
+        log_dir (str): Path to the directory containing model logs and metadata.
+        dataset (torchvision.datasets): Dataset object used for model training.
+        num_models (int): Number of models to be loaded from disk.
+        configs (dict): Dictionary of configuration settings, including device information.
+        logger (logging.Logger): Logger object for logging the model loading process.
+
+    Returns:
+        model_list (list of nn.Module): List of loaded model objects.
+        all_memberships (np.array): Membership matrix for all loaded models, indicating training set membership.
+    """
+    experiment_dir = f"{log_dir}/models"
+    if os.path.exists(f"{experiment_dir}/models_metadata.json"):
+        with open(f"{experiment_dir}/models_metadata.json", "r") as f:
+            model_metadata_dict = json.load(f)
+        all_memberships = np.load(f"{experiment_dir}/memberships.npy")
+        if len(model_metadata_dict) < num_models:
+            return None, None
+    else:
+        return None, None
+
+    model_list = []
+    for model_idx in range(len(model_metadata_dict)):
+        logger.info(f"Loading model {model_idx}")
+        model_obj = dp_load_existing_model(
+            model_metadata_dict[str(model_idx)],
+            dataset,
+            configs["audit"]["device"],
+            configs,
+        )
+        model_list.append(model_obj)
+        if len(model_list) == num_models:
+            break
+    return model_list, all_memberships
 
 def train_models(log_dir, dataset, data_split_info, all_memberships, configs, logger):
     """

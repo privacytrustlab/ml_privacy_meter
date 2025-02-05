@@ -21,18 +21,28 @@ Machine learning is playing a central role in automated decision-making in a wid
 
 Data Protection regulations, such as GDPR and AI governance frameworks, require personal data to be protected when used in AI systems, and that the users have control over their data and awareness about how it is being used. For example, [Article 35 of GDPR](https://gdpr-info.eu/art-35-gdpr/) requires organizations to systematically analyze, identify and minimize the data protection risks of a project, especially when the project involves innovative technologies such as Artificial Intelligence, Machine Learning, and Deep Learning. Thus, proper mechanisms need to be in place to quantitatively evaluate and verify the privacy of individuals in every step of the data processing pipeline in AI systems.
 
+<p align="center">
+  <img src="documentation/images/gdpr.png" alt="GDPR">
+</p>
+
 ## Overview
 Privacy Meter is a versatile tool that can be used with different types of models, datasets and privacy games, which all need to be specified in a `.yaml` configuration file. The description of the configuration file can be found [here](configs/README.md).
 
 <p align="center">
-  <img src="documentation/ml-privacy-meter.png" alt="ML Privacy Meter">
+  <img src="documentation/images/ml-privacy-meter.png" alt="ML Privacy Meter">
 </p>
 
 ## Auditing Methodology
-Privacy Meter encompasses multiple privacy auditing method by considering various sources of information leakage. For information leakage through training points, we recommend using [membership inference attacks](documentation/mia.md). For information leakage in the vicinity of training points, [range membership inference attacks](documentation/ramia.md) should be used. For information leakage in the form of the percentage of dataset used in training the given models, [dataset usage cardinality inference](documentation/duci.md) is the go-to method. Privacy meter also supports [auditing the differential privacy (DP) lower bounds](documentation/dpaudit.md) of (DP or non-DP) training algorithms with membership inference attacks. The specific details of each inference attack and how to use them in Privacy Meter can be found by clicking the respective link above.
+Privacy Meter encompasses multiple privacy auditing method by considering various sources of information leakage. 
+- For information leakage through training points, we recommend using [membership inference](documentation/mia.md). 
+- For information leakage in the vicinity of training points, [range membership inference](documentation/ramia.md) should be used. 
+- For information leakage in the percentage of dataset used in training the given models, [dataset usage cardinality inference](documentation/duci.md) is the go-to method. 
+- Privacy meter also supports [auditing the differential privacy (DP) lower bounds](documentation/dpaudit.md) of (DP or non-DP) training algorithms with membership inference attacks. 
+
+The specific details of each inference attack and how to use them in Privacy Meter can be found by clicking the respective link above. Privacy Meter extends the basic auditing approach that uses membership inference by incorporating more modern and advanced auditing strategies. Refer to the diagram below for a quick guide of which class of inference attack should be used for different auditing purposes.
 
 <p align="center">
-  <img src="documentation/overview.png" alt="Overview">
+  <img src="documentation/images/overview.jpeg" alt="Overview">
 </p>
 
 ## Installation Instructions

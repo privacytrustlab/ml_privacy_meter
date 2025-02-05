@@ -99,6 +99,8 @@ def get_dataset(dataset_name: str, data_dir: str, logger: Any, **kwargs: Any) ->
                 download=True,
                 transform=transform,
             )
+            labels = np.random.randint(10, size = len(all_data))
+            all_data.targets = labels.tolist()
             test_data = torchvision.datasets.CIFAR10(
                 root=path.replace("cifar10_canary", "cifar10"),
                 train=False,

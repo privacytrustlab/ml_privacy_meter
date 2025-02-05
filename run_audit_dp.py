@@ -10,7 +10,7 @@ import numpy as np
 
 from audit import get_average_audit_results, audit_models, get_all_dp_audit_results, get_dp_audit_results_for_k_pos_k_neg
 from get_signals import get_model_signals
-from models.utils import load_models, train_models, dp_train_models
+from models.utils import dp_load_models, train_models, dp_train_models
 from util import (
     check_configs,
     setup_log,
@@ -67,7 +67,7 @@ def main():
 
     start_time = time.time()
 
-    # Load the dataset
+    # Load the canary dataset
     baseline_time = time.time()
     if configs['dp_audit'].get('canary_dataset', 'none') == 'none':
         dataset, population = load_dataset(configs, directories["data_dir"], logger)
@@ -99,7 +99,7 @@ def main():
 
     # Load or train models
     baseline_time = time.time()
-    models_list, memberships = load_models(
+    models_list, memberships = dp_load_models(
         log_dir, dataset, num_model_pairs * 2, configs, logger
     )
     if models_list is None:

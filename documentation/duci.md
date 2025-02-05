@@ -1,10 +1,13 @@
-# Dataset Usage Cardinality Inference Attacks
+# Dataset Usage Cardinality Inference
 
-How much of a given dataset was used to train a machine learning model? This is a critical question for data owners assessing the risk of unauthorized data usage and protecting their right (United States Code, 1976). Dataset Usage Cardinality Inference (DUCI) estimats the exact proportion of data used through debiasing and aggregating individual MIA guesses.
+
+Did your model train on my data? More importantly, does its use qualify as fair use, or does it infringe on my copyright? As AI continues to advance, this question becomes increasingly critical. According to Section 107 of the U.S. Copyright Act, determining whether a use constitutes fair use or copyright infringement requires evaluating the "_amount and substantiality of the portion used in relation to the copyrighted work_" under the "_nature of the copyrighted work_." This raises a key question: **how much of a given dataset was used to train a machine learning model?**
+
+Dataset Usage Cardinality Inference (DUCI) provides an answer. It enables data owners to assess the risk of unauthorized usage and protect their rights by estimating the exact proportion of data used. DUCI achieves this through a debiasing process that aggregates individual Membership Inference Attack (MIA) guesses to deliver accurate results.
 
 ## Problem
 
-<img src="duci_problem.png" alt="Problem Illustration" title="Simple DUCI Pipeline" width="600">
+<img src="images/duci_problem.png" alt="Problem Illustration" title="Simple DUCI Pipeline" width="600">
 
 The Dataset Usage Cardinality Inference (DUCI) algorithm---acting as an agent for the dataset owner with full access to a target dataset---aims to estimate the proportion of the target dataset used in training a victim model, given black-box access to the model and knowledge of the training algorithm (e.g., the population data and model archtecture).
 
@@ -12,17 +15,13 @@ The Dataset Usage Cardinality Inference (DUCI) algorithm---acting as an agent fo
 
 To estimate the proportion of a target dataset being used, the Dataset Usage Cardinality Inference (DUCI) algorithm first debiases the membership predictions \(\hat{m}_i\) provided by any Membership Inference Attack (MIA) method to obtain the probability of each data record being used, using the following formula:
 
-\[
-\hat{p}_i = \frac{\hat{m}_i - P(\hat{m}_i = 1 \mid m_i = 0)}{P(\hat{m}_i = 1 \mid m_i = 1) - P(\hat{m}_i = 1 \mid m_i = 0)},
-\]
+$\hat{p}_i = \frac{\hat{m}_i - P(\hat{m}_i = 1 \mid m_i = 0)}{P(\hat{m}_i = 1 \mid m_i = 1) - P(\hat{m}_i = 1 \mid m_i = 0)}$,
 
 After debiasing, DUCI aggregates the unbiased probability estimators over the entire dataset to compute the overall proportion:
 
-\[
-\hat{p} = \frac{1}{|X|} \sum_{i=1}^{|X|} \hat{p}_i,
-\]
+$\hat{p} = \frac{1}{|X|} \sum_{i=1}^{|X|} \hat{p}_i,$
 
-where \(|X|\) is the size of the target dataset.
+where \($|X|$\) is the size of the target dataset.
 
 ## Pipeline
 
@@ -81,3 +80,11 @@ In this example, there are 4 runs. The target models for the runs are model 0, 1
 - **Run 2**: Target model is model 1, and the reference models are 2 and 3.
 - **Run 3**: Target model is model 2, and the reference models are 0 and 1.
 - **Run 4**: Target model is model 3, and the reference models are 0 and 1.
+
+## Expected Results for $p=0.5$
+
+| RUN | Prediction ($\hat{p}$) | Error (\| $\hat{p}$ - $p$ \|) |
+| :-: | :---------------------: | :------------------: |
+|  1  |         0.5018         |        0.0018        |
+|  2  |         0.4971         |        0.0028        |
+|  3  |         0.5081         |        0.0081        |
