@@ -221,6 +221,7 @@ def get_model_signals(models_list, dataset, configs, logger, is_population=False
         #     )
 
     signals = np.concatenate(signals, axis=1)
+    os.makedirs(f"{configs['run']['log_dir']}/signals", exist_ok=True)
     np.save(
         f"{configs['run']['log_dir']}/signals/{signal_file_name}",
         signals,
