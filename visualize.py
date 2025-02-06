@@ -101,7 +101,7 @@ def plot_eps_vs_num_guesses(eps_list, correct_num_list, k_neg_list, k_pos_list, 
     min_interval_idx = np.argmax(eps_list)
     t = f"k_neg={k_neg_list[min_interval_idx]} and k_pos={k_pos_list[min_interval_idx]} enables the highest audited EPS LB: num of guesses is {num_guesses_grid[min_interval_idx]}, EPS LB is {eps_list[min_interval_idx]}"
     tt = textwrap.fill(t, width = 70)
-    plt.text(num_guesses_grid.mean(), -0.6, tt, ha='center', va='top')
+    plt.text(num_guesses_grid.mean(), -0.2, tt, ha='center', va='top')
     
    
     plt.savefig(path, bbox_inches = 'tight')
