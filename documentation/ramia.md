@@ -45,7 +45,7 @@ The best suited scenario to use RaMIA is when the query set contains no exact ma
 
 
 ### Aggregating membership scores within each range
-In the [paper](https://arxiv.org/pdf/2408.05131), the aggregation method is to compute the trimmed means. We implement this [here](../ramia_scores.py) with an additional averaging option, which can serve as a baseline for comparison. Given this modularity, other aggregation methods can be easily added. Here, we highlight the function that needs to be expanded if more aggregation functions need to be added.
+In the [paper](https://arxiv.org/pdf/2408.05131), the aggregation method is to compute the trimmed means. We implement this [here](../modules/ramia/ramia_scores.py) with an additional averaging option, which can serve as a baseline for comparison. Given this modularity, other aggregation methods can be easily added. Here, we highlight the function that needs to be expanded if more aggregation functions need to be added.
 ```python
 def trim_mia_scores(
     mia_scores: np.ndarray, trim_ratio: float, trim_direction: str

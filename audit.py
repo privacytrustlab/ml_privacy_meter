@@ -12,7 +12,7 @@ from sklearn.metrics import roc_curve, auc
 from torch.utils.data import Subset
 
 from attacks import tune_offline_a, run_rmia, run_loss
-from ramia_scores import get_topk, get_bottomk, trim_mia_scores
+from modules.ramia.ramia_scores import get_topk, get_bottomk, trim_mia_scores
 from visualize import plot_roc, plot_roc_log, plot_eps_vs_num_guesses
 
 
