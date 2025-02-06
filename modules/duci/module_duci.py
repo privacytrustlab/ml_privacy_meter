@@ -1,4 +1,4 @@
-from typing import Tuple, List, Any, Dict
+from typing import Tuple, List, Any, Dict, Union
 import numpy as np
 from sklearn.metrics import roc_curve
 import logging
@@ -26,7 +26,7 @@ class DUCI:
 
     def debias_pred(self, 
             target_model_idx: int,
-            reference_model_indices: np.ndarray,
+            reference_model_indices: Union[np.ndarray, List[int]],
             all_signals: np.ndarray,
             population_signals: np.ndarray,
             all_memberships: np.ndarray,
@@ -82,20 +82,20 @@ class DUCI:
 
         # Conduct MIA on the paired model using privacy meter tools
         ref_score_all, ref_membership_all = [], []
-        paired_model_idx = (
-            target_model_idx + 1 if target_model_idx % 2 == 0 else target_model_idx - 1
-        )
-        for ref_model_idx in [paired_model_idx]:
-        # for ref_model_idx in reference_model_indices:
+        # paired_model_idx = (
+        #     target_model_idx + 1 if target_model_idx % 2 == 0 else target_model_idx - 1
+        # )
+        # for ref_model_idx in [paired_model_idx]:
+        for ref_model_idx in reference_model_indices:
             ref_mia_scores, ref_target_memberships = MIA_instance.run_mia(
                 all_signals,
                 all_memberships,
                 ref_model_idx,
-                reference_model_indices,
+                list(set(reference_model_indices) - {ref_model_idx}),  # reference_model_indices w/o ref_model_idx
                 self.logger,
                 self.args,
                 population_signals,
-                reuse_offline_a=False
+                reuse_offline_a=True
             )
             ref_score_all.append(ref_mia_scores)
             ref_membership_all.append(ref_target_memberships)
@@ -108,6 +108,9 @@ class DUCI:
         # non_member_scores = debias_scores.ravel()[debias_memberships.ravel() == 0]
         # plt.hist(member_scores, bins=50, alpha=0.5, label='ref Members')
         # plt.hist(non_member_scores, bins=50, alpha=0.5, label='ref Non-members')
+        # plt.legend(loc='upper right')
+        # plt.savefig('victim_scores_distribution.png')
+        # plt.close()
         
 
         # member_scores = mia_scores.ravel()[target_memberships.ravel() == 1]

@@ -142,7 +142,7 @@ def main():
         "attack": "RMIA",
         "dataset": configs["data"]["dataset"], # TODO: have DUCI config
         "model": configs["train"]["model_name"],
-        "offline_a": 0.3
+        "offline_a": None
     }
     DUCI_instance = DUCI(logger, args)
 
