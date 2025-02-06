@@ -1,5 +1,12 @@
 # Auditing Differential Privacy Lower Bound
 
+Could I check whether a training algorithm (that used my data) is differentially private (DP) as claimed? Importantly, how to test the claimed differential privacy guarantee of different training algorithms with confidence guarantees. This question is important in quantitatively interpreting, debugging, and comparing the privacy guarantees of different private learning algorithms.
+
+A DP auditing experiment takes in a randomized algorithm and a confidence tolerance as inputs, and returns a high-confidence statistical lower bound $\hat{\varepsilon}$ for the ground-truth DP parameter, such that it satisfies $\Pr[\hat{\varepsilon}<\varepsilon]\geq 1-\beta$ if the algorithm $T$ is $(\varepsilon, \delta)$-DP, where the probability is over randomness of the auditing experiment and the training algorithm. To design such DP auditing experiment, prior works generally rely on the constraint of $(\varepsilon, \delta)$-DP on the power of binary membership hypothesis test ([Wasserman & Zhou, 2010](https://arxiv.org/abs/0811.2501), [Kairouz et al., 2015](https://arxiv.org/abs/1311.0776)). Thus, one way to achieve more powerful DP auditing is by employing stronger membership inference attacks as the underlying test.
+
+Below, we illustrate how to use our state-of-the-art MIA method, the *Robust Membership Inference Attack (RMIA)* ([Zarifzadeh et al., 2023](https://arxiv.org/abs/2312.03262)), to perform a DP auditing experiment that only requires a few training runs ([Steinke et al., 2023](https://arxiv.org/abs/2305.08846)).
+
+
 
 ## Structure
 We perform the following three modifications to the pipeline.
@@ -21,10 +28,9 @@ flowchart LR
 
 We support two choices of canary datasets for DP auditing of models trained on CIFAR-10, see examples images and their classes below.
 
-1. Mislabelled image as canary data
+1. (Randomly) Mislabelled image as canary data
 ![Mislabelled image as canary data](./images/mislabeled_data.png)
-2. Natural image as canary data
-![Natural image as canary data](./images/natural_data.png)
+2. Natural image as canary data (the images with correct labels in CIFAR-10)
 
 To use your own canary dataset, simply modify the following functionality in the `run_audit_dp.py` file.
 ```python
