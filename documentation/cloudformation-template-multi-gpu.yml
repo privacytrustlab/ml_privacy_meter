@@ -1,0 +1,327 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'CloudFormation template for Privacy Meter development environment on SageMaker'
+
+Parameters:
+  NotebookName:
+    Type: String
+    Default: 'PrivacyMeterNotebook'
+  DefaultRepoUrl:
+    Type: String
+    Default: 'https://github.com/privacytrustlab/privacy_meter.git'
+
+Resources:
+  SageMakerExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - sagemaker.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonSageMakerFullAccess
+
+  KmsKey:
+    Type: AWS::KMS::Key
+    Properties:
+      Description: 'KMS key for Privacy Meter notebook'
+      KeyPolicy:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              AWS: !Sub 'arn:aws:iam::${AWS::AccountId}:root'
+            Action: 'kms:*'
+            Resource: '*'
+      EnableKeyRotation: true
+
+  KmsKeyAlias:
+    Type: AWS::KMS::Alias
+    Properties:
+      AliasName: !Sub 'alias/${NotebookName}-kms-key'
+      TargetKeyId: !Ref KmsKey
+
+  PrivacyMeterConfig:
+    Type: AWS::SageMaker::NotebookInstanceLifecycleConfig
+    Properties:
+      NotebookInstanceLifecycleConfigName: "PrivacyMeterEnv"
+      OnCreate:
+        - Content: !Base64 |
+            #!/bin/bash
+            set -e
+
+            sudo touch /home/ec2-user/SageMaker/setup.log
+            sudo chown ec2-user:ec2-user /home/ec2-user/SageMaker/setup.log
+            sudo chmod 664 /home/ec2-user/SageMaker/setup.log
+
+            cat << 'EOF' > /home/ec2-user/SageMaker/setup-environment.sh
+            #!/bin/bash
+            
+            sudo -u ec2-user -i <<'INNEREOF'
+            unset SUDO_UID
+
+            # Install a separate conda installation via Miniconda
+            REPO_TYPE="PROD" # this is the privacy_meter_dev repo; change to "PROD" for the production repo
+            WORKING_DIR=/home/ec2-user/SageMaker/custom-miniconda
+            mkdir -p "$WORKING_DIR"
+            wget https://repo.anaconda.com/miniconda/Miniconda3-4.7.12.1-Linux-x86_64.sh -O "$WORKING_DIR/miniconda.sh"
+            bash "$WORKING_DIR/miniconda.sh" -b -u -p "$WORKING_DIR/miniconda" 
+            rm -rf "$WORKING_DIR/miniconda.sh"
+
+            # Ensure we're using the Miniconda conda
+            export PATH="$WORKING_DIR/miniconda/bin:$PATH"
+
+            # Initialize conda
+            "$WORKING_DIR/miniconda/bin/conda" init bash
+            source ~/.bashrc
+
+            # Create and activate environment
+            KERNEL_NAME="privacymeter_p310"
+            PYTHON="3.10"
+            "$WORKING_DIR/miniconda/bin/conda" create --yes --name "$KERNEL_NAME" python="$PYTHON"
+            eval "$("$WORKING_DIR/miniconda/bin/conda" shell.bash activate "$KERNEL_NAME")"
+
+            # Copy requirements.txt from the repository
+            if [ -f "/home/ec2-user/SageMaker/privacy_meter_dev/requirements.txt" ]; then
+                echo "Found requirements.txt in privacy_meter_dev repository"
+                cp /home/ec2-user/SageMaker/privacy_meter_dev/requirements.txt /home/ec2-user/SageMaker/requirements.txt
+            elif [ -f "/home/ec2-user/SageMaker/privacy_meter/requirements.txt" ]; then
+                echo "Found requirements.txt in privacy_meter repository"
+                cp /home/ec2-user/SageMaker/privacy_meter/requirements.txt /home/ec2-user/SageMaker/requirements.txt
+            else
+                echo "Error: Could not find requirements.txt in either repository"
+                echo "Checked paths:"
+                echo "- /home/ec2-user/SageMaker/privacy_meter_dev/requirements.txt"
+                echo "- /home/ec2-user/SageMaker/privacy_meter/requirements.txt"
+                exit 1
+            fi
+
+            # Install core dependencies first
+            "$WORKING_DIR/miniconda/envs/$KERNEL_NAME/bin/pip" install --upgrade pip setuptools wheel
+            
+            # Install Jupyter dependencies
+            "$WORKING_DIR/miniconda/envs/$KERNEL_NAME/bin/pip" install \
+                jupyter \
+                jupyter_client \
+                jupyter_core \
+                jupyter_server \
+                jupyter_server_terminals \
+                jupyterlab \
+                jupyterlab_pygments \
+                jupyterlab_server \
+                jupyterlab_widgets \
+                ipykernel \
+                notebook
+
+            # Install PyTorch ecosystem
+            "$WORKING_DIR/miniconda/envs/$KERNEL_NAME/bin/pip" install \
+                torch==2.4.1 \
+                torchvision==0.19.1 \
+                torchaudio==2.4.1 \
+                --index-url https://download.pytorch.org/whl/cu118
+
+            # Install packages in smaller chunks to avoid dependency conflicts
+            echo "Installing base packages first..."
+            "$WORKING_DIR/miniconda/envs/$KERNEL_NAME/bin/pip" install -r /home/ec2-user/SageMaker/requirements.txt --no-deps
+
+            echo "Installing remaining dependencies..."
+            "$WORKING_DIR/miniconda/envs/$KERNEL_NAME/bin/pip" install -r /home/ec2-user/SageMaker/requirements.txt
+
+            # Create and verify installation verification script
+            cat << 'VERIFICATIONEOF' > /home/ec2-user/SageMaker/verify_packages.py
+            import pkg_resources
+            import subprocess
+            import sys
+            from packaging import version
+            import re
+
+            def normalize_package_name(name):
+                """Normalize package name: convert to lowercase and handle special cases."""
+                return name.lower().replace('-', '_')
+
+            def parse_requirements(filename):
+                """Parse requirements.txt into a dictionary of package versions."""
+                requirements = {}
+                original_cases = {}  # Store original package names
+                
+                with open(filename, 'r') as f:
+                    for line in f:
+                        line = line.strip()
+                        if line and not line.startswith('#'):
+                            # Handle different requirement formats
+                            if '>=' in line or '<=' in line or '==' in line:
+                                # Split on first occurrence of any version operator
+                                parts = re.split('>=|<=|==', line, 1)
+                                if len(parts) == 2:
+                                    original_name = parts[0].strip()
+                                    normalized_name = normalize_package_name(original_name)
+                                    # Handle +cu118 suffix for PyTorch packages
+                                    version_constraint = parts[1].strip().split('+')[0]
+                                    requirements[normalized_name] = version_constraint
+                                    original_cases[normalized_name] = original_name
+                return requirements, original_cases
+
+            def get_installed_versions():
+                """Get dictionary of installed package versions."""
+                installed = {}
+                for pkg in pkg_resources.working_set:
+                    # Handle PyTorch special versioning
+                    version_str = pkg.version
+                    if '+cu' in version_str:
+                        version_str = version_str.split('+')[0]
+                    
+                    # Store both normalized and original forms
+                    pkg_name = normalize_package_name(pkg.key)
+                    installed[pkg_name] = version_str
+                    
+                    # Also store original form for cross-reference
+                    if pkg_name != pkg.key.lower():
+                        installed[pkg.key.lower()] = version_str
+                return installed
+
+            def create_filtered_requirements(req_file, filtered_file, installed_versions):
+                """Create a new requirements file with only version mismatches."""
+                required_versions, original_cases = parse_requirements(req_file)
+                mismatched = []
+                
+                print("\nChecking package versions...")
+                print("{:<30} {:<15} {:<15}".format("Package", "Required", "Installed"))
+                print("-" * 60)
+                
+                for package_norm, required in required_versions.items():
+                    original_name = original_cases.get(package_norm, package_norm)
+                    
+                    # Try both normalized and original package names
+                    installed = (installed_versions.get(package_norm) or 
+                                installed_versions.get(original_name.lower()) or 
+                                "Not installed")
+                    
+                    print("{:<30} {:<15} {:<15}".format(original_name, required, installed))
+                    
+                    if installed == "Not installed":
+                        mismatched.append(f"{original_name}=={required}")
+                    elif installed != required:
+                        try:
+                            if version.parse(installed) != version.parse(required):
+                                mismatched.append(f"{original_name}=={required}")
+                        except version.InvalidVersion:
+                            print(f"Warning: Invalid version comparison for {original_name}")
+                            mismatched.append(f"{original_name}=={required}")
+                
+                # Write mismatched packages to filtered requirements file
+                if mismatched:
+                    with open(filtered_file, 'w') as f:
+                        for req in sorted(mismatched):
+                            f.write(f"{req}\n")
+                
+                return len(mismatched)
+
+            def main():
+                req_file = "/home/ec2-user/SageMaker/requirements.txt"
+                filtered_file = "/home/ec2-user/SageMaker/filtered_requirements.txt"
+                
+                installed_versions = get_installed_versions()
+                mismatched_count = create_filtered_requirements(req_file, filtered_file, installed_versions)
+                
+                if mismatched_count > 0:
+                    print(f"\nFound {mismatched_count} version mismatches.")
+                    print(f"Created {filtered_file} with packages to update.")
+                    print("\nTo install missing or update packages, run:")
+                    print(f"pip install -r {filtered_file} --force-reinstall")
+                    sys.exit(1)
+                else:
+                    print("\nAll packages match required versions!")
+                    sys.exit(0)
+
+            if __name__ == "__main__":
+                main()
+            VERIFICATIONEOF
+
+            # Create installation verification script
+            cat << 'INSTALLEOF' > /home/ec2-user/SageMaker/install_filtered.sh
+            #!/bin/bash
+            set -e
+
+            # Run the verification script
+            python /home/ec2-user/SageMaker/verify_packages.py
+            VERIFICATION_STATUS=$?
+
+            # If verification failed (mismatches found), install packages
+            if [ $VERIFICATION_STATUS -eq 1 ]; then
+                echo "Installing/updating packages from filtered_requirements.txt..."
+                pip install -r /home/ec2-user/SageMaker/filtered_requirements.txt --force-reinstall
+                # Run verification again to confirm
+                python /home/ec2-user/SageMaker/verify_packages.py
+            fi
+            INSTALLEOF
+
+            # Make scripts executable
+            chmod +x /home/ec2-user/SageMaker/verify_packages.py
+            chmod +x /home/ec2-user/SageMaker/install_filtered.sh
+
+            # Run package verification and installation
+            echo "Running package verification and installation..." >> /home/ec2-user/SageMaker/setup.log 2>&1
+            /home/ec2-user/SageMaker/install_filtered.sh >> /home/ec2-user/SageMaker/setup.log 2>&1
+
+            # Create kernel
+            python -m ipykernel install --user --name "$KERNEL_NAME" --display-name "$KERNEL_NAME"
+
+            # Create a flag file for completion status
+            touch /home/ec2-user/SageMaker/setup-complete
+            echo "Setup completed on: $(date)" > /home/ec2-user/SageMaker/setup-complete
+
+            INNEREOF
+            EOF
+
+            chmod +x /home/ec2-user/SageMaker/setup-environment.sh
+            sudo -u ec2-user nohup /home/ec2-user/SageMaker/setup-environment.sh >> /home/ec2-user/SageMaker/setup.log 2>&1 &
+            echo "Setup started on: $(date)" >> /home/ec2-user/SageMaker/setup.log 2>&1
+
+      OnStart:
+        - Content: !Base64 |
+            #!/bin/bash
+            set -e
+
+            if ! [ -f /home/ec2-user/SageMaker/setup-complete ]; then
+                exit 0
+            fi
+
+            sudo -u ec2-user -i <<'EOF'
+            export PATH="/home/ec2-user/SageMaker/custom-miniconda/bin:$PATH"
+            source /home/ec2-user/SageMaker/custom-miniconda/bin/activate "$KERNEL_NAME"
+            EOF
+
+            # Check OS version and restart Jupyter accordingly
+            CURR_VERSION=$(cat /etc/os-release)
+            if [[ $CURR_VERSION == *$"http://aws.amazon.com/amazon-linux-ami/"* ]]; then
+                sudo initctl restart jupyter-server --no-wait
+            else
+                sudo systemctl --no-block restart jupyter-server.service
+            fi
+
+  SageMakerNotebookInstance:
+    Type: AWS::SageMaker::NotebookInstance
+    Properties:
+      InstanceType: ml.g4dn.12xlarge
+      NotebookInstanceName: !Ref NotebookName
+      RoleArn: !GetAtt SageMakerExecutionRole.Arn
+      DefaultCodeRepository: !Ref DefaultRepoUrl
+      KmsKeyId: !GetAtt KmsKey.Arn
+      PlatformIdentifier: notebook-al2-v3
+      VolumeSizeInGB: 50
+      LifecycleConfigName: !GetAtt PrivacyMeterConfig.NotebookInstanceLifecycleConfigName
+
+Outputs:
+  NotebookInstanceName:
+    Description: Name of the SageMaker Notebook Instance
+    Value: !Ref SageMakerNotebookInstance
+  ExecutionRoleArn:
+    Description: ARN of the SageMaker Execution Role
+    Value: !GetAtt SageMakerExecutionRole.Arn
+  KmsKeyArn:
+    Description: ARN of the KMS Key
+    Value: !GetAtt KmsKey.Arn
