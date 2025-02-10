@@ -46,10 +46,10 @@ conda install -c conda-forge opacus
 
 To run DP auditing on top of membership inference attacks, under two choices of canary data (mislabelled versus natural images) and two choices of training algorithm (DP versus non-DP), you can use the following commands. 
 ```
-python run_audit_dp.py --cf configs/cifar10_nondp_train_mislabel_1000.yaml
-python run_audit_dp.py --cf configs/cifar10_dp_train_mislabel_1000.yaml
-python run_audit_dp.py --cf configs/cifar10_nondp_train_natural_1000.yaml
-python run_audit_dp.py --cf configs/cifar10_dp_train_natural_1000.yaml
+python run_audit_dp.py --cf configs/dpaudit/cifar10_nondp_train_mislabel_1000.yaml
+python run_audit_dp.py --cf configs/dpaudit/cifar10_dp_train_mislabel_1000.yaml
+python run_audit_dp.py --cf configs/dpaudit/cifar10_nondp_train_natural_1000.yaml
+python run_audit_dp.py --cf configs/dpaudit/cifar10_dp_train_natural_1000.yaml
 ```
 
 
