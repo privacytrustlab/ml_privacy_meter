@@ -57,9 +57,9 @@ conda env create -f env.yaml
 This should create a conda environment named `privacy_meter` and install all necessary libraries in it. If conda takes too much time (more than a few minutes) to solve the environment, we suggest updating the conda default solver by following this official [article](https://www.anaconda.com/blog/a-faster-conda-for-a-growing-community).
 
 ### Use Privacy Meter on cloud platforms
-If you want to use this tool on cloud platforms, the simplest way is to follow the instructions above to clone the code and install the environment. We additionally provide Jupyter notebooks for auditing with [mia](demo.ipynb), [ramia](demo_ramia.ipynb) or [duci](demo_duci.ipynb), which can be run with the cloud computing resources from Google once uploaded to Colab. For a quick start, you can follow this [link](https://colab.research.google.com/github/privacytrustlab/ml_privacy_meter/blob/master/demo.ipynb) to do a demo run of the auditing using MIA. 
+If you want to use this tool on cloud platforms, the simplest way is to follow the instructions above to clone the code and install the environment. We additionally provide Jupyter notebooks for auditing with [mia](demo.ipynb), [ramia](demo_ramia.ipynb) or [duci](demo_duci.ipynb), which can be run with the cloud computing resources from Google once uploaded to Colab ![Google Colab](https://img.shields.io/badge/Google_Colab-F9AB00?style=plastic&logo=google-colab&logoColor=white). For a quick start, you can follow this [link](https://colab.research.google.com/github/privacytrustlab/ml_privacy_meter/blob/master/demo.ipynb) to do a demo run of the auditing using MIA. 
 
-If you prefer to use it on AWS, please refer to the instructions [here](documentation/cloudformation.md). This document explains how to use multiple graphics cards (GPUs) at the same time to speed up the training process.
+If you prefer to use it on AWS ![AWS](https://img.shields.io/badge/AWS-232F3E?style=flat&logo=amazonwebservices&logoColor=white), please refer to the instructions [here](documentation/cloudformation.md). This document explains how to use multiple graphics cards (GPUs) at the same time to speed up the training process.
 
 ## Dataset and models
 
