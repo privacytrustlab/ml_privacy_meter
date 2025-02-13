@@ -16,6 +16,9 @@ def create_training_args(configs: Dict) -> TrainingArguments:
         num_train_epochs=configs["train"]["epochs"],
         per_device_train_batch_size=configs["train"]["batch_size"],
         per_device_eval_batch_size=configs["train"]["batch_size"],
+        auto_find_batch_size=configs["train"].get(
+            "auto_find_batch_size", False
+        ),  # if this is not specified in the config, use the specified batch size
         warmup_steps=500,
         optim=configs["train"]["optimizer"],
         weight_decay=configs["train"]["weight_decay"],

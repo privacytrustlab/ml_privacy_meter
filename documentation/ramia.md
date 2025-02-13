@@ -85,8 +85,10 @@ python run_range_mia.py --cf configs/ramia/config.yaml
 ```
 We provide a template of the config file at this [folder](../configs/ramia/). The explanations of each field in the config can be found in this [document](../configs/ramia/README.md).
 
-## Auditing Results
-The auditing results will be stored in the same way as running the base membership inference attack. They can be found at `<log_dir>/report_ramia`. The `exp/attack_result_x.npz` file contains the FPR, TPR, AUC, TPR at small FPR values from attacking target model `x`. A plot of the ROC can also be found at the same folder. Here we attach a sample ROC and log scale ROC by attacking the AG News dataset on a GPT-2 with word replacement being the range function and 10 being the range size.
+## Auditing Result Example
+The auditing results will be stored in the same way as running the base membership inference attack. They can be found at `<log_dir>/report_ramia`. The `exp/attack_result_x.npz` file contains the FPR, TPR, AUC, TPR at small FPR values from attacking target model `x`. A plot of the ROC can also be found at the same folder. Here we attach a sample ROC and log scale ROC by attacking the AG News dataset on a GPT-2 with word replacement being the range function and 10 being the range size. In other words, each range contains sentences that differ from the range center by 5 words. For example:
+- The Times reported on Sunday that intense rains completely inundated many low-lying neighborhoods.
+- The Times stated on Sunday that heavy rains fully flooded numerous low-lying neighborhoods.
 
 <div style="display: flex; justify-content: space-between;">
     <img src="images/ramia_demo_agnews_roc.png" alt="ROC" width="45%">
