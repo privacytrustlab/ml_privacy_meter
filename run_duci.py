@@ -110,9 +110,13 @@ def main():
 
     ############################ Generate signals (softmax outputs) for all models ############################
     baseline_time = time.time()
-    signals = get_model_signals(models_list, auditing_dataset, configs, logger) # num_samples * num_models
+    signals = get_model_signals(
+        models_list, auditing_dataset, configs, logger
+    )  # num_samples * num_models
     auditing_membership = auditing_membership.T
-    assert signals.shape == auditing_membership.shape, f"signals or auditing_membership has incorrect shape (num_samples * num_models): {signals.shape} vs {auditing_membership.shape}"
+    assert (
+        signals.shape == auditing_membership.shape
+    ), f"signals or auditing_membership has incorrect shape (num_samples * num_models): {signals.shape} vs {auditing_membership.shape}"
     population_signals = get_model_signals(
         models_list, population, configs, logger, is_population=True
     )
@@ -120,10 +124,12 @@ def main():
 
     ######################################  Perform DUCI ######################################
     baseline_time = time.time()
-    target_model_indices = list(range(2*(num_experiments+1))) # Each run uses one model as target model
+    target_model_indices = list(
+        range(2 * (num_experiments + 1))
+    )  # Each run uses one model as target model
 
     ############################  Input your own reference model indices ############################
-    #Sample: construct reference models
+    # Sample: construct reference models
     reference_model_indices_all = []
     for target_model_idx in target_model_indices:
         paired_model_idx = (
@@ -137,41 +143,42 @@ def main():
         ][: 2 * num_reference_models]
         reference_model_indices_all.append(np.array(ref_indices))
 
-
     logger.info(f"Initiate DUCI for target models: {target_model_indices}")
     args = {
         "attack": "RMIA",
-        "dataset": configs["data"]["dataset"], # TODO: have DUCI config
+        "dataset": configs["data"]["dataset"],  # TODO: have DUCI config
         "model": configs["train"]["model_name"],
-        "offline_a": None
+        "offline_a": None,
     }
     # Initialize MIA instance
     MIA_instance = MIA(logger)
-    DUCI_instance = DUCI(MIA_instance,logger, args)
+    DUCI_instance = DUCI(MIA_instance, logger, args)
 
-    logger.info("Collecting membership prediction for each sample in the target dataset on target models and reference models.")
+    logger.info(
+        "Collecting membership prediction for each sample in the target dataset on target models and reference models."
+    )
     logger.info("Predicting the proportion of dataset usage on target models.")
     duci_preds, true_proportions, errors = DUCI_instance.pred_proportions(
-        target_model_indices, 
-        reference_model_indices_all, 
+        target_model_indices,
+        reference_model_indices_all,
         signals,
         population_signals,
         auditing_membership,
     )
 
     if len(target_model_indices) > 1:
-        logger.info(
-            "DUCI %0.1f seconds", time.time() - baseline_time
-        )
+        logger.info("DUCI %0.1f seconds", time.time() - baseline_time)
         logger.info(f"Average prediction errors: {np.mean(errors)}")
         logger.info(f"All prediction errors: {errors}")
-        logger.info(f"Prediction details: DUCI predictions: {duci_preds}, True proportions: {true_proportions}")
-    
+        logger.info(
+            f"Prediction details: DUCI predictions: {duci_preds}, True proportions: {true_proportions}"
+        )
+
     # Visualize the results
     # logger.info("Visualizing the results...")
     # DUCI_instance.visualize_results(
-    #     duci_preds, 
-    #     true_proportions, 
+    #     duci_preds,
+    #     true_proportions,
     #     target_model_indices,
     #     directories["report_dir"],
     #     logger

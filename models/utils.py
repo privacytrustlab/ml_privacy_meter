@@ -138,14 +138,17 @@ def dp_load_existing_model(
     else:
         data = load_cifar10_data(dataset, [0], [0], device=device)
         model = NetworkEMA(make_net(data, device=device))
-    
+
     model = ModuleValidator.fix(model)
 
     def remove_module_from_state_dict(old_state_dict):
         from collections import OrderedDict
+
         new_state_dict = OrderedDict()
         for k, v in old_state_dict.items():
-            name = k.replace("_module.", "") # removing ‘.moldule’ from key # remove `module.`
+            name = k.replace(
+                "_module.", ""
+            )  # removing ‘.moldule’ from key # remove `module.`
             new_state_dict[name] = v
         return new_state_dict
 
@@ -158,7 +161,6 @@ def dp_load_existing_model(
     else:
         raise ValueError(f"DP Model path is invalid.")
     return model
-
 
 
 def load_models(log_dir, dataset, num_models, configs, logger):
@@ -201,7 +203,6 @@ def load_models(log_dir, dataset, num_models, configs, logger):
     return model_list, all_memberships
 
 
-
 def dp_load_models(log_dir, dataset, num_models, configs, logger):
     """
     Load trained models from disk if available.
@@ -241,6 +242,7 @@ def dp_load_models(log_dir, dataset, num_models, configs, logger):
             break
     return model_list, all_memberships
 
+
 def train_models(log_dir, dataset, data_split_info, all_memberships, configs, logger):
     """
     Train models based on the dataset split information.
@@ -266,7 +268,9 @@ def train_models(log_dir, dataset, data_split_info, all_memberships, configs, lo
     return model_list
 
 
-def dp_train_models(log_dir, dataset, data_split_info, all_memberships, configs, logger):
+def dp_train_models(
+    log_dir, dataset, data_split_info, all_memberships, configs, logger
+):
     """
     Train models based on the dataset split information.
 
@@ -289,6 +293,7 @@ def dp_train_models(log_dir, dataset, data_split_info, all_memberships, configs,
         experiment_dir, dataset, data_split_info, all_memberships, configs, logger
     )
     return model_list
+
 
 def split_dataset_for_training(dataset_size, num_model_pairs):
     """
@@ -476,8 +481,6 @@ def prepare_models(
     return model_list
 
 
-
-
 def dp_prepare_models(
     log_dir: str,
     dataset: torchvision.datasets,
@@ -543,7 +546,9 @@ def dp_prepare_models(
             )
             test_loss, test_acc = inference(model, test_loader, device)
             train_loss, train_acc = inference(model, train_loader, device)
-            logger.info(f"Train accuracy {train_acc}, Train Loss {train_loss} (epsilon = {epsilon}, delta = 1e-5)")
+            logger.info(
+                f"Train accuracy {train_acc}, Train Loss {train_loss} (epsilon = {epsilon}, delta = 1e-5)"
+            )
             logger.info(f"Test accuracy {test_acc}, Test Loss {test_loss}")
         elif model_name == "speedyresnet" and dataset_name == "cifar10":
             raise ValueError(
@@ -581,7 +586,7 @@ def dp_prepare_models(
             "test_loss": test_loss,
             "dataset": dataset_name,
             "epsilon": epsilon,
-            "delta": 1e-5
+            "delta": 1e-5,
         }
 
     with open(f"{log_dir}/models_metadata.json", "w") as f:

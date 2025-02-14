@@ -1,7 +1,7 @@
 # Membership Inference
 ## Machine Learning Models Leak Information of Training Data
-There is little doubt that the improvement of machine learning (ML) models is partially to the the abundance of data. While learning from data, ML models inevitably memorize some of the training data. In ML, memorization refers to the phenomenon that
-ML models behave differently on training data and non-training data. In particular, the model outputs of IN data (training data) will have a distinct distribution compared to those of OUT data. The less overlapped the two distributions are, the more significant the memorization is, which leads to higher leakage.
+There is little doubt that the improvement of machine learning (ML) models is partially due to the abundance of data. While learning from data, ML models inevitably memorize some of the training data. In ML, memorization refers to the phenomenon that
+ML models behave differently on training data and non-training data. In particular, the model outputs of IN data (training data) will have a distinct distribution compared to those of OUT data. The less overlapped the two distributions are, the more significant the memorization is, which leads to higher leakage. In the leave-one-out (LOO) setting where the two worlds (IN and OUT worlds) differ by one data point, the difference of model outputs on the differing data point can be visualized by the following plot on the left.
 
 <div style="display: flex; justify-content: space-between;">
   <img src="images/histo.png" alt="Different distributions of in and out data" width="30%">
@@ -22,11 +22,13 @@ Membership inference attack (MIA) is a class of inference attack that aims to de
 </p>
 
 ### Membership Inference Game
-In ML security literature, membership inference is often formulated as a game theoretic.
+In ML security literature, membership inference is often formulated as a game theoretic. Here we provide the game formulation in layman terms. Interested users can refer to paper [1](https://arxiv.org/pdf/2111.09679) or [2](https://arxiv.org/pdf/2312.03262).
 
-<p align="center">
-  <img src="images/mi_game.png" alt="Membership Inference Game" width="80%">
-</p>
+**Definition (Membership Inference Game)**
+- The *challenger* samples a training set from a data distribution and trains a model with the training algorithm.
+- The *challenger* flips a fair coin. If head, it randomly samples a data point from the training set; otherwise, it randomly samples a data point from the data distribution that is not in the training set.
+- The *challenger* sends the target model and the data point to the *adversary*.
+- The *adversary*, having access to the data distribution over population data, receives the model and the data point, and outputs a binary membership prediction.
 
 ### Evaluating MIAs
 An attack algorithm should assign a numeric score $\text{MIA}(x;f)$ to every query $x$. The membership decision is then obtained by thresholding the membership score. To evaluate the power of the MIA and assess the overall privacy risk of the target model, the commonly used metric is the area under the receiver operating characteristic curve (AUC-ROC). The ROC curve uses the true positive rate (TPR), which shows the power of the attack, as its y-axis, and the false positive rate (FPR), which shows the error of the attack, as its x-axis. The larger the AUC, the stronger the MIA is. A clueless attacker that uniformly randomly outputs 1's and 0's will have an AUC of 0.5.
@@ -117,7 +119,7 @@ flowchart LR
 To run our demo, you can use the following command
 
 ```
-python main.py --cf configs/config.yaml
+python run_mia.py --cf configs/config.yaml
 ```
 
 The `.yaml` file allows you to specify the hyperparameters for training the model, and the details of the membership inference attack. To shorten the time to run the demo, we set the number of epochs to 10. To properly audit the privacy risk, we suggest change the number of epochs to 100 or whatever is appropriate for your use case.

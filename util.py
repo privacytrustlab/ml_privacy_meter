@@ -101,17 +101,19 @@ def load_dataset(configs: Dict[str, Any], data_dir: str, logger: logging.Logger)
     Returns:
         Any: Loaded dataset.
     """
-    if not configs['data'].get("tokenize", False):
-        return get_dataset(configs['data']['dataset'], data_dir, logger)
+    if not configs["data"].get("tokenize", False):
+        return get_dataset(configs["data"]["dataset"], data_dir, logger)
     return get_dataset(
-        configs['data']['dataset'],
+        configs["data"]["dataset"],
         data_dir,
         logger,
-        tokenizer=configs['data']['tokenizer'],
+        tokenizer=configs["data"]["tokenizer"],
     )
 
 
-def load_canary_dataset(configs: Dict[str, Any], data_dir: str, logger: logging.Logger) -> Any:
+def load_canary_dataset(
+    configs: Dict[str, Any], data_dir: str, logger: logging.Logger
+) -> Any:
     """
     Load the dataset based on the configuration.
 
@@ -123,14 +125,15 @@ def load_canary_dataset(configs: Dict[str, Any], data_dir: str, logger: logging.
     Returns:
         Any: Loaded dataset.
     """
-    if not configs['dp_audit'].get("tokenize", False):
-        return get_dataset(configs['dp_audit']['canary_dataset'], data_dir, logger)
+    if not configs["dp_audit"].get("tokenize", False):
+        return get_dataset(configs["dp_audit"]["canary_dataset"], data_dir, logger)
     return get_dataset(
-        configs['dp_audit']['canary_dataset'],
+        configs["dp_audit"]["canary_dataset"],
         data_dir,
         logger,
-        tokenizer=configs['dp_audit']['tokenizer'],
+        tokenizer=configs["dp_audit"]["tokenizer"],
     )
+
 
 def split_dataset_for_training_poisson(dataset_size, num_model_pairs):
     """

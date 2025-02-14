@@ -74,6 +74,7 @@ def get_peft_model_config(configs: Dict) -> LoraConfig:
         raise ValueError("LoRA configuration is not provided in the configuration file")
 
     if configs["train"]["peft"]["type"] == "lora":
+        # Change the lora field in the config file to change these parameters
         return LoraConfig(
             fan_in_fan_out=configs["train"]["peft"]["fan_in_fan_out"],
             inference_mode=False,

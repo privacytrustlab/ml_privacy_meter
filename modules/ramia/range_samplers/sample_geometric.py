@@ -26,7 +26,7 @@ def sample_geometric(range_center, transformations_list, sample_size):
     """
     # Initialize the samples list
     if len(transformations_list) == sample_size - 1:
-        samples = [range_center] # Include the range_center as the first sample
+        samples = [range_center]  # Include the range_center as the first sample
     else:
         samples = []
 
@@ -38,17 +38,3 @@ def sample_geometric(range_center, transformations_list, sample_size):
             raise ValueError(f"Invalid transformation: {transformation}")
 
     return samples
-
-
-# Test
-# with open("data/cifar10.pkl", "rb") as f:
-#     dataset = pickle.load(f)
-# first_image, _ = dataset[0] # First image and label
-# print("Original Image Size:", first_image.shape)
-#
-# # Transformations to test
-# transformations_list = ["horizontal_flip", "vertical_flip", "rotate"]
-#
-# # Generate augmented samples
-# samples = sample_geometric(first_image, transformations_list, sample_size=3)
-# print("Augmented Samples Size:", samples.shape)

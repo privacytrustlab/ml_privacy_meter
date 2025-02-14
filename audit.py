@@ -418,6 +418,8 @@ def compute_abstain_attack_results(
     Args:
         mia_scores (np.array): MIA score computed by the attack.
         target_memberships (np.array): Membership of samples in the training set of target model.
+        delta (float): DP parameter for tolerance. Should be between 0 and 1.
+        p_value (float): Confidence of the statistical test. Should be between 0 and 1.
 
     Returns:
         dict: Dictionary of results, including fpr and tpr list, AUC, TPR at 1%, 0.1% and 0% FPR.
@@ -425,7 +427,7 @@ def compute_abstain_attack_results(
     mia_scores = mia_scores.ravel()
     target_memberships = target_memberships.ravel()
     sorted_idx = np.argsort(mia_scores)
-    mia_scores = mia_scores[sorted_idx]
+    # mia_scores = mia_scores[sorted_idx]
     target_memberships = target_memberships[sorted_idx]
     step_size = int(np.sqrt(len(target_memberships.ravel())))
     assert step_size >= 1
@@ -486,7 +488,7 @@ def compute_abstain_attack_results_for_k_pos_k_neg(
     mia_scores = mia_scores.ravel()
     target_memberships = target_memberships.ravel()
     sorted_idx = np.argsort(mia_scores)
-    mia_scores = mia_scores[sorted_idx]
+    # mia_scores = mia_scores[sorted_idx]
     target_memberships = target_memberships[sorted_idx]
     correct_num = (1 - target_memberships[:k_neg]).sum() + target_memberships[
         k_pos:
@@ -590,7 +592,7 @@ def get_dp_audit_results_for_k_pos_k_neg(
     )
 
 
-# Code snipplet taken from [Steinke, Thomas, Milad Nasr, and Matthew Jagielski. "Privacy auditing with one (1) training run." Advances in Neural Information Processing Systems 36 (2024).]
+# Code snippet taken from [Steinke, Thomas, Milad Nasr, and Matthew Jagielski. "Privacy auditing with one (1) training run." Advances in Neural Information Processing Systems 36 (2024).]
 # m = number of examples, each included independently with probability 0.5
 # r = number of guesses (i.e. excluding abstentions)
 # v = number of correct guesses by auditor

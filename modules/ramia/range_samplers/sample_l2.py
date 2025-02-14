@@ -1,5 +1,3 @@
-import pdb
-
 import numpy as np
 import torch
 
@@ -27,12 +25,15 @@ def sample_l2(range_center, radius, sample_size):
 
     while len(sampled_points) < sample_size:
         # Sample a candidate point from a multivariate normal distribution
-        candidate = np.random.normal(loc=range_center, scale=scale, size=range_center.shape)
+        candidate = np.random.normal(
+            loc=range_center, scale=scale, size=range_center.shape
+        )
         # Check if the candidate point lies within the L2 ball
         if np.linalg.norm(candidate - range_center) <= radius:
             sampled_points.append(torch.tensor(candidate, dtype=torch.float32))
 
     return sampled_points
+
 
 # Test
 # range_center = np.random.rand(1, 28,28,3)# Center of the 3D ball
