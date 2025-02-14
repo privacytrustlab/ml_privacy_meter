@@ -19,6 +19,7 @@ from util import (
     create_directories,
     load_dataset,
 )
+from modules.mia import MIA
 from modules.duci import DUCI
 
 # Enable benchmark mode in cudnn to improve performance when input sizes are consistent
@@ -144,7 +145,9 @@ def main():
         "model": configs["train"]["model_name"],
         "offline_a": None
     }
-    DUCI_instance = DUCI(logger, args)
+    # Initialize MIA instance
+    MIA_instance = MIA(logger)
+    DUCI_instance = DUCI(MIA_instance,logger, args)
 
     logger.info("Collecting membership prediction for each sample in the target dataset on target models and reference models.")
     logger.info("Predicting the proportion of dataset usage on target models.")
