@@ -21,7 +21,7 @@ After debiasing, DUCI aggregates the unbiased probability estimators over the en
 
 $\hat{p} = \frac{1}{|X|} \sum_{i=1}^{|X|} \hat{p}_i,$
 
-where \($|X|$\) is the size of the target dataset.
+where $|X|$ is the size of the target dataset.
 
 ## Pipeline
 
@@ -65,7 +65,9 @@ You can load your own `signals` (a matrix of shape `dataset_size × total_num_mo
 target_model_indices = [0, 1, 2, 3]
 reference_model_indices_all = [[2, 3], [2, 3], [0, 1], [0, 1]]
 
-DUCI_instance = DUCI(logger, args)
+# Initialize MIA instance
+MIA_instance = MIA(logger)
+DUCI_instance = DUCI(MIA_instance,logger, args)
 duci_preds, true_proportions, errors = DUCI_instance.pred_proportions(
     target_model_indices, 
     reference_model_indices_all, 

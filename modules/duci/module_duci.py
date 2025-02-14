@@ -7,7 +7,7 @@ import time
 from modules.mia import MIA
 
 class DUCI:
-    def __init__(self, logger: logging.Logger, args: Dict[str, Any]):
+    def __init__(self, MIA_instance: MIA, logger: logging.Logger, args: Dict[str, Any]):
         """
         Initialize the DUCI object.
 
@@ -23,14 +23,14 @@ class DUCI:
         self.fpr = None
         self.logger = logger
         self.args = args
+        self.MIA_instance = MIA_instance
 
     def debias_pred(self, 
             target_model_idx: int,
             reference_model_indices: Union[np.ndarray, List[int]],
             all_signals: np.ndarray,
             population_signals: np.ndarray,
-            all_memberships: np.ndarray,
-            MIA_instance: MIA
+            all_memberships: np.ndarray
         ) -> Tuple[float, float]:
         """
         This functions debiases the MIA signals over the target dataset received on the target model 
@@ -66,7 +66,7 @@ class DUCI:
         """
         # Conduct MIA on the target model using privacy meter tools
         baseline_time = time.time()
-        mia_scores, target_memberships = MIA_instance.run_mia(
+        mia_scores, target_memberships = self.MIA_instance.run_mia(
             all_signals,
             all_memberships, 
             target_model_idx, 
@@ -87,11 +87,14 @@ class DUCI:
         # )
         # for ref_model_idx in [paired_model_idx]:
         for ref_model_idx in reference_model_indices:
-            ref_mia_scores, ref_target_memberships = MIA_instance.run_mia(
+            ref_indices = list(set(reference_model_indices) - {ref_model_idx}) # reference_model_indices w/o ref_model_idx
+            if len(ref_indices) == 0:
+                ref_indices = [ref_model_idx] # special case when only one reference model is used
+            ref_mia_scores, ref_target_memberships = self.MIA_instance.run_mia(
                 all_signals,
                 all_memberships,
                 ref_model_idx,
-                list(set(reference_model_indices) - {ref_model_idx}),  # reference_model_indices w/o ref_model_idx
+                ref_indices,
                 self.logger,
                 self.args,
                 population_signals,
@@ -169,8 +172,6 @@ class DUCI:
 
         debiased_preds_list, true_proportion_list = [], []
         error_list = []
-        # Initialize MIA instance
-        MIA_instance = MIA(self.logger)
         # for target_model_idx in target_model_indices:
         for target_model_idx, reference_model_indices in zip(target_model_indices, reference_model_indices_all):
             debiased_pres, true_proportion = self.debias_pred(
@@ -179,7 +180,6 @@ class DUCI:
                 all_signals,
                 population_signals,
                 all_memberships,
-                MIA_instance
             )
 
             post_debias_error = np.abs(np.mean(debiased_pres) - true_proportion)
