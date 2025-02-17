@@ -4,3 +4,4 @@ data/
 demo*/
 exp_*
 .DS_Store
+.privacy_meter_venv/
