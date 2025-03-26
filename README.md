@@ -56,11 +56,6 @@ conda env create -f env.yaml
 ```
 This should create a conda environment named `privacy_meter` and install all necessary libraries in it. If conda takes too much time (more than a few minutes) to solve the environment, we suggest updating the conda default solver by following this official [article](https://www.anaconda.com/blog/a-faster-conda-for-a-growing-community).
 
-### Use Privacy Meter on cloud platforms
-If you want to use this tool on cloud platforms, the simplest way is to follow the instructions above to clone the code and install the environment. We additionally provide Jupyter notebooks for auditing with [mia](demo.ipynb), [ramia](demo_ramia.ipynb) or [duci](demo_duci.ipynb), which can be run with the cloud computing resources from Google once uploaded to Colab ![Google Colab](https://img.shields.io/badge/Google_Colab-F9AB00?style=plastic&logo=google-colab&logoColor=white). For a quick start, you can follow this [link](https://colab.research.google.com/github/privacytrustlab/ml_privacy_meter/blob/master/demo.ipynb) to do a demo run of the auditing using MIA. 
-
-If you prefer to use it on AWS ![AWS](https://img.shields.io/badge/AWS-232F3E?style=flat&logo=amazonwebservices&logoColor=white), please refer to the instructions [here](documentation/cloudformation.md). This document explains how to use multiple graphics cards (GPUs) at the same time to speed up the training process.
-
 ## Dataset and models
 
 Privacy Meter can be used with all datasets and model classes. Here, we provide examples of using Privacy Meter on CIFAR10 (`cifar10`), CIFAR100 (`cifar100`), Purchase (`purchase100`), Texas (`texas100`), and AG News (`agnews`). In terms of models, we provide examples for CNN (`cnn`), AlexNet (`alexnet`), WideResNet (`wrn28-1`, `wrn28-2`, `wrn28-10`), MLP (`mlp`), and GPT-2 (`gpt2`) models. To specify the dataset and model, you can use the `dataset` and `model_name` parameters in the configuration file. Sample configurations have been provided in the `configs` folder for Purchase-100, CIFAR-10 and AG News datasets.
@@ -76,7 +71,7 @@ For other datasets, you can simply modify the `get_dataset` function in `/datase
 
 #### Attacking other transformers
 
-To attack other transformers from Huggingface's `transformers` library, you need to modify `/models/utils.py` to include the new model in the `get_model` function.  If you want to use different training pipelines, you can modify `/trainers/train_transformer.py` accordingly. You can also use other PEFT methods in the same file if you want to use more than LoRA.
+To attack other transformers from Hugging Face's `transformers` library, you need to modify `/models/utils.py` to include the new model in the `get_model` function.  If you want to use different training pipelines, you can modify `/trainers/train_transformer.py` accordingly. You can also use other PEFT methods in the same file if you want to use more than LoRA.
 
 For other Pytorch models, you can create a new model architecture in `/models/` and modify the `get_model` function in `/models/utils.py` to include the new model.
 
