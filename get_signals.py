@@ -1,5 +1,5 @@
 import os.path
-from typing import Optional
+from typing import Optional, Union
 
 import numpy as np
 import torch
@@ -11,7 +11,7 @@ from dataset.utils import load_dataset_subsets
 
 
 def get_softmax(
-    model: PreTrainedModel,
+    model: Union[PreTrainedModel, torch.nn.Module],
     samples: torch.Tensor,
     labels: torch.Tensor,
     batch_size: int,
@@ -53,22 +53,23 @@ def get_softmax(
             if isinstance(model, PreTrainedModel):
                 logits = pred.logits
                 logit_signals = torch.div(logits, temp)
-                softmax_probs = torch.log_softmax(logit_signals, dim=-1)
-                true_class_probs = softmax_probs.gather(2, y.unsqueeze(-1)).squeeze(-1)
+                log_probs = torch.log_softmax(logit_signals, dim=-1)
+                true_class_log_probs = log_probs.gather(2, y.unsqueeze(-1)).squeeze(-1)
                 # Mask out padding tokens
                 mask = (
                     y != pad_token_id
                     if pad_token_id is not None
                     else torch.ones_like(y, dtype=torch.bool)
                 )
-                true_class_probs = true_class_probs * mask
+                true_class_log_probs = true_class_log_probs * mask
                 sequence_probs = torch.exp(
-                    (true_class_probs * mask).sum(1) / mask.sum(1)
+                    (true_class_log_probs * mask).sum(1) / mask.sum(1)
                 )
                 softmax_list.append(sequence_probs.to("cpu").view(-1, 1))
             else:
                 logit_signals = torch.div(pred, temp)
                 max_logit_signals, _ = torch.max(logit_signals, dim=1)
+                # This is to avoid overflow when exp(logit_signals)
                 logit_signals = torch.sub(
                     logit_signals, max_logit_signals.reshape(-1, 1)
                 )
@@ -82,7 +83,7 @@ def get_softmax(
 
 
 def get_loss(
-    model: PreTrainedModel,
+    model: Union[PreTrainedModel, torch.nn.Module],
     samples: torch.Tensor,
     labels: torch.Tensor,
     batch_size: int,
@@ -132,7 +133,7 @@ def get_loss(
     return all_loss_list
 
 
-def get_model_signals(models_list, dataset, configs, logger):
+def get_model_signals(models_list, dataset, configs, logger, is_population=False):
     """Function to get models' signals (softmax, loss, logits) on a given dataset.
 
     Args:
@@ -140,23 +141,38 @@ def get_model_signals(models_list, dataset, configs, logger):
         dataset (torchvision.datasets): The whole dataset.
         configs (dict): Configurations of the tool.
         logger (logging.Logger): Logger object for the current run.
+        is_population (bool): Whether the signals are computed on population data.
 
     Returns:
         signals (np.array): Signal value for all samples in all models
     """
     # Check if signals are available on disk
+    signal_file_name = (
+        f"{configs['audit']['algorithm'].lower()}_ramia_signals"
+        if configs.get("ramia", None)
+        else f"{configs['audit']['algorithm'].lower()}_signals"
+    )
+    signal_file_name += "_pop.npy" if is_population else ".npy"
     if os.path.exists(
-        f"{configs['run']['log_dir']}/signals/{configs['audit']['algorithm'].lower()}_signals.npy",
+        f"{configs['run']['log_dir']}/signals/{signal_file_name}",
     ):
         signals = np.load(
-            f"{configs['run']['log_dir']}/signals/{configs['audit']['algorithm'].lower()}_signals.npy",
+            f"{configs['run']['log_dir']}/signals/{signal_file_name}",
         )
-        if signals.shape[0] == len(dataset):
-            logger.info("Signals loaded from disk.")
+        if configs.get("ramia", None) is None:
+            expected_size = len(dataset)
+            signal_source = "training data size"
+        else:
+            expected_size = len(dataset) * configs["ramia"]["sample_size"]
+            signal_source = f"training data size multiplied by ramia sample size ({configs['ramia']['sample_size']})"
+
+        if signals.shape[0] == expected_size:
+            logger.info("Signals loaded from disk successfully.")
             return signals
         else:
             logger.warning(
-                "Signals shape does not match the audit data size. This is probably due to a different audit data size than the training data size."
+                f"Signals shape ({signals.shape[0]}) does not match the expected size ({expected_size}). "
+                f"This mismatch is likely due to a change in the {signal_source}."
             )
             logger.info("Ignoring the signals on disk and recomputing.")
 
@@ -179,27 +195,22 @@ def get_model_signals(models_list, dataset, configs, logger):
     )
 
     signals = []
+    logger.info("Computing signals for all models.")
+    if configs.get("ramia", None) and not is_population:
+        if len(data.shape) != 2:
+            data = data.view(-1, *data.shape[2:])
+            targets = targets.view(data.shape[0], -1)
     for model in models_list:
-        if configs["audit"]["algorithm"] == "RMIA":
-            signals.append(
-                get_softmax(
-                    model, data, targets, batch_size, device, pad_token_id=pad_token_id
-                )
+        signals.append(
+            get_softmax(
+                model, data, targets, batch_size, device, pad_token_id=pad_token_id
             )
-        elif configs["audit"]["algorithm"] == "LOSS":
-            signals.append(
-                get_loss(
-                    model, data, targets, batch_size, device, pad_token_id=pad_token_id
-                )
-            )
-        else:
-            raise NotImplementedError(
-                f"{configs['audit']['algorithm']} is not implemented"
-            )
+        )
 
     signals = np.concatenate(signals, axis=1)
+    os.makedirs(f"{configs['run']['log_dir']}/signals", exist_ok=True)
     np.save(
-        f"{configs['run']['log_dir']}/signals/{configs['audit']['algorithm'].lower()}_signals.npy",
+        f"{configs['run']['log_dir']}/signals/{signal_file_name}",
         signals,
     )
     logger.info("Signals saved to disk.")

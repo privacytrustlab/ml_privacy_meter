@@ -20,7 +20,7 @@ train: # Configuration for training
   optimizer: SGD
   learning_rate: 0.1
   weight_decay: 0
-  epochs: 10
+  epochs: 100
 
 data: # Configuration for data
   dataset: cifar10 # String indicates the name of the dataset. We support cifar10, cifar100, purchase100 and texas100 by default.

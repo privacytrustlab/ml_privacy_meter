@@ -34,6 +34,7 @@ def get_rmia_out_signals(
     selected_signals = all_signals[:, columns]
     non_members = ~all_memberships[:, columns]
     out_signals = selected_signals * non_members
+    # Sort the signals such that only the non-zero signals (out signals) are kept
     out_signals = -np.sort(-out_signals, axis=1)[:, :num_reference_models]
     return out_signals
 
@@ -41,15 +42,17 @@ def get_rmia_out_signals(
 def tune_offline_a(
     target_model_idx: int,
     all_signals: np.ndarray,
+    population_signals: np.ndarray,
     all_memberships: np.ndarray,
     logger: Any,
-) -> float:
+) -> (float, np.ndarray, np.ndarray):
     """
     Fine-tune coefficient offline_a used in RMIA.
 
     Args:
         target_model_idx (int): Index of the target model.
         all_signals (np.ndarray): Softmax value of all samples in two models (target and reference).
+        population_signals (np.ndarray): Population signals.
         all_memberships (np.ndarray): Membership matrix for all models.
         logger (Any): Logger object for the current run.
 
@@ -64,7 +67,14 @@ def tune_offline_a(
     offline_a = 0.0
     max_auc = 0
     for test_a in np.arange(0, 1.1, 0.1):
-        mia_scores = run_rmia(paired_model_idx, all_signals, all_memberships, 1, test_a)
+        mia_scores = run_rmia(
+            paired_model_idx,
+            all_signals,
+            population_signals,
+            all_memberships,
+            1,
+            test_a,
+        )
         fpr_list, tpr_list, _ = roc_curve(
             paired_memberships.ravel(), mia_scores.ravel()
         )
@@ -72,13 +82,16 @@ def tune_offline_a(
         if roc_auc > max_auc:
             max_auc = roc_auc
             offline_a = test_a
+            mia_scores_array = mia_scores.ravel().copy()
+            membership_array = paired_memberships.ravel().copy()
         logger.info(f"offline_a={test_a:.2f}: AUC {roc_auc:.4f}")
-    return offline_a
+    return offline_a, mia_scores_array, membership_array
 
 
 def run_rmia(
     target_model_idx: int,
     all_signals: np.ndarray,
+    population_signals: np.ndarray,
     all_memberships: np.ndarray,
     num_reference_models: int,
     offline_a: float,
@@ -89,6 +102,7 @@ def run_rmia(
     Args:
         target_model_idx (int): Index of the target model.
         all_signals (np.ndarray): Softmax value of all samples in the target model.
+        population_signals (np.ndarray): Softmax value of all population samples in the target model.
         all_memberships (np.ndarray): Membership matrix for all models.
         num_reference_models (int): Number of reference models used for the attack.
         offline_a (float): Coefficient offline_a is used to approximate p(x) using P_out in the offline setting.
@@ -104,7 +118,24 @@ def run_rmia(
     mean_x = (1 + offline_a) / 2 * mean_out_x + (1 - offline_a) / 2
     prob_ratio_x = target_signals.ravel() / mean_x
 
-    return prob_ratio_x
+    z_signals = population_signals[:, target_model_idx]
+    population_memberships = np.zeros_like(population_signals).astype(
+        bool
+    )  # All population data are OUT for all models
+    z_out_signals = get_rmia_out_signals(
+        population_signals,
+        population_memberships,
+        target_model_idx,
+        num_reference_models,
+    )
+    mean_out_z = np.mean(z_out_signals, axis=1)
+    mean_z = (1 + offline_a) / 2 * mean_out_z + (1 - offline_a) / 2
+    prob_ratio_z = z_signals.ravel() / mean_z
+
+    ratios = prob_ratio_x[:, np.newaxis] / prob_ratio_z
+    counts = np.average(ratios > 1.0, axis=1)
+
+    return counts
 
 
 def run_loss(target_signals: np.ndarray) -> np.ndarray:
