@@ -1,12 +1,10 @@
 from typing import Tuple, Dict
 import os
 import matplotlib.pyplot as plt
-import numpy
 import pandas as pd
 from pathlib import Path
 
-import torch
-from peft import LoraConfig, get_peft_model, TaskType
+from peft import LoraConfig, TaskType, PeftModel
 from transformers import (
     PreTrainedModel,
     AutoTokenizer,
@@ -31,6 +29,7 @@ def create_training_args(configs: Dict, model_idx: int) -> TrainingArguments:
         weight_decay=configs["train"]["weight_decay"],
         learning_rate=configs["train"]["learning_rate"],
         save_strategy="steps" if configs["train"]["save_checkpoints"] else "no",
+        overwrite_output_dir=not(configs["train"]["restart_from_checkpoint"]),
         save_steps=configs["train"]["eval_steps"],
         save_safetensors=True,
         save_total_limit=1,
@@ -99,7 +98,7 @@ def train_transformer(
     trainset, model: PreTrainedModel, configs: Dict, testset, model_idx
 ) -> Tuple[PreTrainedModel, float, float]:
     """Train a Hugging Face transformer model without any PEFT (LoRA) modifications."""
-    if not isinstance(model, PreTrainedModel):
+    if not isinstance(model, (PreTrainedModel, PeftModel)):
         raise ValueError("The provided model is not a Hugging Face transformer model")
 
     training_args = create_training_args(configs, model_idx)
@@ -114,10 +113,9 @@ def train_transformer(
     )
 
     checkpoint_exists = bool(list(Path(training_args.output_dir).glob("checkpoint*")))
-    with torch.serialization.safe_globals([numpy._core.multiarray._reconstruct, numpy.ndarray]):
-        trainer.train(
-            resume_from_checkpoint=checkpoint_exists,
-        )
+    trainer.train(
+        resume_from_checkpoint=(checkpoint_exists and configs["train"]["restart_from_checkpoint"]),
+    )
 
     logging(trainer, training_args, model_idx)
 
@@ -145,32 +143,3 @@ def get_peft_model_config(configs: Dict) -> LoraConfig:
         )
     else:
         raise NotImplementedError("Only LoRA is supported in this implementation.")
-
-
-def train_transformer_with_peft(
-    trainset, peft_model, configs: Dict, testset
-) -> Tuple[PreTrainedModel, float, float]:
-    """Train a Hugging Face transformer model with PEFT (LoRA) modifications."""
-    # if not isinstance(model, PreTrainedModel):
-    #     raise ValueError("The provided model is not a Hugging Face transformer model")
-    #
-    # # Apply PEFT (LoRA) configuration
-    # peft_config = get_peft_model_config(configs)
-    # peft_model = get_peft_model(model, peft_config)
-
-    training_args = create_training_args(configs, model_idx)
-    tokenizer = setup_tokenizer(configs["data"].get("tokenizer", configs["train"]["model_name"]))
-
-    trainer = Trainer(
-        model=peft_model,
-        args=training_args,
-        train_dataset=trainset,
-        eval_dataset=testset,
-        tokenizer=tokenizer,
-    )
-
-    trainer.train()
-    train_loss = trainer.state.log_history[-1]["train_loss"]
-    test_loss = trainer.state.log_history[-2]["eval_loss"]
-
-    return peft_model, train_loss, test_loss

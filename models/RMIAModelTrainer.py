@@ -111,25 +111,13 @@ class RMIAModelTrainer:
 
             if model_name == "gpt2":
                 hf_dataset = self.dataset.hf_dataset
-                if train_configs.get("peft", None) is None:
-                    model, train_loss, test_loss = train_transformer(
-                        hf_dataset.select(split_info["train"]),
-                        get_model(model_name, dataset_name, self.configs),
-                        self.configs,
-                        hf_dataset.select(split_info["test"][:1000]),
-                        model_idx=split
-                    )
-                else:
-                    model, train_loss, test_loss = train_transformer_with_peft(
-                        hf_dataset.select(split_info["train"]),
-                        get_peft_model(
-                            get_model(model_name, dataset_name, self.configs),
-                            get_peft_model_config(self.configs),
-                        ),
-                        self.configs,
-                        hf_dataset.select(split_info["test"]),
-                        split
-                    )
+                model, train_loss, test_loss = train_transformer(
+                    hf_dataset.select(split_info["train"]),
+                    get_model(model_name, dataset_name, self.configs),
+                    self.configs,
+                    hf_dataset.select(split_info["test"][:1000]),
+                    model_idx=split
+                )
                 train_acc, test_acc = None, None
             else:
                 raise ValueError(

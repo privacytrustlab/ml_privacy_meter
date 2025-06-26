@@ -394,10 +394,7 @@ def prepare_models(
                 # Fine-tuning with PEFT
                 model, train_loss, test_loss = train_transformer_with_peft(
                     hf_dataset.select(split_info["train"]),
-                    get_peft_model(
-                        get_model(model_name, dataset_name, configs),
-                        get_peft_model_config(configs),
-                    ),
+                    get_model(model_name, dataset_name, configs),
                     configs,
                     hf_dataset.select(split_info["test"]),
                     split

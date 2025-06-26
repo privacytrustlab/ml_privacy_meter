@@ -1,0 +1,28 @@
+[project]
+    name = "ml_privacy_meter"
+    version = "0.1.0"
+    description = "Environment for Deep Learning experiments with uv and Dev Containers"
+    requires-python = "~=3.11.11" # Ensure compatibility with the Python in your devcontainer
+    dependencies = [
+        "numpy~=2.2",
+        "torch~=2.7",
+        "notebook~=7.4",
+        "scipy~=1.15",
+        "scikit-learn~=1.6",
+        "matplotlib~=3.10",
+        "tqdm~=4.67",
+        "transformers~=4.52.4",
+        "datasets~=3.5",
+        "torchvision~=0.22",
+        "peft~=0.15",
+    ]
+
+[tool.setuptools.packages.find]
+    where = ["."]
+    include = ["models*", "modules*", "configs*", "dataset*", "research*", "trainers*"]
+    exclude = []
+
+
+[build-system]
+    requires = ["setuptools>=61.0"]
+    build-backend = "setuptools.build_meta"
