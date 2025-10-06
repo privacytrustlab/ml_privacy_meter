@@ -83,7 +83,7 @@ nvidia-cufft-cu11==10.9.0.58
 nvidia-curand-cu11==10.3.0.86
 nvidia-cusolver-cu11==11.4.1.48
 nvidia-cusparse-cu11==11.7.5.86
-nvidia-nccl-cu11==2.20.5
+# nvidia-nccl-cu11==2.20.5
 nvidia-nvtx-cu11==11.8.86
 overrides==7.7.0
 opacus==1.5.2
@@ -134,7 +134,7 @@ tornado==6.4.1
 tqdm==4.66.6
 traitlets==5.14.3
 transformers==4.44.2
-triton==3.0.0
+# triton==3.0.0
 types-python-dateutil==2.9.0.20241003
 typing_extensions==4.9.0
 tzdata==2024.2
